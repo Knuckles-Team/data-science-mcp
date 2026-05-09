@@ -10,26 +10,27 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-    - id: check-added-large-files
-      exclude: 'data_science_mcp/skills/.*-docs/'
-    - id: check-ast
-    - id: check-yaml
-    - id: check-toml
-    - id: check-json
-    - id: fix-byte-order-marker
-      exclude: .gitignore
-    - id: check-merge-conflict
-    - id: detect-private-key
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: no-commit-to-branch
+      - id: check-added-large-files
+        exclude: 'data_science_mcp/skills/.*-docs/'
+      - id: check-ast
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-toml
+      - id: check-json
+      - id: fix-byte-order-marker
+        exclude: .gitignore
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: no-commit-to-branch
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.4
     hooks:
       - id: ruff
         exclude: ^(tests/|test/|scripts/|script/)
-        types_or: [ python, pyi, jupyter ]
+        types_or: [python, pyi, jupyter]
         args: ["--fix", "--ignore=E402"]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
@@ -37,13 +38,22 @@ repos:
       - id: codespell
         args: ["-L", "nam,tread,ot,"]
         exclude: |
-            (?x)^(
-              \./test/.*|
-              \./tests/.*|
-              data_science_mcp/skills/.*-docs/.*
-            )$
+          (?x)^(
+            \./test/.*|
+            \./tests/.*|
+            data_science_mcp/skills/.*-docs/.*
+          )$
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.1
     hooks:
       - id: nbqa-ruff
         exclude: ^(tests/|test/|scripts/|script/)
+  - repo: local
+    hooks:
+      - id: mermaid-validate
+        name: mermaid-validate
+        entry: mermaid-validate
+        language: node
+        additional_dependencies: ['@zabaca/mermaid-validate@1.0.1']
+        types: [markdown]
+        pass_filenames: true
