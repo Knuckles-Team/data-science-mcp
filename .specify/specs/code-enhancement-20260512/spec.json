@@ -1,0 +1,202 @@
+{
+  "feature_id": "code-enhancement-20260512",
+  "title": "Code Enhancement: data-science-mcp",
+  "created": "2026-05-12T14:14:40.983530+00:00",
+  "overview": "Automated code enhancement review for data-science-mcp. Covers 17 analysis domains.",
+  "user_stories": [
+    {
+      "role": "developer",
+      "action": "address Project Analysis findings (grade: F, score: 59)",
+      "value": "improve project project analysis from F to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Test Coverage findings (grade: D, score: 60)",
+      "value": "improve project test coverage from D to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Documentation & Governance findings (grade: C, score: 79)",
+      "value": "improve project documentation & governance from C to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Concept Traceability findings (grade: F, score: 42)",
+      "value": "improve project concept traceability from F to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Linting & Formatting findings (grade: F, score: 0)",
+      "value": "improve project linting & formatting from F to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Test Execution findings (grade: D, score: 60)",
+      "value": "improve project test execution from D to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Changelog Audit findings (grade: C, score: 75)",
+      "value": "improve project changelog audit from C to at least B (80+)"
+    },
+    {
+      "role": "developer",
+      "action": "address Environment Variables findings (grade: D, score: 60)",
+      "value": "improve project environment variables from D to at least B (80+)"
+    }
+  ],
+  "functional_requirements": [
+    {
+      "id": "FR-001",
+      "description": "MAJOR update: pandas 2.3.3 (installed) -> 3.0.3",
+      "testable": true
+    },
+    {
+      "id": "FR-002",
+      "description": "Needs attention: mcp_server.py (719L) \u2014 Low cohesion: 11 distinct concepts in one file",
+      "testable": true
+    },
+    {
+      "id": "FR-003",
+      "description": "Low test-to-source ratio: 0.14",
+      "testable": true
+    },
+    {
+      "id": "FR-004",
+      "description": "Test suite lacks intent diversity (only one type)",
+      "testable": true
+    },
+    {
+      "id": "FR-005",
+      "description": "15 potential doc-test drift items",
+      "testable": true
+    },
+    {
+      "id": "FR-006",
+      "description": "README.md missing sections: installation, usage|quick start",
+      "testable": true
+    },
+    {
+      "id": "FR-007",
+      "description": "README.md is short (140 lines) \u2014 consider expanding",
+      "testable": true
+    },
+    {
+      "id": "FR-008",
+      "description": "README missing: MCP tools mapping table with descriptions",
+      "testable": true
+    },
+    {
+      "id": "FR-009",
+      "description": "README missing: Has a Table of Contents",
+      "testable": true
+    },
+    {
+      "id": "FR-010",
+      "description": "README missing: Has usage examples with code blocks",
+      "testable": true
+    },
+    {
+      "id": "FR-011",
+      "description": "README missing: References /docs directory material",
+      "testable": true
+    },
+    {
+      "id": "FR-012",
+      "description": "README missing: Has MCP tools mapping table with descriptions",
+      "testable": true
+    },
+    {
+      "id": "FR-013",
+      "description": "SRP: 1 modules exceed 500 lines (god modules)",
+      "testable": true
+    },
+    {
+      "id": "FR-014",
+      "description": "No discernible layer architecture (no domain/service/adapter separation)",
+      "testable": true
+    },
+    {
+      "id": "FR-015",
+      "description": "Low traceability ratio: 0% concepts fully traced",
+      "testable": true
+    },
+    {
+      "id": "FR-016",
+      "description": "6 orphaned concepts (only in one source)",
+      "testable": true
+    },
+    {
+      "id": "FR-017",
+      "description": "1 test functions missing concept markers",
+      "testable": true
+    },
+    {
+      "id": "FR-018",
+      "description": "30 significant functions (>10 lines) missing concept markers in docstrings",
+      "testable": true
+    },
+    {
+      "id": "FR-019",
+      "description": "Total lint findings: 53 (high/error: 13, medium/warning: 39, low: 1)",
+      "testable": true
+    },
+    {
+      "id": "FR-020",
+      "description": "1 hook(s) may be outdated: ruff-pre-commit",
+      "testable": true
+    },
+    {
+      "id": "FR-021",
+      "description": "Critical: only 0% of tests pass (0/1)",
+      "testable": true
+    },
+    {
+      "id": "FR-022",
+      "description": "FAILED: tests/test_concept_parity.py::test_concept_parity",
+      "testable": true
+    },
+    {
+      "id": "FR-023",
+      "description": "CHANGELOG.md is missing \u2014 create one following Keep a Changelog format",
+      "testable": true
+    },
+    {
+      "id": "FR-024",
+      "description": "CHANGELOG.md is missing",
+      "testable": true
+    },
+    {
+      "id": "FR-025",
+      "description": "Only 14% of env vars documented in README.md",
+      "testable": true
+    },
+    {
+      "id": "FR-026",
+      "description": "Undocumented env vars: ALLOWED_CLIENT_REDIRECT_URIS, AUTH_TYPE, DATA_MANAGEMENTTOOL, DATA_SCIENCE_MCP_VERIFY, DEFAULT_AGENT_NAME, ENABLE_OTEL, EUNOMIA_POLICY_FILE, EUNOMIA_REMOTE_URL, EUNOMIA_TYPE, INTERPRETABILITYTOOL",
+      "testable": true
+    },
+    {
+      "id": "FR-027",
+      "description": "No .env.example file \u2014 create one for developer onboarding",
+      "testable": true
+    }
+  ],
+  "success_criteria": [
+    {
+      "metric": "Overall GPA",
+      "current": 2.41,
+      "target": 3.0
+    },
+    {
+      "metric": "Domains at B or above",
+      "current": 9,
+      "target": 17
+    },
+    {
+      "metric": "Actionable findings",
+      "current": 27,
+      "target": 0
+    }
+  ]
+}

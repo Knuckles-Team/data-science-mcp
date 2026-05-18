@@ -27,7 +27,7 @@ from pydantic import Field
 
 from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
-from agent_utilities.utilities import get_logger
+from agent_utilities.base_utilities import get_logger
 
 __version__ = "0.4.0"
 
@@ -66,19 +66,13 @@ def register_model_training_tools(mcp: FastMCP) -> None:
             description=(
                 "Fully qualified model class name or shorthand. "
                 "Examples: 'sklearn.linear_model.Ridge', 'EBM', 'LinearRegression'"
-            ),
-        ),
+            )),
         dataset_name: str = Field(
-            description="Name of a registered dataset (e.g., 'boston', 'california').",
-        ),
+            description="Name of a registered dataset (e.g., 'boston', 'california')."),
         hyperparameters: str = Field(
-            default="{}",
-            description="JSON-encoded dict of hyperparameters for the model.",
-        ),
+            default="{}", description="JSON-encoded dict of hyperparameters for the model."),
         test_size: float = Field(
-            default=0.2,
-            description="Fraction of data to hold out for evaluation.",
-        ),
+            default=0.2, description="Fraction of data to hold out for evaluation."),
     ) -> str:
         """Fit a model and return results as JSON."""
         try:
@@ -110,14 +104,12 @@ def register_model_training_tools(mcp: FastMCP) -> None:
     )
     def predict(
         model_id: str = Field(
-            description="ID of a previously fitted model from fit_model.",
-        ),
+            description="ID of a previously fitted model from fit_model."),
         inputs: str = Field(
             description=(
                 "JSON-encoded list of dicts, each containing feature values. "
                 "Example: '[{\"x0\": 1.5, \"x1\": 2.0}]'"
-            ),
-        ),
+            )),
     ) -> str:
         """Generate predictions from a fitted model."""
         try:
@@ -144,15 +136,11 @@ def register_model_training_tools(mcp: FastMCP) -> None:
     )
     def evaluate_model(
         model_id: str = Field(
-            description="ID of a previously fitted model.",
-        ),
+            description="ID of a previously fitted model."),
         dataset_name: str = Field(
-            description="Dataset to evaluate on.",
-        ),
+            description="Dataset to evaluate on."),
         split: str = Field(
-            default="test",
-            description="Data split to use: 'train', 'test', or 'validation'.",
-        ),
+            default="test", description="Data split to use: 'train', 'test', or 'validation'."),
     ) -> str:
         """Evaluate a fitted model."""
         try:
@@ -181,8 +169,7 @@ def register_model_training_tools(mcp: FastMCP) -> None:
         dataset_name: str = Field(description="Dataset name."),
         n_folds: int = Field(default=5, description="Number of CV folds."),
         hyperparameters: str = Field(
-            default="{}", description="JSON-encoded hyperparameters.",
-        ),
+            default="{}", description="JSON-encoded hyperparameters."),
     ) -> str:
         """Run cross-validation."""
         try:
@@ -223,27 +210,18 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
     )
     def evolve_model_class(
         model_class_name: str = Field(
-            description="Name of the model class (e.g., 'HingeEBM').",
-        ),
+            description="Name of the model class (e.g., 'HingeEBM')."),
         source_code: str = Field(
-            default="",
-            description="Python source code of the model class.",
-        ),
+            default="", description="Python source code of the model class."),
         str_output: str = Field(
-            default="",
-            description="The model's __str__() output after fitting.",
-        ),
+            default="", description="The model's __str__() output after fitting."),
         rmse_scores: str = Field(
-            default="{}",
-            description=(
+            default="{}", description=(
                 "JSON dict of dataset_name→RMSE scores. "
                 "Example: '{\"boston\": 3.2, \"california\": 0.8}'"
-            ),
-        ),
+            )),
         interpretability_score: float = Field(
-            default=0.0,
-            description="LLM interpretability pass rate (0.0-1.0).",
-        ),
+            default=0.0, description="LLM interpretability pass rate (0.0-1.0)."),
     ) -> str:
         """Register a candidate in the evolutionary loop."""
         try:
@@ -343,19 +321,16 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
     )
     def run_interpretability_suite(
         model_str: str = Field(
-            description="The model's __str__() output to test against.",
-        ),
+            description="The model's __str__() output to test against."),
         test_cases_json: str = Field(
             description=(
                 "JSON array of test cases. Each: "
                 "{category, query, ground_truth, tolerance?}"
-            ),
-        ),
+            )),
         llm_responses_json: str = Field(
             description=(
                 "JSON array of LLM responses, one per test case."
-            ),
-        ),
+            )),
     ) -> str:
         """Run interpretability test suite."""
         try:
@@ -398,21 +373,15 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
     )
     def grade_response(
         llm_response: str = Field(
-            description="The LLM's response to grade.",
-        ),
+            description="The LLM's response to grade."),
         ground_truth: str = Field(
-            description="The expected correct answer.",
-        ),
+            description="The expected correct answer."),
         model_str: str = Field(
-            default="",
-            description=(
+            default="", description=(
                 "The model's __str__() for reward hacking detection."
-            ),
-        ),
+            )),
         tolerance: float = Field(
-            default=0.05,
-            description="Numerical tolerance for approximate matches.",
-        ),
+            default=0.05, description="Numerical tolerance for approximate matches."),
     ) -> str:
         """Grade a single response."""
         try:
@@ -448,22 +417,15 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
     )
     def generate_interpretability_tests(
         feature_names: str = Field(
-            description="JSON array of feature names.",
-        ),
+            description="JSON array of feature names."),
         coefficients: str = Field(
-            default="[]",
-            description="JSON array of coefficient values per feature.",
-        ),
+            default="[]", description="JSON array of coefficient values per feature."),
         inputs: str = Field(
-            default="[]",
-            description=(
+            default="[]", description=(
                 "JSON array of input dicts for point simulation tests."
-            ),
-        ),
+            )),
         outputs: str = Field(
-            default="[]",
-            description="JSON array of output values for point simulation.",
-        ),
+            default="[]", description="JSON array of output values for point simulation."),
     ) -> str:
         """Generate test cases from model metadata."""
         try:
@@ -522,12 +484,9 @@ def register_data_management_tools(mcp: FastMCP) -> None:
             description=(
                 "Dataset name or file path. Built-in: boston, california, "
                 "diabetes, iris, wine."
-            ),
-        ),
+            )),
         target_column: str = Field(
-            default="",
-            description="Target column name (for CSV files).",
-        ),
+            default="", description="Target column name (for CSV files)."),
     ) -> str:
         """Load a dataset and return summary statistics."""
         try:
@@ -573,14 +532,11 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     def split_dataset(
         name: str = Field(description="Dataset name."),
         test_size: float = Field(
-            default=0.2, description="Test split fraction.",
-        ),
+            default=0.2, description="Test split fraction."),
         validation_size: float = Field(
-            default=0.0, description="Validation split fraction (from train).",
-        ),
+            default=0.0, description="Validation split fraction (from train)."),
         random_seed: int = Field(
-            default=42, description="Random seed for reproducibility.",
-        ),
+            default=42, description="Random seed for reproducibility."),
     ) -> str:
         """Split a dataset."""
         try:

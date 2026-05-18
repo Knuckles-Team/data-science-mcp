@@ -1,0 +1,59 @@
+# Tasks: Code Enhancement: data-science-mcp
+
+Generated: 2026-05-12T14:14:40.983530+00:00
+Skipped informational: 4
+
+- [ ] [P] **T001** [Dependency Audit] MAJOR update: pandas 2.3.3 (installed) -> 3.0.3
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T002** [Codebase Optimization] Needs attention: mcp_server.py (719L) — Low cohesion: 11 distinct concepts in on
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T003** [Test Coverage] Low test-to-source ratio: 0.14
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T004** [Test Coverage] Test suite lacks intent diversity (only one type)
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T005** [Test Coverage] 15 potential doc-test drift items
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T006** [Documentation & Governance] README.md missing sections: installation, usage|quick start
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T007** [Documentation & Governance] README.md is short (140 lines) — consider expanding
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T008** [Documentation & Governance] README missing: MCP tools mapping table with descriptions
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T009** [Documentation & Governance] README missing: Has a Table of Contents
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T010** [Documentation & Governance] README missing: Has usage examples with code blocks
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T011** [Documentation & Governance] README missing: References /docs directory material
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T012** [Documentation & Governance] README missing: Has MCP tools mapping table with descriptions
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T013** [Architecture & Design Patterns] SRP: 1 modules exceed 500 lines (god modules)
+  - Priority: P2-Medium | Effort: Large
+- [ ] [P] **T014** [Architecture & Design Patterns] No discernible layer architecture (no domain/service/adapter separation)
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T015** [Concept Traceability] Low traceability ratio: 0% concepts fully traced
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T016** [Concept Traceability] 6 orphaned concepts (only in one source)
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T017** [Concept Traceability] 1 test functions missing concept markers
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T018** [Concept Traceability] 30 significant functions (>10 lines) missing concept markers in docstrings
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T019** [Linting & Formatting] Total lint findings: 53 (high/error: 13, medium/warning: 39, low: 1)
+  - Priority: P1-High | Effort: Medium
+- [ ] [P] **T020** [Pre-Commit Compliance] 1 hook(s) may be outdated: ruff-pre-commit
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T021** [Test Execution] Critical: only 0% of tests pass (0/1)
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T022** [Test Execution] FAILED: tests/test_concept_parity.py::test_concept_parity
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T023** [Changelog Audit] CHANGELOG.md is missing — create one following Keep a Changelog format
+  - Priority: P3-Low | Effort: Small
+- [ ] [P] **T024** [Changelog Audit] CHANGELOG.md is missing
+  - Priority: P3-Low | Effort: Small
+- [ ] [P] **T025** [Environment Variables] Only 14% of env vars documented in README.md
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T026** [Environment Variables] Undocumented env vars: ALLOWED_CLIENT_REDIRECT_URIS, AUTH_TYPE, DATA_MANAGEMENTT
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T027** [Environment Variables] No .env.example file — create one for developer onboarding
+  - Priority: P2-Medium | Effort: Medium
