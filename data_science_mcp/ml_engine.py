@@ -75,7 +75,11 @@ class MLEngine:
                     "X": bunch.data,
                     "y": bunch.target,
                     "feature_names": list(
-                        getattr(bunch, "feature_names", [f"x{i}" for i in range(bunch.data.shape[1])])
+                        getattr(
+                            bunch,
+                            "feature_names",
+                            [f"x{i}" for i in range(bunch.data.shape[1])],
+                        )
                     ),
                     "target_name": getattr(bunch, "target_names", ["target"])[0]
                     if hasattr(bunch, "target_names")
@@ -105,7 +109,9 @@ class MLEngine:
                     "description": f"CSV dataset: {name}",
                 }
             else:
-                return {"error": f"Unknown dataset: {name}. Use sklearn names or .csv path."}
+                return {
+                    "error": f"Unknown dataset: {name}. Use sklearn names or .csv path."
+                }
 
             self._datasets[name] = data
 
@@ -120,7 +126,9 @@ class MLEngine:
             }
 
         except ImportError as exc:
-            return {"error": f"Missing dependency: {exc}. Install scikit-learn and pandas."}
+            return {
+                "error": f"Missing dependency: {exc}. Install scikit-learn and pandas."
+            }
         except Exception as exc:
             return {"error": str(exc)}
 
@@ -156,7 +164,10 @@ class MLEngine:
             from sklearn.model_selection import train_test_split
 
             X_train, X_test, y_train, y_test = train_test_split(
-                data["X"], data["y"], test_size=test_size, random_state=42,
+                data["X"],
+                data["y"],
+                test_size=test_size,
+                random_state=42,
             )
 
             # Resolve model class
@@ -229,10 +240,7 @@ class MLEngine:
         feature_names = model_data["feature_names"]
 
         # Convert input dicts to numpy array
-        X = np.array([
-            [row.get(f, 0.0) for f in feature_names]
-            for row in inputs
-        ])
+        X = np.array([[row.get(f, 0.0) for f in feature_names] for row in inputs])
 
         predictions = model.predict(X)
         return [float(p) for p in predictions]
@@ -269,7 +277,7 @@ class MLEngine:
         y_pred = model.predict(X)
         errors = y - y_pred
 
-        rmse = float(np.sqrt(np.mean(errors ** 2)))
+        rmse = float(np.sqrt(np.mean(errors**2)))
         mae = float(np.mean(np.abs(errors)))
         r2 = float(model.score(X, y))
 
@@ -315,8 +323,11 @@ class MLEngine:
             model = self._resolve_model(model_class, params)
 
             scores = cross_val_score(
-                model, data["X"], data["y"],
-                cv=n_folds, scoring="neg_root_mean_squared_error",
+                model,
+                data["X"],
+                data["y"],
+                cv=n_folds,
+                scoring="neg_root_mean_squared_error",
             )
 
             rmse_scores = [-s for s in scores]
@@ -401,7 +412,10 @@ class MLEngine:
         X, y = data["X"], data["y"]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_seed,
+            X,
+            y,
+            test_size=test_size,
+            random_state=random_seed,
         )
 
         result: dict[str, Any] = {
@@ -411,7 +425,8 @@ class MLEngine:
 
         if validation_size > 0:
             X_train, X_val, y_train, y_val = train_test_split(
-                X_train, y_train,
+                X_train,
+                y_train,
                 test_size=validation_size,
                 random_state=random_seed,
             )

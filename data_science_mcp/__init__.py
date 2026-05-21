@@ -1,25 +1,38 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import importlib
 import inspect
-import warnings
-from typing import List
+from typing import Any
 
-# Suppress RequestsDependencyWarning due to chardet 6.x / requests 2.32.x mismatch
-# Centralized here to ensure it runs before any sub-package imports
-warnings.filterwarnings("ignore", message=".*urllib3.*or chardet.*")
+__all__: list[str] = []
 
-__all__: List[str] = []
-
-CORE_MODULES = [
-    "data_science_mcp.api_client",
-]
+CORE_MODULES: list[str] = []
 
 OPTIONAL_MODULES = {
     "data_science_mcp.agent_server": "agent",
     "data_science_mcp.mcp_server": "mcp",
 }
+
+
+def _expose_members(module):
+    """Expose public classes and functions from a module into globals and __all__."""
+    for name, obj in inspect.getmembers(module):
+        if (inspect.isclass(obj) or inspect.isfunction(obj)) and not name.startswith(
+            "_"
+        ):
+            globals()[name] = obj
+            if name not in __all__:
+                __all__.append(name)
+
+
+# Eagerly import core modules (keeps API wrappers fast & light)
+for module_name in CORE_MODULES:
+    if module_name:
+        module = importlib.import_module(module_name)
+        _expose_members(module)
+
+# Dynamic/lazy loading of optional modules (agent_server, mcp_server)
+_loaded_optional_modules = {}
 
 
 def _import_module_safely(module_name: str):
@@ -30,41 +43,33 @@ def _import_module_safely(module_name: str):
         return None
 
 
-def _expose_members(module):
-    """Expose public classes and functions from a module into globals and __all__."""
-    for name, obj in inspect.getmembers(module):
-        if (inspect.isclass(obj) or inspect.isfunction(obj)) and not name.startswith(
-            "_"
-        ):
-            globals()[name] = obj
-            __all__.append(name)
+def __getattr__(name: str) -> Any:
+    # Handle availability flags dynamically without eager imports
+    if name == "_MCP_AVAILABLE":
+        mcp_key = next((k for k in OPTIONAL_MODULES if "mcp_server" in k), None)
+        if mcp_key:
+            return _import_module_safely(mcp_key) is not None
+        return False
+    if name == "_AGENT_AVAILABLE":
+        agent_key = next((k for k in OPTIONAL_MODULES if "agent_server" in k), None)
+        if agent_key:
+            return _import_module_safely(agent_key) is not None
+        return False
+
+    # Check optional modules
+    for module_name in OPTIONAL_MODULES:
+        if module_name not in _loaded_optional_modules:
+            module = _import_module_safely(module_name)
+            if module is not None:
+                _loaded_optional_modules[module_name] = module
+                _expose_members(module)
+
+        module = _loaded_optional_modules.get(module_name)
+        if module is not None and hasattr(module, name):
+            return getattr(module, name)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-for module_name in CORE_MODULES:
-    try:
-        module = importlib.import_module(module_name)
-        _expose_members(module)
-    except ImportError:
-        pass
-
-for module_name, extra_name in OPTIONAL_MODULES.items():
-    module = _import_module_safely(module_name)
-    if module is not None:
-        _expose_members(module)
-        globals()[f"_{extra_name.upper()}_AVAILABLE"] = True
-    else:
-        globals()[f"_{extra_name.upper()}_AVAILABLE"] = False
-
-_MCP_AVAILABLE = OPTIONAL_MODULES.get("data_science_mcp.mcp_server") in [
-    m.__name__ for m in globals().values() if hasattr(m, "__name__")
-]
-_AGENT_AVAILABLE = "data_science_mcp.agent_server" in globals()
-
-__all__.extend(["_MCP_AVAILABLE", "_AGENT_AVAILABLE"])
-
-
-"""
-data-science-mcp
-
-Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15).
-"""
+def __dir__() -> list[str]:
+    return sorted(list(globals().keys()) + __all__)

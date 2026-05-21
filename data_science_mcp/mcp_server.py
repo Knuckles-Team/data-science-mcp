@@ -15,6 +15,8 @@ Tool tags:
     - data-management: load_dataset, describe_dataset, split_dataset
 """
 
+from fastmcp import Context, FastMCP
+from pydantic import Field
 import json
 import logging
 import os
@@ -22,14 +24,12 @@ import sys
 from typing import Any
 
 from dotenv import find_dotenv, load_dotenv
-from fastmcp import FastMCP
-from pydantic import Field
 
 from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
@@ -48,510 +48,498 @@ DEFAULT_DATA_MANAGEMENTTOOL = to_boolean(
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
+from data_science_mcp.ml_engine import MLEngine
+
+_pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
+_graded_responses = {}  # In-memory store for interpretability tests and grades
+
 
 def register_model_training_tools(mcp: FastMCP) -> None:
-    """Register model training, prediction, and evaluation tools."""
-
-    @mcp.tool(
-        name="fit_model",
-        description=(
-            "Fit a scikit-learn-compatible model on a dataset. Returns fitted "
-            "model metadata including class name, parameters, training RMSE, "
-            "R², and the model's __str__() representation for LLM readability."
-        ),
-        tags=["model-training"],
-    )
-    def fit_model(
+    @mcp.tool(tags={"model-training"})
+    async def fit_model(
         model_class: str = Field(
-            description=(
-                "Fully qualified model class name or shorthand. "
-                "Examples: 'sklearn.linear_model.Ridge', 'EBM', 'LinearRegression'"
-            )),
-        dataset_name: str = Field(
-            description="Name of a registered dataset (e.g., 'boston', 'california')."),
-        hyperparameters: str = Field(
-            default="{}", description="JSON-encoded dict of hyperparameters for the model."),
+            description="Model class name (e.g., 'LinearRegression', 'Ridge', 'RandomForest')"
+        ),
+        dataset_name: str = Field(description="Name of the loaded dataset to train on"),
+        hyperparameters_json: str = Field(
+            default="{}", description="JSON string of hyperparameters for the model"
+        ),
         test_size: float = Field(
-            default=0.2, description="Fraction of data to hold out for evaluation."),
-    ) -> str:
-        """Fit a model and return results as JSON."""
-        try:
-            params = json.loads(hyperparameters)
-        except json.JSONDecodeError:
-            return json.dumps({"error": "Invalid JSON in hyperparameters"})
-
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            result = engine.fit(
-                model_class=model_class,
-                dataset_name=dataset_name,
-                hyperparameters=params,
-                test_size=test_size,
+            default=0.2, description="Fraction of the dataset to hold out for testing"
+        ),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Fit a machine learning model on a dataset and return metrics."""
+        if ctx:
+            await ctx.info(
+                f"Fitting model class {model_class} on dataset {dataset_name}..."
             )
-            return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
-
-    @mcp.tool(
-        name="predict",
-        description=(
-            "Generate predictions from a fitted model. Accepts JSON-encoded "
-            "input features and returns predicted values."
-        ),
-        tags=["model-training"],
-    )
-    def predict(
-        model_id: str = Field(
-            description="ID of a previously fitted model from fit_model."),
-        inputs: str = Field(
-            description=(
-                "JSON-encoded list of dicts, each containing feature values. "
-                "Example: '[{\"x0\": 1.5, \"x1\": 2.0}]'"
-            )),
-    ) -> str:
-        """Generate predictions from a fitted model."""
         try:
-            input_data = json.loads(inputs)
-        except json.JSONDecodeError:
-            return json.dumps({"error": "Invalid JSON in inputs"})
+            hparams = json.loads(hyperparameters_json)
+        except Exception as e:
+            return {"error": f"Invalid hyperparameters_json: {e}"}
 
-        try:
-            from data_science_mcp.ml_engine import MLEngine
+        engine = MLEngine()
+        return engine.fit(
+            model_class=model_class,
+            dataset_name=dataset_name,
+            hyperparameters=hparams,
+            test_size=test_size,
+        )
 
-            engine = MLEngine()
-            predictions = engine.predict(model_id=model_id, inputs=input_data)
-            return json.dumps({"predictions": predictions}, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
-
-    @mcp.tool(
-        name="evaluate_model",
-        description=(
-            "Evaluate a fitted model on a dataset split. Returns RMSE, MAE, "
-            "R², and per-sample prediction errors."
+    @mcp.tool(tags={"model-training"})
+    async def predict(
+        model_id: str = Field(description="ID of a fitted model"),
+        inputs_json: str = Field(
+            description="JSON string of a list of feature value dicts"
         ),
-        tags=["model-training"],
-    )
-    def evaluate_model(
-        model_id: str = Field(
-            description="ID of a previously fitted model."),
-        dataset_name: str = Field(
-            description="Dataset to evaluate on."),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Generate predictions using a fitted model."""
+        if ctx:
+            await ctx.info(f"Generating predictions with model {model_id}...")
+        try:
+            inputs = json.loads(inputs_json)
+        except Exception as e:
+            return {"error": f"Invalid inputs_json: {e}"}
+
+        engine = MLEngine()
+        try:
+            preds = engine.predict(model_id, inputs)
+            return {"model_id": model_id, "predictions": preds}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @mcp.tool(tags={"model-training"})
+    async def evaluate_model(
+        model_id: str = Field(description="ID of a fitted model"),
+        dataset_name: str = Field(description="Name of the dataset to evaluate on"),
         split: str = Field(
-            default="test", description="Data split to use: 'train', 'test', or 'validation'."),
-    ) -> str:
-        """Evaluate a fitted model."""
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            metrics = engine.evaluate(
-                model_id=model_id,
-                dataset_name=dataset_name,
-                split=split,
-            )
-            return json.dumps(metrics, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
-
-    @mcp.tool(
-        name="cross_validate",
-        description=(
-            "Run k-fold cross-validation on a model class with a dataset. "
-            "Returns per-fold and aggregate metrics."
+            default="test", description="Dataset split to evaluate: 'train' or 'test'"
         ),
-        tags=["model-training"],
-    )
-    def cross_validate(
-        model_class: str = Field(description="Model class name."),
-        dataset_name: str = Field(description="Dataset name."),
-        n_folds: int = Field(default=5, description="Number of CV folds."),
-        hyperparameters: str = Field(
-            default="{}", description="JSON-encoded hyperparameters."),
-    ) -> str:
-        """Run cross-validation."""
-        try:
-            params = json.loads(hyperparameters)
-        except json.JSONDecodeError:
-            return json.dumps({"error": "Invalid JSON in hyperparameters"})
-
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            result = engine.cross_validate(
-                model_class=model_class,
-                dataset_name=dataset_name,
-                n_folds=n_folds,
-                hyperparameters=params,
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Evaluate a fitted model on a dataset split."""
+        if ctx:
+            await ctx.info(
+                f"Evaluating model {model_id} on {split} split of {dataset_name}..."
             )
-            return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        engine = MLEngine()
+        return engine.evaluate(model_id, dataset_name, split)
+
+    @mcp.tool(tags={"model-training"})
+    async def cross_validate(
+        model_class: str = Field(description="Model class name"),
+        dataset_name: str = Field(description="Name of the dataset"),
+        n_folds: int = Field(
+            default=5, description="Number of folds for cross-validation"
+        ),
+        hyperparameters_json: str = Field(
+            default="{}", description="JSON string of hyperparameters"
+        ),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Perform k-fold cross-validation for a model class."""
+        if ctx:
+            await ctx.info(
+                f"Running {n_folds}-fold cross validation for {model_class} on {dataset_name}..."
+            )
+        try:
+            hparams = json.loads(hyperparameters_json)
+        except Exception as e:
+            return {"error": f"Invalid hyperparameters_json: {e}"}
+
+        engine = MLEngine()
+        return engine.cross_validate(model_class, dataset_name, n_folds, hparams)
 
 
 # ── Model Evolution Tools ────────────────────────────────────────────
 
 
 def register_model_evolution_tools(mcp: FastMCP) -> None:
-    """Register model evolution and Pareto frontier tools."""
-
-    @mcp.tool(
-        name="evolve_model_class",
-        description=(
-            "Submit a new model class candidate to the IModelEvolver. "
-            "The model will be evaluated for both predictive accuracy "
-            "and LLM interpretability, then added to the Pareto frontier "
-            "if non-dominated. Returns the candidate's fitness metrics."
+    @mcp.tool(tags={"model-evolution"})
+    async def evolve_model_class(
+        model_class: str = Field(
+            description="Model class name (e.g. 'Ridge', 'DecisionTree')"
         ),
-        tags=["model-evolution"],
-    )
-    def evolve_model_class(
-        model_class_name: str = Field(
-            description="Name of the model class (e.g., 'HingeEBM')."),
-        source_code: str = Field(
-            default="", description="Python source code of the model class."),
-        str_output: str = Field(
-            default="", description="The model's __str__() output after fitting."),
-        rmse_scores: str = Field(
-            default="{}", description=(
-                "JSON dict of dataset_name→RMSE scores. "
-                "Example: '{\"boston\": 3.2, \"california\": 0.8}'"
-            )),
-        interpretability_score: float = Field(
-            default=0.0, description="LLM interpretability pass rate (0.0-1.0)."),
-    ) -> str:
-        """Register a candidate in the evolutionary loop."""
-        try:
-            scores = json.loads(rmse_scores)
-        except json.JSONDecodeError:
-            return json.dumps({"error": "Invalid JSON in rmse_scores"})
-
-        try:
-            from agent_utilities.harness.imodel_evolver import IModelEvolver
-
-            evolver = IModelEvolver()
-            candidate = evolver.register_candidate(
-                model_class_name=model_class_name,
-                source_code=source_code,
-                str_output=str_output,
-                rmse_scores=scores,
-                interpretability_score=interpretability_score,
+        base_performance: float = Field(
+            description="Accuracy/performance score (higher is better)"
+        ),
+        complexity: float = Field(
+            description="Complexity of the model class (lower is better)"
+        ),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Submit a model to the evolutionary Pareto frontier."""
+        if ctx:
+            await ctx.info(
+                f"Submitting {model_class} to evolutionary Pareto frontier..."
             )
-            return json.dumps({
-                "model_class_name": candidate.model_class_name,
-                "predictive_rank": candidate.predictive_rank,
-                "interpretability_score": candidate.interpretability_score,
-                "status": "registered",
-            })
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
 
-    @mcp.tool(
-        name="rank_models",
-        description=(
-            "Rank all registered model candidates by mean RMSE across "
-            "datasets. Returns normalized ranks (0.0=best, 1.0=worst)."
+        _pareto_models[model_class] = {
+            "performance": base_performance,
+            "complexity": complexity,
+        }
+
+        # Recompute Pareto Frontier
+        frontier = {}
+        for m1, spec1 in _pareto_models.items():
+            dominated = False
+            for m2, spec2 in _pareto_models.items():
+                if m1 == m2:
+                    continue
+                # dominated if spec2 is strictly better in one dimension and at least equal in the other
+                p1, c1 = spec1["performance"], spec1["complexity"]
+                p2, c2 = spec2["performance"], spec2["complexity"]
+                if (p2 >= p1 and c2 < c1) or (p2 > p1 and c2 <= c1):
+                    dominated = True
+                    break
+            if not dominated:
+                frontier[m1] = spec1
+
+        return {
+            "status": "success",
+            "message": f"Successfully submitted {model_class} to the Pareto frontier.",
+            "pareto_frontier": frontier,
+        }
+
+    @mcp.tool(tags={"model-evolution"})
+    async def rank_models(
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
         ),
-        tags=["model-evolution"],
-    )
-    def rank_models() -> str:
-        """Rank all registered candidates."""
-        try:
-            from agent_utilities.harness.imodel_evolver import IModelEvolver
-
-            evolver = IModelEvolver()
-            ranked = evolver.rank_models()
-            return json.dumps([
+    ) -> dict:
+        """Rank all registered fitted models by their test R2 score."""
+        if ctx:
+            await ctx.info("Ranking models by R2 score...")
+        engine = MLEngine()
+        ranked = []
+        for model_id, model_data in engine._models.items():
+            model = model_data["model"]
+            X_test = model_data["X_test"]
+            y_test = model_data["y_test"]
+            r2 = float(model.score(X_test, y_test))
+            ranked.append(
                 {
-                    "model_class_name": c.model_class_name,
-                    "predictive_rank": c.predictive_rank,
-                    "interpretability_score": c.interpretability_score,
+                    "model_id": model_id,
+                    "dataset": model_data["dataset"],
+                    "model_str": str(model),
+                    "r2_test": round(r2, 6),
                 }
-                for c in ranked
-            ], indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+            )
+        ranked.sort(key=lambda x: x["r2_test"], reverse=True)
+        return {"ranked_models": ranked}
 
-    @mcp.tool(
-        name="get_pareto_frontier",
-        description=(
-            "Get the current Pareto frontier of accuracy vs interpretability. "
-            "Returns all non-dominated models."
+    @mcp.tool(tags={"model-evolution"})
+    async def get_pareto_frontier(
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
         ),
-        tags=["model-evolution"],
-    )
-    def get_pareto_frontier() -> str:
-        """Get current Pareto frontier."""
-        try:
-            from agent_utilities.harness.imodel_evolver import IModelEvolver
+    ) -> dict:
+        """Retrieve the current Pareto frontier of model classes."""
+        if ctx:
+            await ctx.info("Retrieving evolutionary Pareto frontier...")
 
-            evolver = IModelEvolver()
-            frontier = evolver.evolve_round()
-            return json.dumps([
-                {
-                    "model_id": p.model_id if hasattr(p, "model_id") else str(i),
-                    "model_class_name": p.model_class_name,
-                    "predictive_rank": p.predictive_rank,
-                    "interpretability_score": p.interpretability_score,
-                }
-                for i, p in enumerate(frontier)
-            ], indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        frontier = {}
+        for m1, spec1 in _pareto_models.items():
+            dominated = False
+            for m2, spec2 in _pareto_models.items():
+                if m1 == m2:
+                    continue
+                p1, c1 = spec1["performance"], spec1["complexity"]
+                p2, c2 = spec2["performance"], spec2["complexity"]
+                if (p2 >= p1 and c2 < c1) or (p2 > p1 and c2 <= c1):
+                    dominated = True
+                    break
+            if not dominated:
+                frontier[m1] = spec1
+
+        return {"pareto_frontier": frontier}
 
 
 # ── Interpretability Tools ───────────────────────────────────────────
 
 
 def register_interpretability_tools(mcp: FastMCP) -> None:
-    """Register interpretability testing and grading tools."""
-
-    @mcp.tool(
-        name="run_interpretability_suite",
-        description=(
-            "Run the full 6-category interpretability test suite on a model. "
-            "Categories: feature_attribution, point_simulation, sensitivity, "
-            "counterfactual, confidence_calibration, data_attribution. "
-            "Returns per-category pass rates and aggregate score."
+    @mcp.tool(tags={"interpretability"})
+    async def generate_interpretability_tests(
+        model_id: str = Field(description="ID of a fitted model to generate tests for"),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
         ),
-        tags=["interpretability"],
-    )
-    def run_interpretability_suite(
-        model_str: str = Field(
-            description="The model's __str__() output to test against."),
-        test_cases_json: str = Field(
-            description=(
-                "JSON array of test cases. Each: "
-                "{category, query, ground_truth, tolerance?}"
-            )),
-        llm_responses_json: str = Field(
-            description=(
-                "JSON array of LLM responses, one per test case."
-            )),
-    ) -> str:
-        """Run interpretability test suite."""
-        try:
-            test_cases_raw = json.loads(test_cases_json)
-            llm_responses = json.loads(llm_responses_json)
-        except json.JSONDecodeError as exc:
-            return json.dumps({"error": f"Invalid JSON: {exc}"})
+    ) -> dict:
+        """Generate a structured suite of 6 interpretability test cases for a model."""
+        if ctx:
+            await ctx.info(f"Generating interpretability tests for model {model_id}...")
 
-        try:
-            from agent_utilities.harness.interpretability_tests import (
-                InterpretabilityTestCase,
-                InterpretabilityTestSuite,
-            )
-            from agent_utilities.models.imodel import (
-                InterpretabilityTestCategory,
-            )
+        engine = MLEngine()
+        if model_id not in engine._models:
+            return {"error": f"Model {model_id} not found."}
 
-            suite = InterpretabilityTestSuite()
-            tests = [
-                InterpretabilityTestCase(
-                    category=InterpretabilityTestCategory(tc["category"]),
-                    query=tc["query"],
-                    ground_truth=tc["ground_truth"],
-                    tolerance=tc.get("tolerance", 0.05),
-                )
-                for tc in test_cases_raw
-            ]
-            result = suite.run_suite(model_str, tests, llm_responses)
-            return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        model_data = engine._models[model_id]
+        feature_names = model_data["feature_names"]
 
-    @mcp.tool(
-        name="grade_response",
-        description=(
-            "Grade a single LLM response against a ground truth answer. "
-            "Returns pass/fail, reasoning, and reward hacking check."
+        tests = [
+            {
+                "test_id": f"att_{model_id}_0",
+                "category": "Feature Attribution",
+                "question": f"Which feature among {feature_names} has the largest absolute coefficient/importance in the model representation?",
+                "expected_hint": "Inspect the model coefficients/feature importances.",
+            },
+            {
+                "test_id": f"sim_{model_id}_0",
+                "category": "Point Simulation",
+                "question": "Predict the target value when all input features are set to 0.0.",
+                "expected_hint": "This corresponds to the model intercept / baseline prediction.",
+            },
+            {
+                "test_id": f"sens_{model_id}_0",
+                "category": "Sensitivity Analysis",
+                "question": f"How does the model prediction change if we increase the first feature '{feature_names[0]}' by 1.0 unit?",
+                "expected_hint": "This corresponds to the derivative / coefficient of the first feature.",
+            },
+            {
+                "test_id": f"cf_{model_id}_0",
+                "category": "Counterfactual",
+                "question": "What is the required value of the features to achieve exactly the baseline/intercept output?",
+                "expected_hint": "Set all features to 0.0.",
+            },
+            {
+                "test_id": f"conf_{model_id}_0",
+                "category": "Confidence Calibration",
+                "question": "What is the R2 score achieved by this model on the test holdout set?",
+                "expected_hint": "Inspect the model evaluation metrics.",
+            },
+            {
+                "test_id": f"data_{model_id}_0",
+                "category": "Data Attribution",
+                "question": "How many training samples were used to fit this model?",
+                "expected_hint": "Check the n_train field from model fit details.",
+            },
+        ]
+
+        return {"model_id": model_id, "tests": tests}
+
+    @mcp.tool(tags={"interpretability"})
+    async def grade_response(
+        test_id: str = Field(description="ID of the interpretability test"),
+        response: str = Field(description="Answer response to grade"),
+        expected: str = Field(description="Expected reference answer"),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
         ),
-        tags=["interpretability"],
-    )
-    def grade_response(
-        llm_response: str = Field(
-            description="The LLM's response to grade."),
-        ground_truth: str = Field(
-            description="The expected correct answer."),
-        model_str: str = Field(
-            default="", description=(
-                "The model's __str__() for reward hacking detection."
-            )),
-        tolerance: float = Field(
-            default=0.05, description="Numerical tolerance for approximate matches."),
-    ) -> str:
-        """Grade a single response."""
-        try:
-            from agent_utilities.harness.interpretability_tests import (
-                InterpretabilityGrader,
-            )
+    ) -> dict:
+        """Grade a model interpretability response against reference answer."""
+        if ctx:
+            await ctx.info(f"Grading response for test {test_id}...")
 
-            grader = InterpretabilityGrader()
-            passed, reason = grader.grade(
-                llm_response, ground_truth, tolerance=tolerance,
-            )
-            reward_hacking = (
-                grader.detect_reward_hacking(model_str, ground_truth)
-                if model_str
-                else False
-            )
-            return json.dumps({
-                "passed": passed and not reward_hacking,
-                "reason": reason,
-                "reward_hacking_detected": reward_hacking,
-            })
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        # Simple grading logic: case-insensitive match or float match if float
+        passed = False
+        r_clean = response.strip().lower()
+        e_clean = expected.strip().lower()
 
-    @mcp.tool(
-        name="generate_interpretability_tests",
-        description=(
-            "Generate interpretability test cases for a model. Produces "
-            "feature attribution, point simulation, and sensitivity tests "
-            "from model metadata."
+        if r_clean == e_clean:
+            passed = True
+        else:
+            # Try parsing as float
+            try:
+                r_val = float(r_clean)
+                e_val = float(e_clean)
+                if abs(r_val - e_val) < 1e-4:
+                    passed = True
+            except ValueError:
+                # Substring match fallback
+                if e_clean in r_clean or r_clean in e_clean:
+                    passed = True
+
+        result = {
+            "test_id": test_id,
+            "passed": passed,
+            "response": response,
+            "expected": expected,
+            "score": 1.0 if passed else 0.0,
+        }
+        _graded_responses[test_id] = result
+        return result
+
+    @mcp.tool(tags={"interpretability"})
+    async def run_interpretability_suite(
+        model_id: str = Field(description="ID of the fitted model"),
+        answers_json: str = Field(
+            description="JSON string mapping test_id to response answers"
         ),
-        tags=["interpretability"],
-    )
-    def generate_interpretability_tests(
-        feature_names: str = Field(
-            description="JSON array of feature names."),
-        coefficients: str = Field(
-            default="[]", description="JSON array of coefficient values per feature."),
-        inputs: str = Field(
-            default="[]", description=(
-                "JSON array of input dicts for point simulation tests."
-            )),
-        outputs: str = Field(
-            default="[]", description="JSON array of output values for point simulation."),
-    ) -> str:
-        """Generate test cases from model metadata."""
-        try:
-            feat = json.loads(feature_names)
-            coefs = json.loads(coefficients)
-            inp = json.loads(inputs)
-            out = json.loads(outputs)
-        except json.JSONDecodeError as exc:
-            return json.dumps({"error": f"Invalid JSON: {exc}"})
-
-        try:
-            from agent_utilities.harness.interpretability_tests import (
-                InterpretabilityTestSuite,
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Run and grade the complete 6-category interpretability audit suite for a model."""
+        if ctx:
+            await ctx.info(
+                f"Running full interpretability suite for model {model_id}..."
             )
+        try:
+            answers = json.loads(answers_json)
+        except Exception as e:
+            return {"error": f"Invalid answers_json: {e}"}
 
-            suite = InterpretabilityTestSuite()
-            tests = []
-            if coefs:
-                tests.extend(
-                    suite.generate_feature_attribution_tests(feat, coefs),
-                )
-            if inp and out:
-                tests.extend(
-                    suite.generate_point_simulation_tests(inp, out),
-                )
+        engine = MLEngine()
+        if model_id not in engine._models:
+            return {"error": f"Model {model_id} not found."}
 
-            return json.dumps([
+        # We can construct the exact reference answers from the MLEngine models!
+        model_data = engine._models[model_id]
+        model = model_data["model"]
+        feature_names = model_data["feature_names"]
+
+        import numpy as np
+
+        # Att reference: largest coefficient
+        largest_feature = "unknown"
+        if hasattr(model, "coef_"):
+            coefs = np.abs(model.coef_)
+            largest_idx = int(np.argmax(coefs))
+            largest_feature = feature_names[largest_idx]
+        elif hasattr(model, "feature_importances_"):
+            importances = model.feature_importances_
+            largest_idx = int(np.argmax(importances))
+            largest_feature = feature_names[largest_idx]
+
+        # Sim reference: baseline prediction
+        baseline_pred = float(model.predict(np.zeros((1, len(feature_names))))[0])
+
+        # Sens reference: coefficient of first feature
+        coef_first = 0.0
+        if hasattr(model, "coef_"):
+            coef_first = float(model.coef_[0])
+        elif hasattr(model, "feature_importances_"):
+            coef_first = float(model.feature_importances_[0])
+
+        # CF reference
+        cf_val = "0.0"
+
+        # Conf reference
+        r2 = float(model.score(model_data["X_test"], model_data["y_test"]))
+
+        # Data reference
+        n_train = len(model_data["X_train"])
+
+        expected_answers = {
+            f"att_{model_id}_0": largest_feature,
+            f"sim_{model_id}_0": str(round(baseline_pred, 4)),
+            f"sens_{model_id}_0": str(round(coef_first, 4)),
+            f"cf_{model_id}_0": cf_val,
+            f"conf_{model_id}_0": str(round(r2, 4)),
+            f"data_{model_id}_0": str(n_train),
+        }
+
+        results = []
+        score_sum = 0.0
+        for test_id, expected in expected_answers.items():
+            ans = answers.get(test_id, "no answer provided")
+            # Grade
+            passed = False
+            r_clean = ans.strip().lower()
+            e_clean = expected.strip().lower()
+            if r_clean == e_clean:
+                passed = True
+            else:
+                try:
+                    r_val = float(r_clean)
+                    e_val = float(e_clean)
+                    if abs(r_val - e_val) < 1e-3:
+                        passed = True
+                except ValueError:
+                    if e_clean in r_clean or r_clean in e_clean:
+                        passed = True
+
+            score = 1.0 if passed else 0.0
+            score_sum += score
+            results.append(
                 {
-                    "category": t.category.value,
-                    "query": t.query,
-                    "ground_truth": t.ground_truth,
-                    "tolerance": t.tolerance,
+                    "test_id": test_id,
+                    "passed": passed,
+                    "response": ans,
+                    "expected": expected,
+                    "score": score,
                 }
-                for t in tests
-            ], indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+            )
+
+        total_tests = len(expected_answers)
+        return {
+            "model_id": model_id,
+            "overall_score": score_sum / total_tests,
+            "passed_count": sum(1 for r in results if r["passed"]),
+            "failed_count": sum(1 for r in results if not r["passed"]),
+            "detailed_results": results,
+        }
 
 
 # ── Data Management Tools ────────────────────────────────────────────
 
 
 def register_data_management_tools(mcp: FastMCP) -> None:
-    """Register dataset loading and manipulation tools."""
-
-    @mcp.tool(
-        name="load_dataset",
-        description=(
-            "Load a dataset by name. Supports scikit-learn built-in datasets "
-            "(boston, california, diabetes, iris, wine) and CSV files."
-        ),
-        tags=["data-management"],
-    )
-    def load_dataset(
+    @mcp.tool(tags={"data-management"})
+    async def load_dataset(
         name: str = Field(
-            description=(
-                "Dataset name or file path. Built-in: boston, california, "
-                "diabetes, iris, wine."
-            )),
+            description="Dataset name ('california', 'diabetes', 'iris', 'wine', 'breast_cancer') or path to .csv file"
+        ),
         target_column: str = Field(
-            default="", description="Target column name (for CSV files)."),
-    ) -> str:
-        """Load a dataset and return summary statistics."""
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            summary = engine.load_dataset(
-                name=name, target_column=target_column,
-            )
-            return json.dumps(summary, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
-
-    @mcp.tool(
-        name="describe_dataset",
-        description=(
-            "Get descriptive statistics for a loaded dataset: shape, "
-            "dtypes, mean, std, min, max, correlations."
+            default="", description="Name of the target column (for CSV files)"
         ),
-        tags=["data-management"],
-    )
-    def describe_dataset(
-        name: str = Field(description="Name of a loaded dataset."),
-    ) -> str:
-        """Describe a dataset."""
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            stats = engine.describe_dataset(name=name)
-            return json.dumps(stats, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
-
-    @mcp.tool(
-        name="split_dataset",
-        description=(
-            "Split a dataset into train/test/validation sets. Returns "
-            "split sizes and indices."
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
         ),
-        tags=["data-management"],
-    )
-    def split_dataset(
-        name: str = Field(description="Dataset name."),
+    ) -> dict:
+        """Load and parse a dataset by name or CSV file path."""
+        if ctx:
+            await ctx.info(f"Loading dataset {name}...")
+        engine = MLEngine()
+        return engine.load_dataset(name, target_column)
+
+    @mcp.tool(tags={"data-management"})
+    async def describe_dataset(
+        name: str = Field(description="Name of the loaded dataset to describe"),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Get descriptive statistics for a loaded dataset."""
+        if ctx:
+            await ctx.info(f"Describing statistics for dataset {name}...")
+        engine = MLEngine()
+        return engine.describe_dataset(name)
+
+    @mcp.tool(tags={"data-management"})
+    async def split_dataset(
+        name: str = Field(description="Name of the loaded dataset to split"),
         test_size: float = Field(
-            default=0.2, description="Test split fraction."),
+            default=0.2, description="Holdout fraction for testing"
+        ),
         validation_size: float = Field(
-            default=0.0, description="Validation split fraction (from train)."),
+            default=0.0, description="Holdout fraction for validation (from train set)"
+        ),
         random_seed: int = Field(
-            default=42, description="Random seed for reproducibility."),
-    ) -> str:
-        """Split a dataset."""
-        try:
-            from data_science_mcp.ml_engine import MLEngine
-
-            engine = MLEngine()
-            result = engine.split_dataset(
-                name=name,
-                test_size=test_size,
-                validation_size=validation_size,
-                random_seed=random_seed,
-            )
-            return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+            default=42, description="Random seed for reproducibility"
+        ),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Split a loaded dataset into train, test, and validation sets."""
+        if ctx:
+            await ctx.info(f"Splitting dataset {name} with test_size={test_size}...")
+        engine = MLEngine()
+        return engine.split_dataset(name, test_size, validation_size, random_seed)
 
 
 # ── Prompts ──────────────────────────────────────────────────────────
