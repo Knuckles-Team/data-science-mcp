@@ -86,31 +86,7 @@ Configure your IDE's `mcp.json` to launch the MCP server via `uvx`:
 ```
 
 #### Streamable-HTTP Transport (Recommended for production deployments)
-Configure your client's `mcp.json` to launch the Streamable-HTTP server via `uvx` with explicit host and port definition:
-
-```json
-{
-  "mcpServers": {
-    "data-science-mcp": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "data-science-mcp",
-        "data-science-mcp"
-      ],
-      "env": {
-        "TRANSPORT": "streamable-http",
-        "HOST": "0.0.0.0",
-        "PORT": "8000",
-        "DATA_SCIENCE_MCP_URL": "your_data_science_mcp_url_here",
-        "DATA_SCIENCE_MCP_TOKEN": "your_data_science_mcp_token_here"
-      }
-    }
-  }
-}
-```
-
-Alternatively, connect to a pre-deployed remote or local Streamable-HTTP instance:
+To run the server as a long-running Streamable-HTTP service:
 
 ```json
 {
