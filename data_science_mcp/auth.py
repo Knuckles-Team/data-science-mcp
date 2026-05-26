@@ -19,7 +19,7 @@ def get_client():
     if _client is None:
         base_url = os.getenv("DATA_SCIENCE_MCP_URL", "http://localhost:8080")
         token = os.getenv("DATA_SCIENCE_MCP_TOKEN", "")
-        verify = os.getenv("DATA_SCIENCE_MCP_VERIFY", "True").lower() in (
+        verify = os.getenv("DATA_SCIENCE_MCP_SSL_VERIFY") or os.getenv("DATA_SCIENCE_MCP_VERIFY", "True").lower() in (
             "true",
             "1",
             "yes",

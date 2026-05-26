@@ -6,7 +6,7 @@ from typing import Any
 
 __all__: list[str] = []
 
-CORE_MODULES: list[str] = []
+CORE_MODULES: list[str] = ["data_science_mcp.auth"]
 
 OPTIONAL_MODULES = {
     "data_science_mcp.agent_server": "agent",

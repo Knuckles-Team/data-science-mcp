@@ -1,12 +1,10 @@
 #!/usr/bin/python
 # coding: utf-8
-
 """Data Science MCP Server.
 
 Provides model training, evaluation, and evolution tools for agentic ML
 workflows. Designed as the MCP delegation target for agent-utilities'
-IModelEvolver (CONCEPT:AHE-3.15) and InterpretabilityTestSuite
-(CONCEPT:AHE-3.16).
+IModelEvolver and InterpretabilityTestSuite.
 
 Tool tags:
     - model-training: fit_model, predict, evaluate_model, cross_validate
@@ -45,14 +43,12 @@ DEFAULT_DATA_MANAGEMENTTOOL = to_boolean(
     os.getenv("DATA_MANAGEMENTTOOL", "True"),
 )
 
-
 # ── Model Training Tools ─────────────────────────────────────────────
 
 from data_science_mcp.ml_engine import MLEngine
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades
-
 
 def register_model_training_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"model-training"})
@@ -160,9 +156,7 @@ def register_model_training_tools(mcp: FastMCP) -> None:
         engine = MLEngine()
         return engine.cross_validate(model_class, dataset_name, n_folds, hparams)
 
-
 # ── Model Evolution Tools ────────────────────────────────────────────
-
 
 def register_model_evolution_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"model-evolution"})
@@ -266,9 +260,7 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
 
         return {"pareto_frontier": frontier}
 
-
 # ── Interpretability Tools ───────────────────────────────────────────
-
 
 def register_interpretability_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"interpretability"})
@@ -483,9 +475,7 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
             "detailed_results": results,
         }
 
-
 # ── Data Management Tools ────────────────────────────────────────────
-
 
 def register_data_management_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"data-management"})
@@ -541,9 +531,7 @@ def register_data_management_tools(mcp: FastMCP) -> None:
         engine = MLEngine()
         return engine.split_dataset(name, test_size, validation_size, random_seed)
 
-
 # ── Prompts ──────────────────────────────────────────────────────────
-
 
 def register_prompts(mcp: FastMCP) -> None:
     """Register MCP prompts for guided workflows."""
@@ -594,9 +582,7 @@ def register_prompts(mcp: FastMCP) -> None:
             f"4. Use run_interpretability_suite() for aggregate scoring\n"
         )
 
-
 # ── MCP Initialization ──────────────────────────────────────────────
-
 
 def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
     """Initialize and return the Data Science MCP instance."""
@@ -608,7 +594,7 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         instructions=(
             "Data Science MCP Server for model training, evaluation, and "
             "evolution. Integrates with agent-utilities IModelEvolver "
-            "(CONCEPT:AHE-3.15) for Agentic-iModels workflows."
+            " for Agentic-iModels workflows."
         ),
     )
 
@@ -637,7 +623,6 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
 
     return mcp, args, middlewares, registered_tags
 
-
 def mcp_server():
     """Entry point for the MCP server."""
     mcp, args, middlewares, registered_tags = get_mcp_instance()
@@ -657,7 +642,6 @@ def mcp_server():
     else:
         logger.error(f"Invalid transport: {args.transport}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     mcp_server()

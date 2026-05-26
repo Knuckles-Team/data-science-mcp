@@ -1,0 +1,65 @@
+# Tasks: Code Enhancement: data-science-mcp
+
+Generated: 2026-05-24T04:17:16.176178+00:00
+Skipped informational: 5
+
+- [ ] [P] **T001** [Dependency Audit] Minor update: agent-utilities 0.2.40 (installed) -> 0.16.0
+  - Priority: P3-Low | Effort: Small
+- [ ] [P] **T002** [Dependency Audit] Minor update: scikit-learn 1.5.0 (constraint — not installed) -> 1.8.0
+  - Priority: P3-Low | Effort: Small
+- [ ] [P] **T003** [Dependency Audit] MAJOR update: pandas 2.0.0 (constraint — not installed) -> 3.0.3
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T004** [Codebase Optimization] 2 functions exceed 200 lines (actionable refactoring targets): register_interpre
+  - Priority: P2-Medium | Effort: Large
+- [ ] [P] **T005** [Codebase Optimization] Monolithic: mcp_server.py (663L) — 2 functions with high complexity (worst: regi
+  - Priority: P1-High | Effort: Large
+- [ ] [P] **T006** [Test Coverage] Test suite lacks intent diversity (only one type)
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T007** [Test Coverage] 12 potential doc-test drift items
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T008** [Documentation & Governance] README.md missing sections: usage|quick start
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T009** [Documentation & Governance] 2 broken internal links in README.md
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T010** [Documentation & Governance] README missing: Has a Table of Contents
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T011** [Documentation & Governance] README missing: Has usage examples with code blocks
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T012** [Architecture & Design Patterns] SRP: 2 modules exceed 500 lines (god modules)
+  - Priority: P2-Medium | Effort: Large
+- [ ] [P] **T013** [Architecture & Design Patterns] No discernible layer architecture (no domain/service/adapter separation)
+  - Priority: P2-Medium | Effort: Medium
+- [ ] [P] **T014** [Concept Traceability] Low traceability ratio: 0% concepts fully traced
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T015** [Concept Traceability] 13 orphaned concepts (only in one source)
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T016** [Concept Traceability] 28 test functions missing concept markers
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T017** [Concept Traceability] 47 significant functions (>10 lines) missing concept markers in docstrings
+  - Priority: P4-Enhancement | Effort: Small
+- [ ] [P] **T018** [Linting & Formatting] Total lint findings: 0 (high/error: 0, medium/warning: 0, low: 0)
+  - Priority: P4-Enhancement | Effort: Medium
+- [ ] [P] **T019** [Pre-Commit Compliance] 1 hook(s) may be outdated: ruff-pre-commit
+  - Priority: P2-Medium | Effort: Small
+- [ ] [P] **T020** [Changelog Audit] CHANGELOG.md exists but could not be parsed — check format compliance
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T021** [Changelog Audit] No changelog entries within the last 30 days
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T022** [Changelog Audit] keepachangelog not installed — pip install 'universal-skills[code-enhancer]'
+  - Priority: P3-Low | Effort: Small
+- [ ] [P] **T023** [Pytest Quality] 1 test files exceed 500 lines — split into focused modules
+  - Priority: P3-Low | Effort: Large
+- [ ] [P] **T024** [Pytest Quality] No @pytest.mark.parametrize usage — consider data-driven tests
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T025** [Pytest Quality] 10 tests have >5 assertions — consider splitting (single responsibility)
+  - Priority: P3-Low | Effort: Large
+- [ ] [P] **T026** [Pytest Quality] 1 tests exceed 100 lines — likely doing too much per test
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T027** [Environment Variables] Partial env var documentation: 53% coverage
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T028** [Environment Variables] Undocumented env vars: AUTH_TYPE, DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T029** [Environment Variables] 2 Python env vars not in .env.example: DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE
+  - Priority: P3-Low | Effort: Medium
+- [ ] [P] **T030** [analyze_xdg_kg] Analysis error: No module named 'agent_utilities.knowledge_graph'
+  - Priority: P1-High | Effort: Medium
