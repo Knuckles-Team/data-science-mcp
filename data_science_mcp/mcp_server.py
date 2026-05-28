@@ -27,7 +27,7 @@ from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
