@@ -87,17 +87,17 @@ class MLEngine:
                     "description": getattr(bunch, "DESCR", "")[:200],
                 }
             elif name.endswith(".csv"):
-                import pandas as pd
+                import polars as pl
 
-                df = pd.read_csv(name)
+                df = pl.read_csv(name)
                 if target_column and target_column in df.columns:
-                    y = df[target_column].values
-                    X = df.drop(columns=[target_column]).values
+                    y = df[target_column].to_numpy()
+                    X = df.drop(target_column).to_numpy()
                     feature_names = [c for c in df.columns if c != target_column]
                 else:
                     # Last column as target
-                    y = df.iloc[:, -1].values
-                    X = df.iloc[:, :-1].values
+                    y = df[:, -1].to_numpy()
+                    X = df[:, :-1].to_numpy()
                     feature_names = list(df.columns[:-1])
                     target_column = df.columns[-1]
 
