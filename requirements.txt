@@ -1,4 +1,4 @@
-agent-utilities[mcp]>=0.40.0
+agent-utilities[mcp]>=0.41.0
 scikit-learn>=1.5.0
 pandas>=2.0.0
 numpy>=1.24.0
