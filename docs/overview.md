@@ -5,7 +5,7 @@
 
 ## Description
 
-Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15).
+Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).
 
 ## Enterprise Readiness
 
@@ -30,7 +30,7 @@ This project implements or inherits the following ecosystem concepts:
 
 | Concept ID | Description | Source |
 |:-----------|:------------|:-------|
-| AHE-3.15 | **Agent-Interpretable Model Evolver** | `agent-utilities` (inherited) |
+| AHE-3.8 | **Agent-Interpretable Model Evolver** | `agent-utilities` (inherited) |
 | AHE-3.16 | **LLM-Graded Interpretability Tests** | `agent-utilities` (inherited) |
 | ECO-4.1 | MCP & Universal Skills | `agent-utilities` (inherited) |
 | KG-2.17 | **Model Display Optimization** | `agent-utilities` (inherited) |

@@ -2,7 +2,7 @@
 
 ## [default]
  * **Name:** Data Science MCP Agent
- * **Role:** Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15).
+ * **Role:** Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).
  * **Emoji:** 🤖
 
  ### System Prompt

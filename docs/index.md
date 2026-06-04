@@ -27,7 +27,7 @@
 
 **Data Science MCP MCP Server + A2A Agent**
 
-Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15).
+Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).
 
 This repository is actively maintained - Contributions are welcome!
 

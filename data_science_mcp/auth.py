@@ -9,7 +9,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from agent_utilities.core.exceptions import AuthError, UnauthorizedError
 
-# TODO: Import your API wrapper class here
 _client = None
 
 
@@ -28,14 +27,6 @@ def get_client():
         )
 
         try:
-            # TODO: Uncomment and configure once the API wrapper class is created
-            # _client = DataScienceApiClient(
-            #     base_url=base_url,
-            #     token=token,
-            #     verify=verify,
-            # )
-
-            # Placeholder until API wrapper is implemented
             if _client is None:
                 session = requests.Session()
                 session.headers.update({"Authorization": f"Bearer {token}"})

@@ -6,7 +6,7 @@ import logging
 import warnings
 
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,7 +40,7 @@ def agent_server():
         "AGENT_DESCRIPTION",
         meta.get(
             "description",
-            "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15).",
+            "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).",
         ),
     )
     DEFAULT_AGENT_SYSTEM_PROMPT = os.getenv(

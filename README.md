@@ -20,13 +20,13 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 0.18.0*
+*Version: 0.19.0*
 
 ---
 
 ## Overview
 
-**Data Science Mcp** is a production-grade Agent and Model Context Protocol (MCP) server designed to interface directly with Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15)..
+**Data Science Mcp** is a production-grade Agent and Model Context Protocol (MCP) server designed to interface directly with Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8)..
 
 ---
 
@@ -41,7 +41,7 @@
 
 ## CLI or API
 
-This agent wraps the Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15). API. You can interact with it programmatically or via its integrated execution entrypoints.
+This agent wraps the Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8). API. You can interact with it programmatically or via its integrated execution entrypoints.
 
 Detailed instructions on how to use the underlying API wrappers, extended schema bindings, and developer SDK references are maintained in [docs/index.md](docs/index.md).
 
