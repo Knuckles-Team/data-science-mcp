@@ -12,9 +12,7 @@ import json
 import tempfile
 import pytest
 from unittest.mock import MagicMock, patch
-import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
 
 from data_science_mcp.ml_engine import MLEngine
 from data_science_mcp.mcp_server import get_mcp_instance
@@ -38,8 +36,8 @@ def test_ml_engine_singleton():
     assert engine1 is engine2
 
 
-def test_ml_engine_load_dataset():
-    """Test loading built-in sklearn datasets and custom CSV files."""
+def test_ml_engine_load_dataset(require_sklearn):
+    """Test loading built-in sample datasets (optional sklearn) and CSV files."""
     engine = MLEngine()
 
     # Test loading iris (classification)
@@ -64,16 +62,17 @@ def test_ml_engine_load_dataset():
     assert "error" in res_err
     assert "Unknown dataset" in res_err["error"]
 
-    # Test load dataset using custom CSV
+    # Test load dataset using custom CSV (written without pandas)
     with tempfile.NamedTemporaryFile(suffix=".csv", mode="w+", delete=False) as tmp:
-        df = pd.DataFrame(
-            {
-                "feat1": [1.0, 2.0, 3.0, 4.0, 5.0],
-                "feat2": [2.0, 4.0, 6.0, 8.0, 10.0],
-                "label": [0.5, 1.5, 2.5, 3.5, 4.5],
-            }
-        )
-        df.to_csv(tmp.name, index=False)
+        tmp.write("feat1,feat2,label\n")
+        for a, b, c in [
+            (1.0, 2.0, 0.5),
+            (2.0, 4.0, 1.5),
+            (3.0, 6.0, 2.5),
+            (4.0, 8.0, 3.5),
+            (5.0, 10.0, 4.5),
+        ]:
+            tmp.write(f"{a},{b},{c}\n")
         tmp_name = tmp.name
 
     try:
@@ -93,8 +92,8 @@ def test_ml_engine_load_dataset():
             os.remove(tmp_name)
 
 
-def test_ml_engine_fit_predict_evaluate():
-    """Test model fitting, predictions, and evaluation workflows on real scikit-learn models."""
+def test_ml_engine_fit_predict_evaluate(require_engine, require_sklearn):
+    """Test model fitting, predictions, and evaluation via the epistemic-graph engine."""
     engine = MLEngine()
 
     # Fit a model without loading dataset first (should trigger auto-load)
@@ -134,8 +133,8 @@ def test_ml_engine_fit_predict_evaluate():
     assert "error" in res_fit_err
 
 
-def test_ml_engine_cross_validate():
-    """Test cross-validation functionality across multiple estimators."""
+def test_ml_engine_cross_validate(require_engine, require_sklearn):
+    """Test cross-validation via the epistemic-graph engine."""
     engine = MLEngine()
 
     # Load dataset
@@ -154,24 +153,16 @@ def test_ml_engine_cross_validate():
     assert "error" in res_cv_err
 
 
-def test_ml_engine_resolve_model():
-    """Verify sklearn estimator resolution, fully-qualified name resolution, and defaults."""
-    # Test shortcut mapping
-    model_lr = MLEngine._resolve_model("linear_regression", {})
-    assert model_lr.__class__.__name__ == "LinearRegression"
-
-    # Test fully qualified name
-    model_ridge = MLEngine._resolve_model("sklearn.linear_model.Ridge", {"alpha": 2.0})
-    assert model_ridge.__class__.__name__ == "Ridge"
-    assert model_ridge.alpha == 2.0
-
-    # Test unknown model class (should fallback to LinearRegression)
-    model_unknown = MLEngine._resolve_model("UnknownEstimator", {})
-    assert model_unknown.__class__.__name__ == "LinearRegression"
+def test_ml_engine_supported_models():
+    """Verify model-name normalization and the supported-model registry."""
+    for m in ("LinearRegression", "linear_regression", "Ridge", "RandomForest", "SVR"):
+        assert MLEngine._is_supported(m), m
+    assert not MLEngine._is_supported("UnknownEstimator")
+    assert MLEngine._normalize_model("Random_Forest-Regressor") == "randomforestregressor"
 
 
-def test_ml_engine_split_dataset():
-    """Verify train/test/validation splitting functionality."""
+def test_ml_engine_split_dataset(require_sklearn):
+    """Verify train/test/validation splitting (engine when up, numpy fallback)."""
     engine = MLEngine()
     engine.load_dataset("iris")
 
@@ -194,71 +185,38 @@ def test_ml_engine_split_dataset():
 
 
 def test_ml_engine_errors():
-    """Verify MLEngine exception and import error branches."""
+    """Verify MLEngine error branches (engine-only compute; no sklearn fallback)."""
     engine = MLEngine()
 
-    # 1. load_dataset exceptions & import errors
-    with patch(
-        "sklearn.datasets.load_iris",
-        side_effect=ImportError("mocked load_iris import error"),
-    ):
-        res = engine.load_dataset("iris")
-        assert "error" in res
-        assert "Missing dependency" in res["error"]
+    # Unknown dataset name (not a sample name, not a .csv path).
+    res = engine.load_dataset("unknown_dataset_name")
+    assert "error" in res and "Unknown dataset" in res["error"]
 
-    with patch(
-        "sklearn.datasets.load_iris",
-        side_effect=ValueError("mocked load_iris value error"),
-    ):
-        res = engine.load_dataset("iris")
-        assert "error" in res
-        assert "mocked load_iris value error" in res["error"]
+    # Unsupported model class is rejected before any engine call.
+    engine._datasets["synthetic"] = {
+        "X": np.zeros((5, 2)),
+        "y": np.zeros(5),
+        "feature_names": ["a", "b"],
+        "target_name": "y",
+    }
+    res_fit = engine.fit("TotallyUnknownModel", "synthetic")
+    assert "error" in res_fit and "Unsupported model" in res_fit["error"]
 
-    with patch(
-        "pandas.read_csv", side_effect=ImportError("mocked pandas import error")
-    ):
-        res = engine.load_dataset("nonexistent.csv")
-        assert "error" in res
-        assert "Missing dependency" in res["error"]
+    res_cv = engine.cross_validate("TotallyUnknownModel", "synthetic")
+    assert "error" in res_cv and "Unsupported model" in res_cv["error"]
 
-    # 2. Fit exceptions & import errors
-    engine.load_dataset("iris")
-    with patch(
-        "sklearn.model_selection.train_test_split",
-        side_effect=ImportError("mocked train_test_split import error"),
-    ):
-        res = engine.fit("LinearRegression", "iris")
-        assert "error" in res
-        assert "Missing dependency" in res["error"]
+    # Fit against a non-existent dataset surfaces the load error.
+    res_fit_err = engine.fit("LinearRegression", "invalid_dataset_name")
+    assert "error" in res_fit_err
 
-    with patch(
-        "sklearn.model_selection.train_test_split",
-        side_effect=ValueError("mocked train_test_split value error"),
-    ):
-        res = engine.fit("LinearRegression", "iris")
-        assert "error" in res
-        assert "mocked train_test_split value error" in res["error"]
-
-    # 3. Cross validate exceptions & import errors
-    with patch(
-        "sklearn.model_selection.cross_val_score",
-        side_effect=ImportError("mocked cross_val_score import error"),
-    ):
-        res = engine.cross_validate("LinearRegression", "iris")
-        assert "error" in res
-        assert "Missing dependency" in res["error"]
-
-    with patch(
-        "sklearn.model_selection.cross_val_score",
-        side_effect=ValueError("mocked cross_val_score value error"),
-    ):
-        res = engine.cross_validate("LinearRegression", "iris")
-        assert "error" in res
-        assert "mocked cross_val_score value error" in res["error"]
+    # predict/evaluate with an unknown model id.
+    with pytest.raises(ValueError, match="Unknown model_id"):
+        engine.predict("invalid_model_id", [{"a": 0.0, "b": 0.0}])
+    assert "error" in engine.evaluate("invalid_model_id", "synthetic")
 
 
 @pytest.mark.asyncio
-async def test_mcp_data_management_tools():
+async def test_mcp_data_management_tools(require_engine, require_sklearn):
     """Verify FastMCP load, describe, and split dataset tools."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
@@ -287,7 +245,7 @@ async def test_mcp_data_management_tools():
 
 
 @pytest.mark.asyncio
-async def test_mcp_model_training_tools():
+async def test_mcp_model_training_tools(require_engine, require_sklearn):
     """Verify FastMCP fit, predict, evaluate, and cross-validate tools."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
@@ -369,7 +327,7 @@ async def test_mcp_model_training_tools():
 
 
 @pytest.mark.asyncio
-async def test_mcp_model_evolution_tools():
+async def test_mcp_model_evolution_tools(require_engine, require_sklearn):
     """Verify FastMCP evolve_model_class, rank_models, and get_pareto_frontier tools."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
@@ -425,7 +383,7 @@ async def test_mcp_model_evolution_tools():
 
 
 @pytest.mark.asyncio
-async def test_mcp_interpretability_tools():
+async def test_mcp_interpretability_tools(require_engine, require_sklearn):
     """Verify FastMCP interpretability tests suite, grading, and run tools."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
@@ -519,10 +477,10 @@ async def test_mcp_interpretability_tools():
     )
     assert res_suite_fb["overall_score"] == 1.0
 
-    # 4. Test run_interpretability_suite with a model that has feature_importances_ instead of coef_
-    # e.g., DecisionTreeRegressor
+    # 4. Test run_interpretability_suite with a non-linear model (no linear
+    # coefficients) — exercises the 'unknown'-attribution reference path.
     res_dt = await fit_tool.fn(
-        model_class="sklearn.tree.DecisionTreeRegressor",
+        model_class="DecisionTree",
         dataset_name="iris",
         hyperparameters_json="{}",
         test_size=0.2,
@@ -548,7 +506,7 @@ async def test_mcp_interpretability_tools():
 
 
 @pytest.mark.asyncio
-async def test_mcp_context_logging():
+async def test_mcp_context_logging(require_engine, require_sklearn):
     """Verify that passing a mock context invokes info/logging methods in all tools."""
 
     class MockContext:

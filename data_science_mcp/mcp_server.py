@@ -220,22 +220,7 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
         if ctx:
             await ctx.info("Ranking models by R2 score...")
         engine = MLEngine()
-        ranked = []
-        for model_id, model_data in engine._models.items():
-            model = model_data["model"]
-            X_test = model_data["X_test"]
-            y_test = model_data["y_test"]
-            r2 = float(model.score(X_test, y_test))
-            ranked.append(
-                {
-                    "model_id": model_id,
-                    "dataset": model_data["dataset"],
-                    "model_str": str(model),
-                    "r2_test": round(r2, 6),
-                }
-            )
-        ranked.sort(key=lambda x: x["r2_test"], reverse=True)
-        return {"ranked_models": ranked}
+        return {"ranked_models": engine.ranked_models()}
 
     @mcp.tool(tags={"model-evolution"})
     async def get_pareto_frontier(
@@ -393,50 +378,18 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
         if model_id not in engine._models:
             return {"error": f"Model {model_id} not found."}
 
-        # We can construct the exact reference answers from the MLEngine models!
-        model_data = engine._models[model_id]
-        model = model_data["model"]
-        feature_names = model_data["feature_names"]
-
-        import numpy as np
-
-        # Att reference: largest coefficient
-        largest_feature = "unknown"
-        if hasattr(model, "coef_"):
-            coefs = np.abs(model.coef_)
-            largest_idx = int(np.argmax(coefs))
-            largest_feature = feature_names[largest_idx]
-        elif hasattr(model, "feature_importances_"):
-            importances = model.feature_importances_
-            largest_idx = int(np.argmax(importances))
-            largest_feature = feature_names[largest_idx]
-
-        # Sim reference: baseline prediction
-        baseline_pred = float(model.predict(np.zeros((1, len(feature_names))))[0])
-
-        # Sens reference: coefficient of first feature
-        coef_first = 0.0
-        if hasattr(model, "coef_"):
-            coef_first = float(model.coef_[0])
-        elif hasattr(model, "feature_importances_"):
-            coef_first = float(model.feature_importances_[0])
-
-        # CF reference
-        cf_val = "0.0"
-
-        # Conf reference
-        r2 = float(model.score(model_data["X_test"], model_data["y_test"]))
-
-        # Data reference
-        n_train = len(model_data["X_train"])
+        # Reference answers from the engine-backed model (no sklearn object).
+        ref = engine.interpretability_reference(model_id)
+        if ref is None:
+            return {"error": f"Model {model_id} not found."}
 
         expected_answers = {
-            f"att_{model_id}_0": largest_feature,
-            f"sim_{model_id}_0": str(round(baseline_pred, 4)),
-            f"sens_{model_id}_0": str(round(coef_first, 4)),
-            f"cf_{model_id}_0": cf_val,
-            f"conf_{model_id}_0": str(round(r2, 4)),
-            f"data_{model_id}_0": str(n_train),
+            f"att_{model_id}_0": ref["largest_feature"],
+            f"sim_{model_id}_0": str(round(ref["baseline_pred"], 4)),
+            f"sens_{model_id}_0": str(round(ref["coef_first"], 4)),
+            f"cf_{model_id}_0": "0.0",
+            f"conf_{model_id}_0": str(round(ref["r2"], 4)),
+            f"data_{model_id}_0": str(ref["n_train"]),
         }
 
         results = []

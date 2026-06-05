@@ -3,9 +3,33 @@
 > Claude Code loads this file via `CLAUDE.md` (`@AGENTS.md` import) — the two stay
 > in sync. Edit **this** file, not `CLAUDE.md`.
 
+## ⚙️ Compute runs in epistemic-graph — NOT scikit-learn (READ FIRST)
+
+All ML compute (fit / predict / evaluate / cross-validate / dataset stats /
+train-test split) is delegated to the Rust **`epistemic-graph`** engine over its
+MessagePack/UDS client (`epistemic_graph.client.SyncEpistemicGraphClient`,
+`.datascience` namespace). `ml_engine.py` is the single integration point; the
+engine is a **required** dependency and there is **no scikit-learn compute path**.
+
+- **When adding or enhancing ML functionality, extend the engine, not Python.**
+  Add the algorithm to `epistemic-graph/src/datascience/*`, expose it
+  (`protocol.rs` + `server.rs` + `epistemic_graph/client.py`), then call it from
+  `ml_engine.py` via `client.datascience.*`. Do NOT add `scikit-learn`/`scipy`
+  compute here. See `epistemic-graph/docs/RUST_COMPUTE_GUIDE.md`.
+- Supported models route automatically (`ridge`, `lasso`, `elasticnet`,
+  `decisiontree`, `randomforest`, `gradientboosting`, `adaboost`, `svr`, plus
+  OLS). Need a new estimator? Implement it in the engine and add its normalized
+  name to `_RUST_ESTIMATOR_MODELS` in `ml_engine.py`.
+- `scikit-learn` is an **optional** extra (`data-science-mcp[datasets]`) used
+  ONLY by the built-in sample-dataset loaders (iris/diabetes/...). CSV loading
+  uses polars. `numpy` remains for array marshalling and light local math.
+- Configure the engine endpoint via `EPISTEMIC_GRAPH_SOCKET` / `EPISTEMIC_GRAPH_TCP`.
+  Compute tests are gated by the `require_engine` fixture; sklearn-parity for the
+  estimators is validated out-of-tree.
+
 ## Tech Stack & Architecture
 - Language/Version: Python 3.10+
-- Core Libraries: `agent-utilities`, `fastmcp`, `pydantic-ai`
+- Core Libraries: `agent-utilities`, `epistemic-graph` (Rust compute engine), `fastmcp`, `pydantic-ai`
 - Key principles: Functional patterns, Pydantic for data validation, asynchronous tool execution.
 - Architecture:
     - `mcp_server.py`: Main MCP server entry point and tool registration.
