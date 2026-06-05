@@ -1,33 +1,21 @@
 """Integration tests for the epistemic-graph Rust compute path in MLEngine.
 
-These exercise fit / predict / evaluate / describe / split / cross_validate when
-they are routed to the Rust engine (CONCEPT:KG-2.22). They auto-skip unless an
-engine endpoint is configured and reachable, so they are a no-op in environments
-without the engine while still guarding the Rust integration where it runs.
-
-To run locally, start the server and point the env at it::
-
-    epistemic-graph-server --socket-path /tmp/eg.sock &
-    EPISTEMIC_GRAPH_SOCKET=/tmp/eg.sock pytest tests/test_rust_engine.py
+These exercise fit / predict / evaluate / describe / split / cross_validate
+routed to the Rust engine (CONCEPT:KG-2.22). The engine is started by the
+session-scoped `epistemic_graph_engine` fixture (see conftest.py); the data
+fixtures depend on `require_engine`, which skips cleanly if no engine could be
+started/reached. Engine reachability is resolved at fixture-setup time (not at
+import/collection), so the session engine is always up first.
 """
 
 import numpy as np
 import pytest
 
-from data_science_mcp.ml_engine import MLEngine, _UNPROBED
-
-# Reset the cached client probe so the env var is honored at collection time.
-MLEngine._rust_client_cache = _UNPROBED
-
-pytestmark = pytest.mark.skipif(
-    MLEngine._rust_client() is None,
-    reason="epistemic-graph engine not configured/reachable "
-    "(set EPISTEMIC_GRAPH_SOCKET or EPISTEMIC_GRAPH_TCP)",
-)
+from data_science_mcp.ml_engine import MLEngine
 
 
 @pytest.fixture
-def engine_with_data():
+def engine_with_data(require_engine):
     engine = MLEngine()
     engine._datasets.clear()
     engine._models.clear()
@@ -87,10 +75,9 @@ def test_cross_validate_rust(engine_with_data):
 
 
 @pytest.fixture
-def engine_nonlinear():
-    """Shuffled nonlinear dataset (trees interpolate, they don't extrapolate, and
-    the engine's split is contiguous — so shuffle to avoid a pure-extrapolation
-    test fold)."""
+def engine_nonlinear(require_engine):
+    """Nonlinear dataset; the engine's seeded-shuffle split keeps the test fold
+    interpolatable for tree/SVR models."""
     engine = MLEngine()
     engine._datasets.clear()
     engine._models.clear()
