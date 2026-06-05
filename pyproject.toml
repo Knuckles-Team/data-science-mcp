@@ -18,7 +18,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "agent-utilities[mcp]>=0.41.0",
-    "scikit-learn>=1.5.0",
+    "epistemic-graph[datascience]>=0.24.0",
     "polars>=1.0.0",
     "numpy>=1.24.0",
 ]
@@ -27,12 +27,16 @@ dependencies = [
 agent = [
     "agent-utilities[agent,logfire]>=0.41.0"]
 
-rust = [
-    "epistemic-graph[datascience]>=0.24.0"]
+# scikit-learn is no longer used for compute (that runs in the epistemic-graph
+# Rust engine). It is optional and only powers the built-in sample-dataset
+# loaders (iris/diabetes/wine/...). CSV datasets need no scikit-learn.
+datasets = [
+    "scikit-learn>=1.5.0"]
 
 all = [
     "agent-utilities[mcp,agent,logfire]>=0.41.0",
-    "epistemic-graph[datascience]>=0.24.0"]
+    "epistemic-graph[datascience]>=0.24.0",
+    "scikit-learn>=1.5.0"]
 
 [project.scripts]
 data-science-mcp = "data_science_mcp.mcp_server:mcp_server"

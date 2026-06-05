@@ -69,22 +69,7 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
         if ctx:
             await ctx.info("Ranking models by R2 score...")
         engine = MLEngine()
-        ranked = []
-        for model_id, model_data in engine._models.items():
-            model = model_data["model"]
-            X_test = model_data["X_test"]
-            y_test = model_data["y_test"]
-            r2 = float(model.score(X_test, y_test))
-            ranked.append(
-                {
-                    "model_id": model_id,
-                    "dataset": model_data["dataset"],
-                    "model_str": str(model),
-                    "r2_test": round(r2, 6),
-                }
-            )
-        ranked.sort(key=lambda x: x["r2_test"], reverse=True)
-        return {"ranked_models": ranked}
+        return {"ranked_models": engine.ranked_models()}
 
     @mcp.tool(tags={"model-evolution"})
     async def get_pareto_frontier(
