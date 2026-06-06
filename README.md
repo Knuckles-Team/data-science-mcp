@@ -20,7 +20,7 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 0.20.5*
+*Version: 0.21.0*
 
 ---
 

@@ -6,7 +6,7 @@ import logging
 import warnings
 
 
-__version__ = "0.20.5"
+__version__ = "0.21.0"
 
 logging.basicConfig(
     level=logging.INFO,
