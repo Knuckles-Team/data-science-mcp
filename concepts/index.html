@@ -417,6 +417,21 @@
 <td>Model Training Operations</td>
 <td>MCP tool domain <code>model_training</code> — Action-routed dynamic tool registration</td>
 </tr>
+<tr>
+<td><code>CONCEPT:DSCI-005</code></td>
+<td>State-Space / Stat-Arb Operations</td>
+<td>MCP tool domain <code>quant_statespace</code> — Kalman filter/beta/volatility, ADF, OU calibration + thresholds, Markov transition (engine <code>client.finance.*</code>, KG-2.20h)</td>
+</tr>
+<tr>
+<td><code>CONCEPT:DSCI-006</code></td>
+<td>Signal-Combination Operations</td>
+<td>MCP tool domain <code>quant_signals</code> — order-book imbalance, information ratio, effective independent N, alpha combination, convergence gate; plus <code>empirical_kelly</code> (quant_sizing) and <code>brier_score</code> (quant_validation) (engine <code>client.finance.*</code>, KG-2.20i)</td>
+</tr>
+<tr>
+<td><code>CONCEPT:DSCI-007</code></td>
+<td>SABR Volatility-Surface Operations</td>
+<td>MCP tool domain <code>quant_derivatives</code> — Hagan-2002 SABR <code>implied_vol</code> / <code>smile</code> / <code>calibrate</code> (fit α,ρ,ν with β fixed → {alpha,beta,rho,nu,rmse,converged}) delegating to engine <code>client.finance.sabr_*</code> (KG-2.20j)</td>
+</tr>
 </tbody>
 </table>
 <h2 id="cross-project-references-from-agent-utilities">Cross-Project References (from agent-utilities)<a class="headerlink" href="#cross-project-references-from-agent-utilities" title="Permanent link">&para;</a></h2>
