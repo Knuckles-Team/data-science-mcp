@@ -11,6 +11,8 @@ Tool tags:
     - model-evolution: evolve_model_class, rank_models, pareto_frontier
     - interpretability: run_interpretability_suite, grade_response, generate_tests
     - data-management: load_dataset, describe_dataset, split_dataset
+    - quant: quant_market_making, quant_microstructure, quant_sizing,
+      quant_validation, quant_forensic (epistemic-graph finance kernels)
 """
 
 from fastmcp import Context, FastMCP
@@ -27,7 +29,7 @@ from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "0.20.1"
+__version__ = "0.20.3"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
@@ -42,6 +44,7 @@ DEFAULT_INTERPRETABILITYTOOL = to_boolean(
 DEFAULT_DATA_MANAGEMENTTOOL = to_boolean(
     os.getenv("DATA_MANAGEMENTTOOL", "True"),
 )
+DEFAULT_QUANTTOOL = to_boolean(os.getenv("QUANTTOOL", "True"))
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
@@ -49,6 +52,11 @@ from data_science_mcp.ml_engine import MLEngine
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades
+
+# Imported after the module-level stores above so the sibling tool modules in
+# data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
+# without a circular import.
+from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
 
 
 def register_model_training_tools(mcp: FastMCP) -> None:
@@ -579,6 +587,10 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
     if DEFAULT_DATA_MANAGEMENTTOOL:
         register_data_management_tools(mcp)
         registered_tags.append("data-management")
+
+    if DEFAULT_QUANTTOOL:
+        register_quant_tools(mcp)
+        registered_tags.append("quant")
 
     register_prompts(mcp)
 
