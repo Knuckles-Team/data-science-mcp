@@ -5,7 +5,8 @@ Compute (fit / predict / evaluate / cross-validation / stats / split) runs in th
 Rust ``epistemic-graph`` engine over its MessagePack/UDS protocol — there is no
 scikit-learn compute path. The engine is a required dependency for model
 operations; scikit-learn is optional and used only by the built-in sample-dataset
-loaders (``data-science-mcp[datasets]``). CSV loading uses polars.
+loaders (``data-science-mcp[datasets]``). CSV loading prefers polars, with a
+# stdlib-csv + numpy fallback when polars is unavailable.
 
 All operations are stateful: fitted models and loaded datasets are stored
 in-memory and referenced by ID for subsequent operations.
@@ -281,19 +282,35 @@ class MLEngine:
                     "description": getattr(bunch, "DESCR", "")[:200],
                 }
             elif name.endswith(".csv"):
-                import polars as pl
+                # Fast path: polars when available; otherwise stdlib csv + numpy,
+                # so numeric CSV loading still works without the polars wheel
+                # (which core-dumps on CPUs lacking its SIMD baseline).
+                import numpy as np
 
-                df = pl.read_csv(name)
-                if target_column and target_column in df.columns:
-                    y = df[target_column].to_numpy()
-                    X = df.drop(target_column).to_numpy()
-                    feature_names = [c for c in df.columns if c != target_column]
+                try:
+                    import polars as pl
+
+                    df = pl.read_csv(name)
+                    columns = list(df.columns)
+                    matrix = df.to_numpy()
+                except ImportError:
+                    import csv as _csv
+
+                    with open(name, newline="") as fh:
+                        reader = _csv.reader(fh)
+                        columns = next(reader)
+                        rows = [[float(v) for v in row] for row in reader if row]
+                    matrix = np.asarray(rows, dtype=float)
+
+                if target_column and target_column in columns:
+                    t_idx = columns.index(target_column)
                 else:
                     # Last column as target
-                    y = df[:, -1].to_numpy()
-                    X = df[:, :-1].to_numpy()
-                    feature_names = list(df.columns[:-1])
-                    target_column = df.columns[-1]
+                    t_idx = len(columns) - 1
+                    target_column = columns[t_idx]
+                y = matrix[:, t_idx]
+                X = np.delete(matrix, t_idx, axis=1)
+                feature_names = [c for i, c in enumerate(columns) if i != t_idx]
 
                 data = {
                     "X": X,
@@ -398,8 +415,12 @@ class MLEngine:
             reg = client.datascience.linear_regression(x_train, y_train)
             coef, intercept = reg["coefficients"], reg["intercept"]
 
-            rmse_train = self._rmse(y_train, self._linear_predict(x_train, coef, intercept))
-            rmse_test = self._rmse(y_test, self._linear_predict(x_test, coef, intercept))
+            rmse_train = self._rmse(
+                y_train, self._linear_predict(x_train, coef, intercept)
+            )
+            rmse_test = self._rmse(
+                y_test, self._linear_predict(x_test, coef, intercept)
+            )
             r2_test = self._r2(y_test, self._linear_predict(x_test, coef, intercept))
 
             model_id = f"model:{uuid.uuid4().hex[:8]}"
@@ -697,7 +718,9 @@ class MLEngine:
                 )
                 rmse_scores.append(self._rmse(y[test_idx], y_pred))
 
-            return self._cv_summary(model_class, dataset_name, n_folds, rmse_scores, "rust")
+            return self._cv_summary(
+                model_class, dataset_name, n_folds, rmse_scores, "rust"
+            )
         except Exception as exc:  # noqa: BLE001
             logger.error("Rust OLS cross-validate failed: %s", exc)
             return None
@@ -736,7 +759,9 @@ class MLEngine:
                 blob = client.datascience.fit_estimator(
                     key, X[train_idx].tolist(), y[train_idx].tolist(), mapped
                 )
-                y_pred = client.datascience.predict_estimator(blob, X[test_idx].tolist())
+                y_pred = client.datascience.predict_estimator(
+                    blob, X[test_idx].tolist()
+                )
                 rmse_scores.append(self._rmse(y[test_idx], y_pred))
 
             return self._cv_summary(
@@ -929,7 +954,6 @@ class MLEngine:
         random_seed: int,
     ) -> dict[str, Any]:
         """Pure-numpy shuffle split (no scikit-learn)."""
-        import numpy as np
 
         n = len(X)
         n_test = int(round(n * test_size))

@@ -22,7 +22,7 @@ engine is a **required** dependency and there is **no scikit-learn compute path*
   name to `_RUST_ESTIMATOR_MODELS` in `ml_engine.py`.
 - `scikit-learn` is an **optional** extra (`data-science-mcp[datasets]`) used
   ONLY by the built-in sample-dataset loaders (iris/diabetes/...). CSV loading
-  uses polars. `numpy` remains for array marshalling and light local math.
+  prefers polars (with a stdlib-csv fallback when polars is unavailable). `numpy` remains for array marshalling and light local math.
 - Configure the engine endpoint via `EPISTEMIC_GRAPH_SOCKET` / `EPISTEMIC_GRAPH_TCP`.
   Compute tests are gated by the `require_engine` fixture; sklearn-parity for the
   estimators is validated out-of-tree.

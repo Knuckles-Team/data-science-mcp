@@ -12,7 +12,8 @@ Tool tags:
     - interpretability: run_interpretability_suite, grade_response, generate_tests
     - data-management: load_dataset, describe_dataset, split_dataset
     - quant: quant_market_making, quant_microstructure, quant_sizing,
-      quant_validation, quant_forensic (epistemic-graph finance kernels)
+      quant_validation, quant_forensic, quant_statespace, quant_signals,
+      quant_derivatives (epistemic-graph finance kernels)
 """
 
 from fastmcp import Context, FastMCP
@@ -29,7 +30,7 @@ from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "0.20.3"
+__version__ = "0.20.5"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
