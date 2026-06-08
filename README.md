@@ -20,7 +20,7 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 0.21.0*
+*Version: 0.22.0*
 
 ---
 
@@ -36,6 +36,7 @@
 - **Enterprise-Grade Security:** Comprehensive support for Eunomia policies, OIDC token delegation, and granular execution context tracking.
 - **Integrated Graph Agent:** Built-in Pydantic AI agent supporting the Agent Control Protocol (ACP) and standard Web interfaces (AG-UI).
 - **Native Telemetry & Tracing:** Out-of-the-box OpenTelemetry exports and native Langfuse tracing.
+- **In-House Model Training (Wave C):** A deterministic SFT/DPO/GRPO corpus + reward engine plus torch/PEFT gradient trainers (LoRA/QLoRA, TIES adapter merge, vLLM rollouts, checkpoint→reliability-suite eval hooks). Loss/optimizer kernels are CPU-smoke-tested on a toy model; real fine-tunes run on the GB10. Install with `pip install data-science-mcp[training]`. MCP tools: `build_training_dataset`, `compose_reward`, `train_sft`, `train_dpo`, `train_grpo`, `merge_adapters_ties`. See **[docs/training.md](docs/training.md)**.
 
 ---
 

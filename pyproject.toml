@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "0.21.0"
+version = "0.22.0"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15)."
 readme = "README.md"
 authors = [{ name = "Audel Rouhi", email = "knucklessg1@gmail.com" }]
@@ -17,15 +17,15 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.10"
 dependencies = [
-    "agent-utilities[mcp]>=0.45.0",
-    "epistemic-graph[datascience]>=0.25.0",
+    "agent-utilities[mcp]>=0.46.0",
+    "epistemic-graph[datascience]>=0.26.0",
     "polars>=1.0.0",
     "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
 agent = [
-    "agent-utilities[agent,logfire]>=0.45.0"]
+    "agent-utilities[agent,logfire]>=0.46.0"]
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
 # Rust engine). It is optional and only powers the built-in sample-dataset
@@ -33,9 +33,19 @@ agent = [
 datasets = [
     "scikit-learn>=1.5.0"]
 
+# Wave-C gradient trainers (SFT/DPO/GRPO) + LoRA/QLoRA adapters + vLLM rollouts.
+# Heavy, GPU-oriented; imported lazily so the package installs/imports without it.
+# On Blackwell (GB10, sm_120) pin CUDA-12.6+/cu12x Blackwell-enabled builds.
+training = [
+    "torch>=2.4.0",
+    "transformers>=4.44.0",
+    "peft>=0.12.0",
+    "bitsandbytes>=0.43.0",
+    "httpx>=0.27.0"]
+
 all = [
-    "agent-utilities[mcp,agent,logfire]>=0.45.0",
-    "epistemic-graph[datascience]>=0.25.0",
+    "agent-utilities[mcp,agent,logfire]>=0.46.0",
+    "epistemic-graph[datascience]>=0.26.0",
     "scikit-learn>=1.5.0"]
 
 [project.scripts]

@@ -30,7 +30,7 @@ from agent_utilities.base_utilities import to_boolean
 from agent_utilities.mcp_utilities import create_mcp_server
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "0.21.0"
+__version__ = "0.22.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
@@ -58,6 +58,12 @@ _graded_responses = {}  # In-memory store for interpretability tests and grades
 # data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
 # without a circular import.
 from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
+from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
+    register_training_data_tools,
+)
+from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
+    register_trainer_tools,
+)
 
 
 def register_model_training_tools(mcp: FastMCP) -> None:
@@ -575,6 +581,8 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
 
     if DEFAULT_MODEL_TRAININGTOOL:
         register_model_training_tools(mcp)
+        register_training_data_tools(mcp)
+        register_trainer_tools(mcp)
         registered_tags.append("model-training")
 
     if DEFAULT_MODEL_EVOLUTIONTOOL:
