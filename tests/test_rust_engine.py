@@ -117,7 +117,16 @@ def test_linear_family_estimators_rust(engine_with_data, model, params):
     [
         ("RandomForest", {"n_estimators": 40, "random_state": 1}),
         ("GradientBoosting", {"n_estimators": 60, "learning_rate": 0.1}),
-        ("SVR", {"C": 10.0, "epsilon": 0.05, "gamma": 0.5, "kernel": "rbf", "max_iter": 3000}),
+        (
+            "SVR",
+            {
+                "C": 10.0,
+                "epsilon": 0.05,
+                "gamma": 0.5,
+                "kernel": "rbf",
+                "max_iter": 3000,
+            },
+        ),
     ],
 )
 def test_nonlinear_estimators_rust(engine_nonlinear, model, params):
@@ -138,7 +147,15 @@ def test_ridge_cross_validate_rust(engine_with_data):
 
 
 def test_supported_model_flags():
-    for m in ("Ridge", "Lasso", "ElasticNet", "RandomForest",
-              "GradientBoosting", "AdaBoost", "SVR", "linear_regression"):
+    for m in (
+        "Ridge",
+        "Lasso",
+        "ElasticNet",
+        "RandomForest",
+        "GradientBoosting",
+        "AdaBoost",
+        "SVR",
+        "linear_regression",
+    ):
         assert MLEngine._is_supported(m), m
     assert not MLEngine._is_supported("SomeUnknownModel")

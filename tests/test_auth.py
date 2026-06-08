@@ -3,12 +3,10 @@ Tests for checking authentication functions in auth.py.
 """
 
 import os
-import sys
 import pytest
-import requests
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from agent_utilities.core.exceptions import AuthError, UnauthorizedError
+from agent_utilities.core.exceptions import AuthError
 import data_science_mcp.auth as auth
 
 

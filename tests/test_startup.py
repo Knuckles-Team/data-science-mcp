@@ -3,7 +3,6 @@ Tests for checking module initialization, lazy loading, and startup server scrip
 """
 
 import sys
-import os
 import pytest
 from unittest.mock import patch, MagicMock
 import runpy
@@ -131,7 +130,6 @@ def test_main_execution(mock_agent_server):
 def test_init_file_branches():
     """Verify other branches of data_science_mcp/__init__.py."""
     import data_science_mcp
-    import importlib
 
     # 1. Test _import_module_safely with non-existent module
     res = data_science_mcp._import_module_safely("data_science_mcp.non_existent")

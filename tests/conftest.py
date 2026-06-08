@@ -39,7 +39,13 @@ def _find_engine_binary() -> str | None:
     candidates = [
         os.path.abspath(
             os.path.join(
-                here, "..", "..", "..", "epistemic-graph", "target", build,
+                here,
+                "..",
+                "..",
+                "..",
+                "epistemic-graph",
+                "target",
+                build,
                 "epistemic-graph-server",
             )
         )
@@ -59,7 +65,9 @@ def epistemic_graph_engine():
     no binary is available — in which case `require_engine` tests skip.
     """
     # Respect an externally provided engine (e.g. a CI service container).
-    if os.environ.get("EPISTEMIC_GRAPH_SOCKET") or os.environ.get("EPISTEMIC_GRAPH_TCP"):
+    if os.environ.get("EPISTEMIC_GRAPH_SOCKET") or os.environ.get(
+        "EPISTEMIC_GRAPH_TCP"
+    ):
         yield None
         return
 

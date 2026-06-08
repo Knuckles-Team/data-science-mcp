@@ -11,7 +11,7 @@ sys.argv = ["mcp_server.py"]
 import json
 import tempfile
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import numpy as np
 
 from data_science_mcp.ml_engine import MLEngine
@@ -158,7 +158,9 @@ def test_ml_engine_supported_models():
     for m in ("LinearRegression", "linear_regression", "Ridge", "RandomForest", "SVR"):
         assert MLEngine._is_supported(m), m
     assert not MLEngine._is_supported("UnknownEstimator")
-    assert MLEngine._normalize_model("Random_Forest-Regressor") == "randomforestregressor"
+    assert (
+        MLEngine._normalize_model("Random_Forest-Regressor") == "randomforestregressor"
+    )
 
 
 def test_ml_engine_split_dataset(require_sklearn):

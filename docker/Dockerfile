@@ -7,6 +7,8 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_SYSTEM_PYTHON=1 \
     UV_HTTP_TIMEOUT=3600
+# uv is the version pinner; bootstrapping it unpinned is intentional.
+# hadolint ignore=DL3013
 RUN --mount=type=cache,target=/root/.cache/uv \
     pip install --no-cache-dir uv \
     && uv pip install --system --upgrade --break-system-packages --prerelease=allow data-science-mcp[all]>=0.22.0
