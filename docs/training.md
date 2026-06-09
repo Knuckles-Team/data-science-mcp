@@ -1,7 +1,7 @@
 # In-House Model Training (Wave C)
 
 > **CONCEPT:AHE-3.1** — Training Substrate · **CONCEPT:DSCI-004** — Model Training Operations
-> Part of the cross-repo [In-House Training Substrate](../../agent-utilities/docs/architecture/in_house_training_substrate.md).
+> Part of the cross-repo [In-House Training Substrate](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md).
 
 `data-science-mcp` owns the **corpus + gradient-trainer** half of the framework's
 self-training stack: it turns execution traces into SFT/DPO/GRPO datasets and
@@ -135,5 +135,5 @@ identical.
 | Trainers (loss kernels + loops) | ✅ CPU-smoke-tested on a toy model |
 | Real fine-tunes | ⛔ GB10 (pin Blackwell torch/peft/bnb/vllm); first run = OpenSeeker SFT |
 
-See [`WAVE_C_INFRA.md`](../../../.specify/specs/research-evolution-20260606/WAVE_C_INFRA.md)
+See [`WAVE_C_INFRA.md`](https://github.com/Knuckles-Team/data-science-mcp/blob/main/.specify/specs/research-evolution-20260606/WAVE_C_INFRA.md)
 for per-paper GB10 requirements.

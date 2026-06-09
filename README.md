@@ -22,6 +22,10 @@
 
 *Version: 0.22.0*
 
+> **Documentation** — Installation, deployment, usage across the MCP, Python API, and
+> CLI interfaces, and the in-house model-training substrate are maintained in the
+> [official documentation](https://knuckles-team.github.io/data-science-mcp/).
+
 ---
 
 ## Overview
@@ -276,6 +280,23 @@ uv pip install data-science-mcp[all]
 # Using standard pip
 python -m pip install data-science-mcp[all]
 ```
+
+---
+
+## Documentation
+
+The complete documentation is published as the
+[official documentation site](https://knuckles-team.github.io/data-science-mcp/) and
+is the recommended reference for installation, deployment, and day-to-day operation.
+
+| Page | Contents |
+|---|---|
+| [Installation](https://knuckles-team.github.io/data-science-mcp/installation/) | pip, source, extras, prebuilt Docker image |
+| [Deployment](https://knuckles-team.github.io/data-science-mcp/deployment/) | run the MCP server and A2A agent, Compose, Caddy + Technitium, env config |
+| [Usage](https://knuckles-team.github.io/data-science-mcp/usage/) | the MCP tools, the `MLEngine` Python API, the console scripts |
+| [Overview](https://knuckles-team.github.io/data-science-mcp/overview/) | ecosystem role, enterprise readiness, concept registry |
+| [Model Training](https://knuckles-team.github.io/data-science-mcp/training/) | SFT/DPO/GRPO corpus, reward engine, gradient trainers |
+| [Concepts](https://knuckles-team.github.io/data-science-mcp/concepts/) | concept registry (`CONCEPT:DSCI-*`) |
 
 ---
 
