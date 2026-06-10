@@ -38,7 +38,12 @@ def _torch():
 
 @dataclass
 class TrainConfig:
-    """Hyper-parameters shared by every trainer."""
+    """Hyper-parameters shared by every trainer.
+
+    Defaults reproduce the original single-GPU, constant-LR, fp32 behaviour exactly
+    (so existing smoke tests are unaffected); the robustness/scale features below
+    activate only when set away from their defaults.
+    """
 
     base_model: str = "toy"
     output_dir: str = ""
@@ -57,6 +62,28 @@ class TrainConfig:
     clip_eps: float = 0.2
     kl_coef: float = 0.0
     group_size: int = 4
+    # --- robustness / throughput (CONCEPT:ML-001) ---------------------------
+    precision: str = "fp32"  # fp32 | fp16 | bf16 → AMP autocast (+ GradScaler on fp16)
+    gradient_checkpointing: bool = False
+    max_grad_norm: float | None = None  # gradient clipping
+    warmup_steps: int = 0
+    lr_scheduler: str = (
+        "constant"  # constant | linear | cosine | ... (HF get_scheduler)
+    )
+    resume_from: str | None = None  # path to a checkpoint-N dir
+    save_steps: int = 0  # 0 = save only at end; >0 = periodic checkpoints
+    save_total_limit: int = 0  # 0 = keep all; >0 = keep newest N
+    attn_impl: str | None = None  # e.g. "flash_attention_2"
+    use_liger: bool = False  # fuse kernels via liger-kernel when available
+    pack_sequences: bool = False  # concat+split for pretrain throughput
+    # --- scale-out (CONCEPT:ML-005) -----------------------------------------
+    distributed: str = "none"  # none | fsdp | deepspeed  (equal first-class peers)
+    cpu_offload: bool = False
+    zero_stage: int = 3  # DeepSpeed ZeRO stage when distributed="deepspeed"
+    # --- tracking (CONCEPT:ML-004) ------------------------------------------
+    tracker: str = "none"  # none | mlflow | wandb
+    run_name: str | None = None
+    kg_log: bool = False  # mirror the run into the epistemic-graph as a TrainingRun
 
 
 class TrainerBase(ABC):
@@ -139,6 +166,43 @@ class TrainerBase(ABC):
             return optimizer
         params = [p for p in model.parameters() if p.requires_grad]
         return torch.optim.AdamW(params, lr=self.config.lr)
+
+    # --- robustness / scale hooks (no-ops at default config) ----------------
+    def _enable_runtime(self, model: Any) -> None:
+        """Apply gradient checkpointing when requested (HF models only)."""
+        if self.config.gradient_checkpointing and hasattr(
+            model, "gradient_checkpointing_enable"
+        ):
+            if getattr(model, "config", None) is not None:
+                model.config.use_cache = False  # required with checkpointing
+            model.gradient_checkpointing_enable()
+
+    def _scheduler(self, optimizer: Any, total_steps: int) -> Any | None:
+        """Build the LR scheduler (``None`` for the constant-LR default)."""
+        from data_science_mcp.trainers.loop import build_scheduler  # noqa: PLC0415
+
+        return build_scheduler(optimizer, self.config, total_steps)
+
+    def _prepare(self, model: Any, optimizer: Any) -> tuple[Any, Any, Any]:
+        """Prepare for FSDP/DeepSpeed; returns ``(accelerator|None, model, optimizer)``."""
+        from data_science_mcp.trainers.accelerate_launch import prepare  # noqa: PLC0415
+
+        return prepare(self.config, model, optimizer)
+
+    def _tracker(self, params: dict[str, Any] | None = None) -> Any:
+        """Build + start the experiment tracker (no-op at ``tracker='none'``)."""
+        from data_science_mcp.tracking import RunTracker  # noqa: PLC0415
+
+        return RunTracker.from_config(self.config, params=params).start()
+
+    def _total_opt_steps(self, items_per_epoch: int) -> int:
+        """Planned optimizer updates (accounts for grad accumulation + max_steps)."""
+        accum = max(1, self.config.grad_accum)
+        per = math.ceil(items_per_epoch / accum) if items_per_epoch else 0
+        total = per * max(1, self.config.epochs)
+        if self.config.max_steps is not None:
+            total = min(total, self.config.max_steps)
+        return max(1, total)
 
     @abstractmethod
     def train(self, dataset: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:

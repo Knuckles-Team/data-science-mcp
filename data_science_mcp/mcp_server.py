@@ -45,11 +45,12 @@ DEFAULT_INTERPRETABILITYTOOL = to_boolean(
 DEFAULT_DATA_MANAGEMENTTOOL = to_boolean(
     os.getenv("DATA_MANAGEMENTTOOL", "True"),
 )
+DEFAULT_DATA_ENGINETOOL = to_boolean(os.getenv("DATA_ENGINETOOL", "True"))
 DEFAULT_QUANTTOOL = to_boolean(os.getenv("QUANTTOOL", "True"))
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
-from data_science_mcp.ml_engine import MLEngine
+from data_science_mcp.ml_engine import MLEngine  # noqa: E402
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades
@@ -64,6 +65,11 @@ from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
 from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
     register_trainer_tools,
 )
+
+# mcp_data_engine is imported lazily inside get_mcp_instance (see below) rather than
+# at module top: a top-level import here perturbs the package's lazy OPTIONAL_MODULES
+# loader (data_science_mcp/__init__.py), whose _import_module_safely swallows the
+# transient partial-init ImportError and would leave mcp_server unexposed.
 
 
 def register_model_training_tools(mcp: FastMCP) -> None:
@@ -596,6 +602,12 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
     if DEFAULT_DATA_MANAGEMENTTOOL:
         register_data_management_tools(mcp)
         registered_tags.append("data-management")
+
+    if DEFAULT_DATA_ENGINETOOL:
+        from data_science_mcp.mcp.mcp_data_engine import register_data_engine_tools
+
+        register_data_engine_tools(mcp)
+        registered_tags.append("data-engine")
 
     if DEFAULT_QUANTTOOL:
         register_quant_tools(mcp)

@@ -50,6 +50,10 @@ class DpoTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Optimise the DPO objective; return a training report."""
+        import math  # noqa: PLC0415
+
+        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+
         torch = _torch()
         if not dataset:
             return {"trainer": self.name, "steps": 0, "examples": 0, "losses": []}
@@ -58,48 +62,70 @@ class DpoTrainer(TrainerBase):
         device = self._device()
         model.to(device)
         model.train()
-        # Frozen reference = snapshot of the policy at start (SFT checkpoint).
+        self._enable_runtime(model)
+        # Frozen reference = snapshot of the policy at start (SFT checkpoint), taken
+        # before any distributed wrapping so it stays a plain on-device module.
         ref = ref_model if ref_model is not None else copy.deepcopy(model)
         ref.to(device)
         ref.eval()
         for p in ref.parameters():
             p.requires_grad_(False)
         opt = self._optimizer(model, optimizer)
+        accel, model, opt = self._prepare(model, opt)
+        total = self._total_opt_steps(
+            math.ceil(len(dataset) / max(1, self.config.batch_size))
+        )
+        sched = self._scheduler(opt, total)
+        tracker = self._tracker(
+            {
+                "trainer": self.name,
+                "base_model": self.config.base_model,
+                "beta": self.config.beta,
+                "lr": self.config.lr,
+                "epochs": self.config.epochs,
+                "precision": self.config.precision,
+            }
+        )
 
-        losses: list[float] = []
-        step = 0
-        for _epoch in range(max(1, self.config.epochs)):
-            for batch in self._batches(dataset):
-                chosen = [f"{ex['prompt']}{ex['chosen']}" for ex in batch]
-                rejected = [f"{ex['prompt']}{ex['rejected']}" for ex in batch]
-                enc_c = self._encode(tokenizer, chosen)
-                enc_r = self._encode(tokenizer, rejected)
-                pol_c = self._logps(model, enc_c, device)
-                pol_r = self._logps(model, enc_r, device)
-                with torch.no_grad():
-                    ref_c = self._logps(ref, enc_c, device)
-                    ref_r = self._logps(ref, enc_r, device)
-                loss = dpo_loss(pol_c, pol_r, ref_c, ref_r, beta=self.config.beta)
-                loss.backward()
-                opt.step()
-                opt.zero_grad()
-                losses.append(float(loss.detach()))
-                step += 1
-                if self.config.max_steps is not None and step >= self.config.max_steps:
-                    break
-            if self.config.max_steps is not None and step >= self.config.max_steps:
-                break
+        def compute_loss(batch: list[dict[str, Any]]) -> Any:
+            chosen = [f"{ex['prompt']}{ex['chosen']}" for ex in batch]
+            rejected = [f"{ex['prompt']}{ex['rejected']}" for ex in batch]
+            enc_c = self._encode(tokenizer, chosen)
+            enc_r = self._encode(tokenizer, rejected)
+            pol_c = self._logps(model, enc_c, device)
+            pol_r = self._logps(model, enc_r, device)
+            with torch.no_grad():
+                ref_c = self._logps(ref, enc_c, device)
+                ref_r = self._logps(ref, enc_r, device)
+            return dpo_loss(pol_c, pol_r, ref_c, ref_r, beta=self.config.beta)
 
-        return {
+        out = run_loop(
+            config=self.config,
+            model=model,
+            optimizer=opt,
+            device=device,
+            epoch_items=lambda: self._batches(dataset),
+            compute_loss=compute_loss,
+            scheduler=sched,
+            accelerator=accel,
+            tracker=tracker,
+            total_steps=total,
+        )
+        losses = out["losses"]
+        report = {
             "trainer": self.name,
             "kind": self.kind,
             "examples": len(dataset),
-            "steps": step,
+            "steps": out["steps"],
             "losses": losses,
             "final_loss": losses[-1] if losses else None,
             "beta": self.config.beta,
             "base_model": self.config.base_model,
+            "checkpoints": out["checkpoints"],
+            "resumed_from_step": out["resumed_from_step"],
         }
+        tracker.end({"final_loss": report["final_loss"], "steps": out["steps"]})
+        return report
 
 
 def build_dpo_trainer(config: TrainConfig | None = None) -> DpoTrainer:

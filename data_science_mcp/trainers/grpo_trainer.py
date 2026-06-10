@@ -60,6 +60,8 @@ class GrpoTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Optimise the GRPO surrogate over advantage-tagged groups."""
+        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+
         torch = _torch()
         groups = [g for g in dataset if g.get("samples")]
         if not groups:
@@ -69,6 +71,7 @@ class GrpoTrainer(TrainerBase):
         device = self._device()
         model.to(device)
         model.train()
+        self._enable_runtime(model)
         ref = None
         if self.config.kl_coef > 0:
             ref = ref_model if ref_model is not None else copy.deepcopy(model)
@@ -77,51 +80,72 @@ class GrpoTrainer(TrainerBase):
             for p in ref.parameters():
                 p.requires_grad_(False)
         opt = self._optimizer(model, optimizer)
-
-        losses: list[float] = []
+        accel, model, opt = self._prepare(model, opt)
+        total = self._total_opt_steps(len(groups))
+        sched = self._scheduler(opt, total)
+        tracker = self._tracker(
+            {
+                "trainer": self.name,
+                "base_model": self.config.base_model,
+                "clip_eps": self.config.clip_eps,
+                "kl_coef": self.config.kl_coef,
+                "lr": self.config.lr,
+                "epochs": self.config.epochs,
+                "precision": self.config.precision,
+            }
+        )
         kls: list[float] = []
-        step = 0
-        for _epoch in range(max(1, self.config.epochs)):
-            for group in groups:
-                samples = group["samples"]
-                prompt = group.get("prompt", "")
-                texts = [f"{prompt}{s['completion']}" for s in samples]
-                adv = torch.tensor(
-                    [float(s["advantage"]) for s in samples],
-                    dtype=torch.float32,
-                    device=device,
-                )
-                logp = self._seq_logps(model, texts, tokenizer, device)
-                old = logp.detach()
-                loss = grpo_surrogate(logp, old, adv, clip_eps=self.config.clip_eps)
-                if ref is not None:
-                    with torch.no_grad():
-                        ref_logp = self._seq_logps(ref, texts, tokenizer, device)
-                    kl = approx_kl(logp, ref_logp)
-                    loss = loss + self.config.kl_coef * kl
-                    kls.append(float(kl.detach()))
-                loss.backward()
-                opt.step()
-                opt.zero_grad()
-                losses.append(float(loss.detach()))
-                step += 1
-                if self.config.max_steps is not None and step >= self.config.max_steps:
-                    break
-            if self.config.max_steps is not None and step >= self.config.max_steps:
-                break
 
-        return {
+        def compute_loss(group: dict[str, Any]) -> Any:
+            samples = group["samples"]
+            prompt = group.get("prompt", "")
+            texts = [f"{prompt}{s['completion']}" for s in samples]
+            adv = torch.tensor(
+                [float(s["advantage"]) for s in samples],
+                dtype=torch.float32,
+                device=device,
+            )
+            logp = self._seq_logps(model, texts, tokenizer, device)
+            old = logp.detach()
+            loss = grpo_surrogate(logp, old, adv, clip_eps=self.config.clip_eps)
+            if ref is not None:
+                with torch.no_grad():
+                    ref_logp = self._seq_logps(ref, texts, tokenizer, device)
+                kl = approx_kl(logp, ref_logp)
+                loss = loss + self.config.kl_coef * kl
+                kls.append(float(kl.detach()))
+            return loss
+
+        out = run_loop(
+            config=self.config,
+            model=model,
+            optimizer=opt,
+            device=device,
+            epoch_items=lambda: iter(groups),
+            compute_loss=compute_loss,
+            scheduler=sched,
+            accelerator=accel,
+            tracker=tracker,
+            total_steps=total,
+        )
+        losses = out["losses"]
+        mean_kl = (sum(kls) / len(kls)) if kls else None
+        report = {
             "trainer": self.name,
             "kind": self.kind,
             "groups": len(groups),
-            "steps": step,
+            "steps": out["steps"],
             "losses": losses,
             "final_loss": losses[-1] if losses else None,
-            "mean_kl": (sum(kls) / len(kls)) if kls else None,
+            "mean_kl": mean_kl,
             "clip_eps": self.config.clip_eps,
             "kl_coef": self.config.kl_coef,
             "base_model": self.config.base_model,
+            "checkpoints": out["checkpoints"],
+            "resumed_from_step": out["resumed_from_step"],
         }
+        tracker.end({"final_loss": report["final_loss"], "steps": out["steps"]})
+        return report
 
 
 def build_grpo_trainer(config: TrainConfig | None = None) -> GrpoTrainer:

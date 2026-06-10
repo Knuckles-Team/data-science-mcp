@@ -137,3 +137,130 @@ identical.
 
 See [`WAVE_C_INFRA.md`](../../../.specify/specs/research-evolution-20260606/WAVE_C_INFRA.md)
 for per-paper GB10 requirements.
+
+---
+
+# High-Caliber LLM Trainer (CONCEPT:ML-001…006)
+
+The substrate above is hardened into a full LLM trainer: robust fine-tuning at
+scale, a corpus curation engine, **pretraining a model from random init**, and an
+**agent-driven** workflow that runs the whole loop. See the SDD spec at
+[`.specify/specs/llm-model-trainer/`](../../../.specify/specs/llm-model-trainer/).
+
+## Robustness & throughput knobs (CONCEPT:ML-001)
+
+`TrainConfig` gained additive fields (defaults reproduce the original behaviour
+exactly). They flow through one shared optimisation loop, `trainers/loop.py::run_loop`:
+
+| Field | Effect |
+|---|---|
+| `precision` (`fp32`/`fp16`/`bf16`) | AMP autocast (+ `GradScaler` on fp16) |
+| `grad_accum` | gradient accumulation → larger effective batch |
+| `max_grad_norm` | gradient clipping |
+| `warmup_steps` + `lr_scheduler` (`cosine`/`linear`/…) | HF `get_scheduler` (default `constant`) |
+| `gradient_checkpointing` | activation checkpointing (memory↓) |
+| `attn_impl="flash_attention_2"` | FlashAttention-2 (needs `[training-scale]`) |
+| `use_liger` | fused Triton kernels (needs `[training-fast]`) |
+| `save_steps` / `save_total_limit` / `resume_from` | periodic checkpoints + resume |
+| `distributed` (`fsdp`/`deepspeed`) | sharded multi-GPU (see below) |
+| `tracker` (`mlflow`/`wandb`) + `kg_log` | experiment tracking + KG mirror |
+
+## Scale-out: FSDP **and** DeepSpeed (CONCEPT:ML-005)
+
+Both are first-class peers via `trainers/accelerate_launch.py` (🤗 Accelerate). For a
+real multi-GPU/-node run, generate a launch config and command with
+`data_science_mcp.launch`:
+
+```python
+from data_science_mcp.launch import (
+    fsdp_accelerate_config, deepspeed_zero3_config, write_config, build_launch_command)
+
+write_config(fsdp_accelerate_config(num_processes=8, mixed_precision="bf16"), "fsdp.yaml")
+cmd = build_launch_command("data_science_mcp.trainers.pretrain_trainer",
+                           distributed="fsdp", num_processes=8, config_file="fsdp.yaml")
+# multi-node: same call + num_machines/machine_rank/main_process_ip (homelab OR cloud)
+```
+
+`flash-attn` and `deepspeed` are **GPU-host installs** (`[training-scale]`, need the
+CUDA toolchain) — not CI/CPU-installable.
+
+## Corpus curation engine (CONCEPT:ML-002)
+
+`data_engine.py` — data quality is what separates good models from bad ones:
+
+- `stream_corpus` — list / `.jsonl` / `.txt` / 🤗 `datasets(streaming=True)`.
+- `dedup` — exact (content-hash) + near-duplicate (cosine/LSH). The all-pairs search
+  is offloaded to the **epistemic-graph** Rust `find_similar_pairs` when a live engine
+  is present, with a local-cosine fallback. Embeddings use a deterministic hashing
+  vectorizer — no embedding model required.
+- `decontaminate` — drop training records that leak held-out eval examples.
+- `quality_filter`, `pack_sequences` (packed pretrain windows), `dataset_provenance`
+  (a `DatasetVersion` lineage node, optionally mirrored into the KG).
+
+MCP tools (tag `data-engine`): `curate_corpus`, `dedup_corpus`,
+`decontaminate_corpus`, `dataset_lineage`.
+
+## Pretrain from random init (CONCEPT:ML-003)
+
+For genuinely *new* models (≤~1.5B in a homelab; scale the spec up on cloud GPUs):
+
+```python
+from data_science_mcp.training_pipeline import run_pretrain_pipeline
+from data_science_mcp.trainers import TrainConfig, PretrainSpec
+
+report = run_pretrain_pipeline(
+    TrainConfig(output_dir="/models/tiny-lm", max_seq_len=2048, precision="bf16",
+                lr=3e-4, warmup_steps=2000, lr_scheduler="cosine",
+                save_steps=1000, distributed="fsdp"),
+    corpus=curated_records,                 # {text} records from the data engine
+    spec=PretrainSpec(hidden_size=1024, num_hidden_layers=24, num_attention_heads=16,
+                      max_position_embeddings=2048),
+    train_tokenizer_first=True,             # BPE tokenizer trained on the corpus
+)
+```
+
+The model is built with **random weights** (`AutoConfig` → `from_config`, *not*
+`from_pretrained`); `tokenizer_trainer.py` trains a byte-level BPE tokenizer first.
+MCP tools: `train_tokenizer`, `pretrain_model` (plan-first like the fine-tuners).
+
+## Agent-driven training (CONCEPT:ML-007)
+
+The whole loop is exposed as an agent workflow. Four agent personas (prompt JSONs in
+`agent-utilities/agent_utilities/prompts/`): `data_curator`, `training_engineer`,
+`eval_judge`, `ml_orchestrator`. They are bound into the `model_training_team`
+TeamConfig and driven by the `train_model` workflow skill
+(`universal-skills/.../workflows/ml/train_model/`):
+
+```
+prepare_corpus → curate/dedup/decontaminate → (train_tokenizer) →
+  train(sft|pretrain) → eval → gate → align(dpo|grpo) → eval → gate →
+  merge_adapters → final_eval → register_model
+```
+
+Run it via `graph_orchestrate(action="execute_workflow", name="train_model", task=…)`.
+
+## Benchmark evaluation (CONCEPT:ML-006)
+
+Alongside the AHE-3.1 reliability suite, `eval_hooks.evaluate_benchmarks(model_path,
+tasks)` scores a checkpoint on EleutherAI `lm-eval` tasks (`[eval]` extra; graceful
+no-op when absent).
+
+## Compute reality
+
+"High-caliber from scratch" at frontier scale is a capital problem, not a code one —
+nobody pretrains a frontier LLM in a homelab. The realistic targets here are
+(a) robust SFT/DPO/GRPO of 1.5B–8B bases (QLoRA fits one 24 GB card; FSDP/DeepSpeed
+for full FT) and (b) genuine pretraining of small models (≤~1.5B). Given the homelab
+GPU situation, plan for cloud-burst GPUs for anything larger — the launcher targets
+both from one command. **All code is CPU-unit-tested on a toy model; GPU runs are
+validated on a GPU host, not in CI.**
+
+## Build-now / run-later (LLM trainer)
+
+| Layer | Status |
+|---|---|
+| Data curation engine | ✅ runnable now (no GPU) |
+| Trainer hardening (precision/accum/clip/sched/ckpt/resume) | ✅ CPU-smoke-tested |
+| Pretrain-from-scratch loop | ✅ CPU-smoke-tested on a toy model |
+| Agent workflow (personas + team + skill) | ✅ compiles + validates |
+| FSDP / DeepSpeed multi-GPU, flash-attn, real pretrain | ⛔ GPU host (configs + launcher ready) |

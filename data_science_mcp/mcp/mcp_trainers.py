@@ -47,6 +47,26 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             "clip_eps",
             "kl_coef",
             "group_size",
+            # robustness / throughput (CONCEPT:ML-001)
+            "precision",
+            "gradient_checkpointing",
+            "max_grad_norm",
+            "warmup_steps",
+            "lr_scheduler",
+            "resume_from",
+            "save_steps",
+            "save_total_limit",
+            "attn_impl",
+            "use_liger",
+            "pack_sequences",
+            # scale-out (CONCEPT:ML-005)
+            "distributed",
+            "cpu_offload",
+            "zero_stage",
+            # tracking (CONCEPT:ML-004)
+            "tracker",
+            "run_name",
+            "kg_log",
         }
         config = TrainConfig(**{k: v for k, v in options.items() if k in cfg_keys})
         trainer = get_trainer(kind, config)
@@ -148,6 +168,156 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             return json.dumps({"error": f"invalid json: {e}"})
         except Exception as e:  # pragma: no cover - defensive
             return json.dumps({"error": str(e)})
+
+    @mcp.tool(tags={"model-training"})
+    def pretrain_model(dataset_json: str = "[]", options_json: str = "{}") -> str:
+        """Pretrain a causal LM **from random init** (CONCEPT:ML-003).
+
+        Args:
+            dataset_json: JSON list of ``{text: ...}`` records (curate with
+                ``curate_corpus`` first).
+            options_json: JSON ``TrainConfig`` fields + a ``spec`` object with
+                ``PretrainSpec`` architecture knobs (``hidden_size``,
+                ``num_hidden_layers``, ``num_attention_heads``, ``vocab_size``,
+                ``max_position_embeddings``, ``model_type``) + ``{"execute": bool}``.
+
+        Returns:
+            JSON ``{kind:"pretrain", plan, executed, report?}`` (or ``{error}``).
+        """
+        return _dispatch("pretrain", dataset_json, options_json, _run_pretrain)
+
+    @mcp.tool(tags={"model-training"})
+    def train_tokenizer(corpus_json: str = "[]", options_json: str = "{}") -> str:
+        """Train a byte-level BPE tokenizer from scratch (CONCEPT:ML-003).
+
+        Args:
+            corpus_json: JSON list of training text strings.
+            options_json: JSON ``TokenizerSpec`` fields (``vocab_size``,
+                ``min_frequency``, ``special_tokens``, ``extra_tokens``,
+                ``lowercase``) + ``output_dir`` + ``{"execute": bool}``.
+
+        Returns:
+            JSON ``{plan, executed, output_dir?, vocab_size?}`` (or ``{error}``).
+        """
+        try:
+            from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
+                TokenizerSpec,
+                plan_tokenizer,
+                train_tokenizer as _train_tok,
+            )
+
+            corpus = json.loads(corpus_json or "[]")
+            opts = json.loads(options_json or "{}")
+            spec_keys = {
+                "vocab_size",
+                "min_frequency",
+                "special_tokens",
+                "extra_tokens",
+                "lowercase",
+            }
+            spec = TokenizerSpec(
+                **{
+                    k: (tuple(v) if isinstance(v, list) else v)
+                    for k, v in opts.items()
+                    if k in spec_keys
+                }
+            )
+            plan = plan_tokenizer(spec)
+            base = {
+                "plan": {
+                    "vocab_size": plan.vocab_size,
+                    "n_special": plan.n_special,
+                    "special_tokens": plan.special_tokens,
+                    "algorithm": plan.algorithm,
+                }
+            }
+            if not opts.get("execute"):
+                return json.dumps({**base, "executed": False})
+            tok = _train_tok(corpus, spec=spec, output_dir=opts.get("output_dir"))
+            return json.dumps(
+                {
+                    **base,
+                    "executed": True,
+                    "output_dir": opts.get("output_dir"),
+                    "vocab_size": len(tok),
+                }
+            )
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid json: {e}"})
+        except Exception as e:  # pragma: no cover - defensive
+            return json.dumps({"error": str(e)})
+
+
+def _run_pretrain(kind: str, dataset: list, options: dict) -> dict[str, Any]:
+    """Plan-first runner for the random-init pretrain trainer (CONCEPT:ML-003)."""
+    from data_science_mcp.trainers import (  # noqa: PLC0415
+        PretrainSpec,
+        PretrainTrainer,
+        TrainConfig,
+    )
+
+    cfg_keys = {
+        "base_model",
+        "output_dir",
+        "epochs",
+        "lr",
+        "batch_size",
+        "max_steps",
+        "max_seq_len",
+        "grad_accum",
+        "seed",
+        "device",
+        "precision",
+        "gradient_checkpointing",
+        "max_grad_norm",
+        "warmup_steps",
+        "lr_scheduler",
+        "resume_from",
+        "save_steps",
+        "save_total_limit",
+        "attn_impl",
+        "use_liger",
+        "pack_sequences",
+        "distributed",
+        "cpu_offload",
+        "zero_stage",
+        "tracker",
+        "run_name",
+        "kg_log",
+    }
+    spec_keys = {
+        "model_type",
+        "vocab_size",
+        "hidden_size",
+        "num_hidden_layers",
+        "num_attention_heads",
+        "num_key_value_heads",
+        "intermediate_size",
+        "max_position_embeddings",
+    }
+    config = TrainConfig(**{k: v for k, v in options.items() if k in cfg_keys})
+    spec_opts = options.get("spec", {})
+    spec = PretrainSpec(**{k: v for k, v in spec_opts.items() if k in spec_keys})
+    trainer = PretrainTrainer(config, spec)
+    plan = trainer.plan(dataset)
+    plan["approx_params"] = spec.approx_params()
+    if not options.get("execute"):
+        return {
+            "kind": kind,
+            "plan": plan,
+            "executed": False,
+            "requires": None if _has_torch() else "data-science-mcp[training]",
+            "note": "set options.execute=true to run (builds a random-init model; GPU recommended)",
+        }
+    if not _has_torch():
+        return {
+            "kind": kind,
+            "plan": plan,
+            "executed": False,
+            "error": "torch not installed — install data-science-mcp[training]",
+        }
+    report = trainer.train(dataset)
+    return {"kind": kind, "plan": plan, "executed": True, "report": report}
 
 
 def _dispatch(kind: str, dataset_json: str, options_json: str, runner) -> str:
