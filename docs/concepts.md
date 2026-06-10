@@ -2,7 +2,7 @@
 
 > **Prefixes**: `CONCEPT:DSCI-*` (this project) · `CONCEPT:ML-*` (cross-repo LLM trainer)
 > **Version**: 0.9.0
-> **Bridge**: [`CONCEPT:ECO-4.0`](../../agent-utilities/docs/concepts.md) (Unified Toolkit Ingestion)
+> **Bridge**: [`CONCEPT:ECO-4.0`](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/concepts.md) (Unified Toolkit Ingestion)
 
 ---
 

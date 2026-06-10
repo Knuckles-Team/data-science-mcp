@@ -5,6 +5,13 @@ through **optional extras**, so you install exactly what a capability needs. The
 package imports and runs (planning, data curation, engine-backed ML) with **no torch
 and no GPU**.
 
+## Requirements
+
+- **Python 3.11–3.13** (`requires-python = ">=3.11,<3.14"`).
+- The Rust **`epistemic-graph`** compute engine (installed as a dependency via
+  `epistemic-graph[datascience]`). All classical ML compute runs in the engine over
+  its MessagePack/UDS protocol — there is no scikit-learn compute path.
+
 ## Install
 
 ```bash
@@ -14,9 +21,15 @@ pip install data-science-mcp
 # A capability bundle (see the matrix below):
 pip install "data-science-mcp[training]"          # run SFT/DPO/GRPO + pretrain
 pip install "data-science-mcp[training,tracking]" # + MLflow experiment tracking
+```
 
-# From source (this repo):
+From source (this repo), optionally with [`uv`](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/Knuckles-Team/data-science-mcp.git
+cd data-science-mcp
 pip install -e ".[training]"
+# or: uv pip install -e ".[training]" && uv run data-science-mcp
 ```
 
 > **`[all]` does _not_ include the GPU training extras.** It bundles the agent +
@@ -62,6 +75,17 @@ them actually executes, so the package installs and imports without them.
 | Experiment tracking | `TrainConfig(tracker="mlflow", kg_log=True)` | `[tracking]` (KG mirror needs the agent-utilities KG facade) |
 | A2A agent / Web UI | `data-science-agent` | `[agent]` |
 
+## Prebuilt Docker image
+
+A multi-stage, slim image is published on every release (entrypoint `data-science-mcp`):
+
+```bash
+docker pull knucklessg1/data-science-mcp:latest
+docker run --rm -i knucklessg1/data-science-mcp:latest   # stdio transport (default)
+```
+
+For an HTTP server with a published port, see [Deployment](deployment.md).
+
 ## GPU-host notes
 
 - `training-scale` (`deepspeed`, `flash-attn`) compiles CUDA extensions — install on a
@@ -71,3 +95,16 @@ them actually executes, so the package installs and imports without them.
 - Real fine-tunes/pretrains need a GPU; everything above the "Run" rows is
   CPU-testable (plan, curate, toy-model smokes). See [Model Training](training.md) for
   the GPU runbook and [Concepts](concepts.md) for the `CONCEPT:ML-*` registry.
+
+## Verify the install
+
+```bash
+data-science-mcp --help
+python -c "import data_science_mcp; print(data_science_mcp.__version__)"
+```
+
+## Next steps
+
+- **[Deployment](deployment.md)** — run it as a long-lived MCP server and A2A agent behind Caddy + DNS.
+- **[Usage](usage.md)** — call the tools, the `MLEngine` API, and the CLI.
+- **[Model Training](training.md)** — the SFT/DPO/GRPO + pretrain recipes and the agent workflow.

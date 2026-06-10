@@ -50,7 +50,7 @@ This project implements or inherits the following ecosystem concepts (full
 | ECO-4.1 | MCP & Universal Skills | `agent-utilities` (inherited) |
 | KG-2.17 | **Model Display Optimization** | `agent-utilities` (inherited) |
 
-> 📖 **Full Registry**: See [`agent-utilities/docs/overview.md`](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/overview.md) for the complete 5-Pillar concept index.
+> 📖 **Full Registry**: See the [agent-utilities concept index](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/overview.md) for the complete 5-Pillar concept registry.
 
 ## Architecture
 
