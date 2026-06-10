@@ -33,11 +33,13 @@ agent = [
 datasets = [
     "scikit-learn>=1.5.0"]
 
-# Wave-C gradient trainers (SFT/DPO/GRPO/pretrain) + LoRA/QLoRA adapters + vLLM
-# rollouts + corpus streaming/curation + tokenizer training + 🤗 Accelerate
-# (FSDP/single-GPU AMP). Heavy, GPU-oriented; imported lazily so the package
-# installs/imports without it. On Blackwell (GB10, sm_120) pin CUDA-12.6+/cu12x
-# Blackwell-enabled builds.
+# Wave-C gradient trainers (SFT/DPO/GRPO/pretrain) + LoRA/QLoRA adapters +
+# served-model rollouts/eval over an OpenAI-compatible inference server (vLLM or
+# SGLang — client-only via `httpx`; the engine runs out-of-process, selected with
+# INFERENCE_BACKEND/INFERENCE_BASE_URL, see `data_science_mcp/inference/`) +
+# corpus streaming/curation + tokenizer training + 🤗 Accelerate (FSDP/single-GPU
+# AMP). Heavy, GPU-oriented; imported lazily so the package installs/imports
+# without it. On Blackwell (GB10, sm_120) pin CUDA-12.6+/cu12x Blackwell builds.
 training = [
     "torch>=2.4.0",
     "transformers>=4.44.0",

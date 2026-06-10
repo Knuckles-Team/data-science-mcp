@@ -29,14 +29,36 @@ from data_science_mcp import training_data as td
 from data_science_mcp.trainers import TrainConfig, get_trainer
 
 
+def _resolve_eval_generate_fn(
+    generate_fn: Callable[[str], str] | None,
+) -> Callable[[str], str]:
+    """Pick the inference fn for the reliability eval.
+
+    Prefers an injected ``generate_fn``; otherwise, when a served-model endpoint
+    is configured (``INFERENCE_BASE_URL``), uses the selected inference backend
+    (vLLM/SGLang via ``INFERENCE_BACKEND``) at temperature 0; otherwise falls
+    back to a no-op echo so the pipeline still completes on CPU with no server.
+    """
+    if generate_fn is not None:
+        return generate_fn
+    from data_science_mcp.inference import (  # noqa: PLC0415
+        create_inference_backend,
+        inference_backend_configured,
+    )
+
+    if inference_backend_configured():
+        return create_inference_backend().as_generate_fn()
+    return lambda x: x
+
+
 @dataclass
 class DeploymentTarget:
     """How to publish a trained checkpoint into the model registry."""
 
     role: str  # functional role to bind (e.g. "generator", "rlm-coder")
     served_model_name: str  # the model id the serving endpoint exposes
-    base_url: str | None = None  # e.g. the local vLLM OpenAI endpoint
-    provider: str = "vllm"
+    base_url: str | None = None  # e.g. the local vLLM/SGLang OpenAI endpoint
+    provider: str = "vllm"  # serving engine: "vllm" | "sglang" (see inference/)
     tier: str = "medium"
     tags: list[str] = field(default_factory=list)
     api_key_env: str | None = None
@@ -126,8 +148,9 @@ def run_sft_pipeline(
     if eval_cases:
         from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint
 
-        gen = generate_fn or (lambda x: x)
-        report["eval"] = evaluate_checkpoint(gen, eval_cases)
+        report["eval"] = evaluate_checkpoint(
+            _resolve_eval_generate_fn(generate_fn), eval_cases
+        )
 
     # 5) Save checkpoint (best-effort; real HF/PEFT models expose save_pretrained)
     cid = checkpoint_id or f"sft-{(config.base_model or 'model').replace('/', '-')}"
@@ -213,7 +236,9 @@ def run_pretrain_pipeline(
     if eval_cases:
         from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
 
-        report["eval"] = evaluate_checkpoint(generate_fn or (lambda x: x), eval_cases)
+        report["eval"] = evaluate_checkpoint(
+            _resolve_eval_generate_fn(generate_fn), eval_cases
+        )
 
     # 5) Deploy seam — identical to the SFT pipeline.
     cid = (

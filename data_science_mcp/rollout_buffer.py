@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Rollout buffer + vLLM generation client for on-policy RL (CONCEPT:AHE-3.1).
+"""Rollout buffer + served-model generation client for on-policy RL (CONCEPT:AHE-3.1).
 
 GRPO/SDAR/ATLAS need *many* sampled completions per prompt, scored with a reward,
 then group-normalised into advantages. This module is that staging area:
@@ -8,12 +8,14 @@ then group-normalised into advantages. This module is that staging area:
   per-token logprobs → reward`` groups, score them with any reward callable, and
   export GRPO training groups (delegating advantage normalisation to
   :func:`data_science_mcp.training_data.build_grpo_groups`, the shared reward spine).
-* :class:`VLLMRolloutClient` — generate completions from the **already-running vLLM**
-  OpenAI-compatible endpoint (far faster than in-process ``.generate()``), returning
-  text + per-token logprobs for the GRPO surrogate.
+* :data:`VLLMRolloutClient` — back-compat alias of
+  :class:`data_science_mcp.inference.VLLMBackend`. Rollout generation is served by
+  an **already-running** OpenAI-compatible server; swap engines (vLLM ↔ SGLang) by
+  passing a different :class:`~data_science_mcp.inference.InferenceBackend` to
+  :meth:`RolloutBuffer.generate` (or via ``INFERENCE_BACKEND``).
 
 The buffer is pure Python (CPU, unit-testable with an injected fake client); only
-:class:`VLLMRolloutClient` touches the network, and ``httpx`` is imported lazily.
+the backend touches the network, and ``httpx`` is imported lazily.
 
 Concept: rollout-buffer
 """
@@ -23,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from data_science_mcp.inference import VLLMBackend
 from data_science_mcp.training_data import build_grpo_groups
 
 
@@ -111,8 +114,9 @@ class RolloutBuffer:
         """Fill the buffer by sampling ``n`` completions/prompt from ``client``.
 
         ``client`` is any object with ``generate(prompt, n, **kwargs) ->
-        list[{"text": str, "logprobs": list[float]}]`` (see
-        :class:`VLLMRolloutClient`); a fake satisfies it in tests.
+        list[{"text": str, "logprobs": list[float]}]`` — any
+        :class:`~data_science_mcp.inference.InferenceBackend` (vLLM or SGLang)
+        satisfies it, as does a fake in tests.
         """
         for prompt in prompts:
             outs = client.generate(prompt, n=n, **gen_kwargs)
@@ -123,61 +127,10 @@ class RolloutBuffer:
             )
 
 
-class VLLMRolloutClient:
-    """Generate completions from a vLLM OpenAI-compatible ``/v1/completions`` endpoint."""
-
-    def __init__(
-        self,
-        base_url: str,
-        model: str,
-        *,
-        api_key: str = "EMPTY",
-        timeout: float = 120.0,
-    ) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.model = model
-        self.api_key = api_key
-        self.timeout = timeout
-
-    def generate(
-        self,
-        prompt: str,
-        *,
-        n: int = 4,
-        max_tokens: int = 512,
-        temperature: float = 1.0,
-        logprobs: int = 1,
-    ) -> list[dict[str, Any]]:
-        """Sample ``n`` completions with per-token logprobs (lazy ``httpx``)."""
-        try:
-            import httpx  # noqa: PLC0415
-        except ImportError as e:  # pragma: no cover - without the extra
-            raise RuntimeError(
-                "httpx is required for vLLM rollouts; install "
-                "`data-science-mcp[training]`"
-            ) from e
-        resp = httpx.post(
-            f"{self.base_url}/v1/completions",
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={
-                "model": self.model,
-                "prompt": prompt,
-                "n": n,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "logprobs": logprobs,
-            },
-            timeout=self.timeout,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return [
-            {
-                "text": ch.get("text", ""),
-                "logprobs": (ch.get("logprobs") or {}).get("token_logprobs") or [],
-            }
-            for ch in data.get("choices", [])
-        ]
+# Back-compat alias: the vLLM rollout client is now the general vLLM inference
+# backend. Existing callers (`VLLMRolloutClient(base_url, model)`) are unchanged;
+# the HTTP/constrained-decoding logic lives in `data_science_mcp.inference`.
+VLLMRolloutClient = VLLMBackend
 
 
 __all__ = ["Rollout", "RolloutBuffer", "VLLMRolloutClient"]
