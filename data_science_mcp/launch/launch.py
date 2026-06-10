@@ -118,10 +118,14 @@ def build_launch_command(
     if config_file:
         cmd += ["--config_file", config_file]
     cmd += [
-        "--num_processes", str(num_processes),
-        "--num_machines", str(num_machines),
-        "--machine_rank", str(machine_rank),
-        "--main_process_port", str(main_process_port),
+        "--num_processes",
+        str(num_processes),
+        "--num_machines",
+        str(num_machines),
+        "--machine_rank",
+        str(machine_rank),
+        "--main_process_port",
+        str(main_process_port),
     ]
     if main_process_ip:
         cmd += ["--main_process_ip", main_process_ip]

@@ -105,7 +105,11 @@ def test_pretrain_model_tool_plans_without_execute():
         tools["pretrain_model"](
             json.dumps([{"text": "a b c"}, {"text": "d e f"}]),
             json.dumps(
-                {"epochs": 1, "batch_size": 1, "spec": {"hidden_size": 128, "num_hidden_layers": 2}}
+                {
+                    "epochs": 1,
+                    "batch_size": 1,
+                    "spec": {"hidden_size": 128, "num_hidden_layers": 2},
+                }
             ),
         )
     )
@@ -140,4 +144,6 @@ def test_train_tokenizer_real_bpe(tmp_path):
         corpus, spec=TokenizerSpec(vocab_size=300), output_dir=str(tmp_path)
     )
     assert len(tok) > 0
-    assert (tmp_path / "tokenizer.json").exists() or (tmp_path / "tokenizer_config.json").exists()
+    assert (tmp_path / "tokenizer.json").exists() or (
+        tmp_path / "tokenizer_config.json"
+    ).exists()

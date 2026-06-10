@@ -152,7 +152,12 @@ class PretrainTrainer(TrainerBase):
         )
         blocks = [b for b in blocks if len(b) >= 2]  # need ≥2 tokens to form a target
         if not blocks:
-            return {"trainer": self.name, "steps": 0, "examples": len(dataset), "losses": []}
+            return {
+                "trainer": self.name,
+                "steps": 0,
+                "examples": len(dataset),
+                "losses": [],
+            }
 
         opt = self._optimizer(model, optimizer)
         accel, model, opt = self._prepare(model, opt)

@@ -67,7 +67,9 @@ class TrainConfig:
     gradient_checkpointing: bool = False
     max_grad_norm: float | None = None  # gradient clipping
     warmup_steps: int = 0
-    lr_scheduler: str = "constant"  # constant | linear | cosine | ... (HF get_scheduler)
+    lr_scheduler: str = (
+        "constant"  # constant | linear | cosine | ... (HF get_scheduler)
+    )
     resume_from: str | None = None  # path to a checkpoint-N dir
     save_steps: int = 0  # 0 = save only at end; >0 = periodic checkpoints
     save_total_limit: int = 0  # 0 = keep all; >0 = keep newest N

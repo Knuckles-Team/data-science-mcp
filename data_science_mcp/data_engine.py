@@ -168,9 +168,15 @@ def near_duplicate_pairs(
     texts: list[str], *, threshold: float = 0.9, dim: int = 256, use_engine: bool = True
 ) -> list[tuple[int, int, float]]:
     """Index pairs ``(i, j, sim)`` whose hashing-vector cosine ≥ ``threshold``."""
-    vectors = np.stack([feature_vector(t, dim) for t in texts]) if texts else np.zeros((0, dim))
+    vectors = (
+        np.stack([feature_vector(t, dim) for t in texts])
+        if texts
+        else np.zeros((0, dim))
+    )
     if use_engine and len(texts) > 1:
-        eng = _near_pairs_engine(vectors, [str(i) for i in range(len(texts))], threshold)
+        eng = _near_pairs_engine(
+            vectors, [str(i) for i in range(len(texts))], threshold
+        )
         if eng is not None:
             return eng
     return _near_pairs_local(vectors, threshold)

@@ -251,7 +251,9 @@ def run_loop(
                         {"loss": raw, "lr": _cur_lr(optimizer)}, step=start_step + step
                     )
                 if save_steps and step % save_steps == 0:
-                    ck = _save_checkpoint(model, optimizer, scheduler, config, start_step + step)
+                    ck = _save_checkpoint(
+                        model, optimizer, scheduler, config, start_step + step
+                    )
                     if ck:
                         checkpoints.append(ck)
                         _enforce_limit(checkpoints, save_limit)

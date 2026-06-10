@@ -50,7 +50,7 @@ DEFAULT_QUANTTOOL = to_boolean(os.getenv("QUANTTOOL", "True"))
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
-from data_science_mcp.ml_engine import MLEngine
+from data_science_mcp.ml_engine import MLEngine  # noqa: E402
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades

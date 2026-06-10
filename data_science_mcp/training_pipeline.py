@@ -216,7 +216,9 @@ def run_pretrain_pipeline(
         report["eval"] = evaluate_checkpoint(generate_fn or (lambda x: x), eval_cases)
 
     # 5) Deploy seam — identical to the SFT pipeline.
-    cid = checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
+    cid = (
+        checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
+    )
     if registry is not None and deploy is not None:
         definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
         report["deployment"] = {

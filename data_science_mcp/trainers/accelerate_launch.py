@@ -74,7 +74,9 @@ def build_accelerator(config: Any) -> Any:
             ) from e
         kwargs["deepspeed_plugin"] = DeepSpeedPlugin(
             zero_stage=int(getattr(config, "zero_stage", 3)),
-            offload_optimizer_device="cpu" if getattr(config, "cpu_offload", False) else "none",
+            offload_optimizer_device="cpu"
+            if getattr(config, "cpu_offload", False)
+            else "none",
             gradient_accumulation_steps=max(1, getattr(config, "grad_accum", 1)),
         )
     else:  # pragma: no cover - guarded by wants_accelerate upstream

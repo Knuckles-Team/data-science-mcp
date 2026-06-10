@@ -70,7 +70,9 @@ class SftTrainer(TrainerBase):
         pad_id = getattr(tokenizer, "pad_token_id", None)
 
         def compute_loss(batch: list[dict[str, Any]]) -> Any:
-            texts = [f"{ex.get('prompt', '')}{ex.get('completion', '')}" for ex in batch]
+            texts = [
+                f"{ex.get('prompt', '')}{ex.get('completion', '')}" for ex in batch
+            ]
             enc = self._encode(tokenizer, texts)
             input_ids = enc["input_ids"].to(device)
             attn = enc["attention_mask"].to(device)

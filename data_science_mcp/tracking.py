@@ -53,7 +53,9 @@ class RunTracker:
         self._wandb: Any = None
 
     @classmethod
-    def from_config(cls, config: Any, *, params: dict[str, Any] | None = None) -> "RunTracker":
+    def from_config(
+        cls, config: Any, *, params: dict[str, Any] | None = None
+    ) -> "RunTracker":
         """Build a tracker from a ``TrainConfig`` (``tracker``/``run_name``/``kg_log``)."""
         return cls(
             getattr(config, "tracker", "none"),
@@ -96,13 +98,17 @@ class RunTracker:
             except Exception:
                 pass
 
-    def log_metrics(self, metrics: dict[str, float], *, step: int | None = None) -> None:
+    def log_metrics(
+        self, metrics: dict[str, float], *, step: int | None = None
+    ) -> None:
         """Record a metric point (mirrored in memory; forwarded to the backend)."""
         rec = {"step": step, **{k: _num(v) for k, v in metrics.items()}}
         self.records.append(rec)
         if self._mlflow is not None:
             try:  # pragma: no cover - external service
-                self._mlflow.log_metrics({k: _num(v) for k, v in metrics.items()}, step=step)
+                self._mlflow.log_metrics(
+                    {k: _num(v) for k, v in metrics.items()}, step=step
+                )
             except Exception:
                 pass
         if self._wandb is not None:

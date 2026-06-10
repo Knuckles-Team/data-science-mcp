@@ -106,9 +106,12 @@ def test_data_engine_tools_register_and_curate():
             return deco
 
     register_data_engine_tools(_Recorder())
-    assert {"dedup_corpus", "decontaminate_corpus", "curate_corpus", "dataset_lineage"} <= set(
-        captured
-    )
+    assert {
+        "dedup_corpus",
+        "decontaminate_corpus",
+        "curate_corpus",
+        "dataset_lineage",
+    } <= set(captured)
 
     out = json.loads(
         captured["curate_corpus"](
@@ -121,7 +124,15 @@ def test_data_engine_tools_register_and_curate():
                 ]
             ),
             json.dumps(["alpha beta gamma delta"]),  # eval text → decontaminate
-            json.dumps({"min_chars": 3, "threshold": 0.9, "use_engine": False, "name": "t", "version": "v1"}),
+            json.dumps(
+                {
+                    "min_chars": 3,
+                    "threshold": 0.9,
+                    "use_engine": False,
+                    "name": "t",
+                    "version": "v1",
+                }
+            ),
         )
     )
     assert out["provenance"]["kind"] == "DatasetVersion"

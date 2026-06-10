@@ -48,7 +48,9 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
             recs = json.loads(records_json or "[]")
             ev = json.loads(eval_texts_json or "[]")
             opts = json.loads(options_json or "{}")
-            return decontaminate(recs, ev, **_pick(opts, {"text_key", "threshold", "use_engine"}))
+            return decontaminate(
+                recs, ev, **_pick(opts, {"text_key", "threshold", "use_engine"})
+            )
 
         return _json(_go)
 
@@ -77,11 +79,16 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
             q = de.quality_filter(
                 recs, **_pick(opts, {"text_key", "min_chars", "max_chars"})
             )
-            d = de.dedup(q["kept"], **_pick(opts, {"text_key", "threshold", "exact", "near", "use_engine"}))
+            d = de.dedup(
+                q["kept"],
+                **_pick(opts, {"text_key", "threshold", "exact", "near", "use_engine"}),
+            )
             kept = d["kept"]
             dec = None
             if ev:
-                dec = de.decontaminate(kept, ev, **_pick(opts, {"text_key", "use_engine"}))
+                dec = de.decontaminate(
+                    kept, ev, **_pick(opts, {"text_key", "use_engine"})
+                )
                 kept = dec["kept"]
             ops = ["quality_filter", "dedup"] + (["decontaminate"] if ev else [])
             prov = de.dataset_provenance(
@@ -94,7 +101,11 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
             )
             return {
                 "kept": kept,
-                "stages": {"quality": _counts(q), "dedup": d.get("removed"), "decontaminate": _counts(dec)},
+                "stages": {
+                    "quality": _counts(q),
+                    "dedup": d.get("removed"),
+                    "decontaminate": _counts(dec),
+                },
                 "provenance": prov,
                 "n_in": n_in,
                 "n_out": len(kept),
@@ -135,7 +146,9 @@ def _dedup(records_json: str, options_json: str) -> dict[str, Any]:
 
     recs = json.loads(records_json or "[]")
     opts = json.loads(options_json or "{}")
-    return dedup(recs, **_pick(opts, {"text_key", "threshold", "exact", "near", "use_engine"}))
+    return dedup(
+        recs, **_pick(opts, {"text_key", "threshold", "exact", "near", "use_engine"})
+    )
 
 
 def _pick(opts: dict[str, Any], keys: set[str]) -> dict[str, Any]:
