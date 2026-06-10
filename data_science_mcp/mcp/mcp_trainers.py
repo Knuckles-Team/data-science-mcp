@@ -47,6 +47,26 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             "clip_eps",
             "kl_coef",
             "group_size",
+            # robustness / throughput (CONCEPT:ML-001)
+            "precision",
+            "gradient_checkpointing",
+            "max_grad_norm",
+            "warmup_steps",
+            "lr_scheduler",
+            "resume_from",
+            "save_steps",
+            "save_total_limit",
+            "attn_impl",
+            "use_liger",
+            "pack_sequences",
+            # scale-out (CONCEPT:ML-005)
+            "distributed",
+            "cpu_offload",
+            "zero_stage",
+            # tracking (CONCEPT:ML-004)
+            "tracker",
+            "run_name",
+            "kg_log",
         }
         config = TrainConfig(**{k: v for k, v in options.items() if k in cfg_keys})
         trainer = get_trainer(kind, config)
