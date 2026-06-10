@@ -27,6 +27,29 @@ engine is a **required** dependency and there is **no scikit-learn compute path*
   Compute tests are gated by the `require_engine` fixture; sklearn-parity for the
   estimators is validated out-of-tree.
 
+## 🔌 Served-model inference — vendor-agnostic backend (vLLM / SGLang)
+
+Trainer-side generation (GRPO rollouts; post-train reliability eval) talks to an
+**already-running** OpenAI-compatible inference server — there is **no embedded
+engine** and no GPU dep here; the runtime cost is `httpx` only.
+
+- `data_science_mcp/inference/` is the seam: `InferenceBackend` ABC +
+  `create_inference_backend()` factory + `VLLMBackend` / `SGLangBackend`. Both
+  engines share the `/v1/completions` wire protocol, so one
+  `OpenAICompatibleBackend` covers both; they differ only in constrained-decoding
+  param names (vLLM `guided_json`/`guided_regex`/`guided_grammar` ↔ SGLang
+  `json_schema`/`regex`/`ebnf`). RadixAttention / prefix-cache is automatic
+  server-side — no client support needed.
+- Select the engine via `INFERENCE_BACKEND` (`vllm` default | `sglang`),
+  `INFERENCE_BASE_URL`, `INFERENCE_MODEL`, `INFERENCE_API_KEY` — or pass a backend
+  instance directly to `RolloutBuffer.generate(...)`. `VLLMRolloutClient` is a
+  back-compat alias of `VLLMBackend`.
+- The reliability-eval `generate_fn` resolves through the backend when
+  `INFERENCE_BASE_URL` is set (else echoes, so CPU smokes still pass). To **add an
+  engine**, subclass `OpenAICompatibleBackend`, override `_constrained_params`,
+  and register it in `inference/__init__.py::_BACKENDS` — do NOT add the engine
+  package as a dep (servers run out-of-process).
+
 ## Tech Stack & Architecture
 - Language/Version: Python 3.10+
 - Core Libraries: `agent-utilities`, `epistemic-graph` (Rust compute engine), `fastmcp`, `pydantic-ai`
