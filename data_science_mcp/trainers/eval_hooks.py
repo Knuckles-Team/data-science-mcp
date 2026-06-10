@@ -81,4 +81,45 @@ class ReliabilityEvalHook:
         return evaluate_checkpoint(generate_fn, self.cases, scorers=self.scorers)
 
 
-__all__ = ["evaluate_checkpoint", "ReliabilityEvalHook", "GenerateFn"]
+def evaluate_benchmarks(
+    model_path: str,
+    tasks: list[str],
+    *,
+    limit: int | None = None,
+    batch_size: int | str = "auto",
+    device: str | None = None,
+) -> dict[str, Any]:
+    """Score a checkpoint on standard benchmarks via ``lm-eval`` (CONCEPT:ML-006).
+
+    A complement to the AHE-3.1 reliability suite: where that measures grounding /
+    safety regressions, this runs community benchmarks (e.g. ``hellaswag``,
+    ``arc_easy``, ``gsm8k``) through EleutherAI's ``lm-evaluation-harness``. The
+    harness is an optional GPU-host dep (``data-science-mcp[eval]``), imported
+    lazily so this module stays light.
+
+    Returns ``{tasks, results:{task: metrics}}`` or ``{error}`` when ``lm-eval`` is
+    absent.
+    """
+    try:
+        from lm_eval import simple_evaluate  # noqa: PLC0415
+    except ImportError:  # pragma: no cover - without the extra
+        return {"error": "lm-eval not installed — install data-science-mcp[eval]"}
+    model_args = f"pretrained={model_path}"
+    if device:  # pragma: no cover - GPU host
+        model_args += f",device={device}"
+    out = simple_evaluate(  # pragma: no cover - heavy GPU eval
+        model="hf",
+        model_args=model_args,
+        tasks=tasks,
+        limit=limit,
+        batch_size=batch_size,
+    )
+    return {"tasks": tasks, "results": out.get("results", {})}
+
+
+__all__ = [
+    "evaluate_checkpoint",
+    "evaluate_benchmarks",
+    "ReliabilityEvalHook",
+    "GenerateFn",
+]
