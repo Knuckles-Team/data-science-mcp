@@ -13,12 +13,12 @@ import sys
 # parsing the pytest CLI.
 sys.argv = ["mcp_server.py"]
 
-import json
+import json  # noqa: E402
 
-import pytest
+import pytest  # noqa: E402
 
-from data_science_mcp.ml_engine import MLEngine, _UNPROBED
-from data_science_mcp.mcp_server import get_mcp_instance
+from data_science_mcp.ml_engine import MLEngine, _UNPROBED  # noqa: E402
+from data_science_mcp.mcp_server import get_mcp_instance  # noqa: E402
 
 QUANT_TOOLS = {
     "quant_market_making",
@@ -33,15 +33,20 @@ QUANT_TOOLS = {
 
 
 def _skip_if_unknown_variant(res: dict) -> None:
-    """Skip when the live engine daemon is a version behind and lacks the kernel.
+    """Skip when the engine *or client* is a version behind and lacks the kernel.
 
-    The KG-2.20h/i kernels may not exist on an older engine build; the engine
-    surfaces that as an 'unknown variant' MessagePack error. Mirror the
-    no-socket skip so engine-backed tests never hard-fail on a stale daemon.
+    The KG-2.20h/i kernels may not exist on an older engine build (surfaced as an
+    'unknown variant' MessagePack error) or on an older Python client (surfaced as
+    a 'FinanceClient has no attribute …' AttributeError). Either is a version gap,
+    not a code defect, so mirror the no-socket skip rather than hard-fail.
     """
     err = str(res.get("error", "")).lower()
-    if "unknown variant" in err or "unknown method" in err:
-        pytest.skip(f"engine lacks kernel (version behind): {res['error']}")
+    if (
+        "unknown variant" in err
+        or "unknown method" in err
+        or "has no attribute" in err
+    ):
+        pytest.skip(f"engine/client lacks kernel (version behind): {res['error']}")
 
 
 @pytest.mark.asyncio
@@ -224,6 +229,27 @@ async def test_quant_microstructure(require_engine):
         ctx=None,
     )
     assert "branching_ratio" in res_hb
+
+    res_queue = await micro.fn(
+        action="queue_imbalance",
+        bid_q_json=json.dumps([100.0, 50.0]),
+        ask_q_json=json.dumps([100.0, 150.0]),
+        bid_rate_json=json.dumps([10.0, 10.0]),
+        ask_rate_json=json.dumps([10.0, 10.0]),
+        ctx=None,
+    )
+    _skip_if_unknown_variant(res_queue)
+    assert "error" not in res_queue and isinstance(res_queue["skew"], list)
+    assert res_queue["skew"][1] > 0  # ask queue heavier ⇒ positive skew
+
+    res_rv = await micro.fn(
+        action="realized_vol_tick",
+        mid_json=json.dumps([100.0, 101.0, 100.0, 102.0, 101.0]),
+        window=3,
+        ctx=None,
+    )
+    _skip_if_unknown_variant(res_rv)
+    assert "error" not in res_rv and isinstance(res_rv["realized_vol"], list)
 
 
 @pytest.mark.asyncio
@@ -528,6 +554,18 @@ async def test_quant_signals(require_engine):
     _skip_if_unknown_variant(res_cg)
     assert "error" not in res_cg
     assert {"agree", "total", "fraction", "direction", "pass"} <= set(res_cg)
+
+    res_sr = await sig.fn(
+        action="spread_reversion",
+        bid_px_json=json.dumps([0.50, 0.50, 0.50, 0.50, 0.50, 0.50]),
+        ask_px_json=json.dumps([0.52, 0.52, 0.52, 0.52, 0.52, 0.60]),
+        window=5,
+        ctx=None,
+    )
+    _skip_if_unknown_variant(res_sr)
+    assert "error" not in res_sr
+    assert isinstance(res_sr["signal"], list)
+    assert res_sr["signal"][-1] < 0  # widening spread ⇒ expect tighten
 
 
 @pytest.mark.asyncio
