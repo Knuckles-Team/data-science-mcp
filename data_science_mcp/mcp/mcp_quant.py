@@ -128,7 +128,8 @@ def register_quant_tools(mcp: FastMCP) -> None:
         action: str = Field(
             description=(
                 "Microstructure kernel: 'ofi_series', 'microprice_series', "
-                "'vpin_pm', 'hawkes_mle', or 'hardiman_bouchaud'."
+                "'vpin_pm', 'hawkes_mle', 'hardiman_bouchaud', "
+                "'queue_imbalance', or 'realized_vol_tick'."
             )
         ),
         ts_json: str = Field(
@@ -171,6 +172,27 @@ def register_quant_tools(mcp: FastMCP) -> None:
         ),
         n_windows: int = Field(
             default=100, description="Count windows (hardiman_bouchaud)."
+        ),
+        bid_q_json: str = Field(
+            default="[]", description="JSON list of best-bid queue sizes (queue_imbalance)."
+        ),
+        ask_q_json: str = Field(
+            default="[]", description="JSON list of best-ask queue sizes (queue_imbalance)."
+        ),
+        bid_rate_json: str = Field(
+            default="[]",
+            description="JSON list of bid-side arrival rates (queue_imbalance; uniform if empty).",
+        ),
+        ask_rate_json: str = Field(
+            default="[]",
+            description="JSON list of ask-side arrival rates (queue_imbalance; uniform if empty).",
+        ),
+        mid_json: str = Field(
+            default="[]", description="JSON list of mid-prices (realized_vol_tick)."
+        ),
+        window: int = Field(
+            default=20,
+            description="Rolling tick window (queue arrival default / realized_vol_tick).",
         ),
         ctx: Context | None = Field(
             default=None, description="MCP context for progress reporting"
@@ -225,6 +247,19 @@ def register_quant_tools(mcp: FastMCP) -> None:
                 return {
                     "branching_ratio": fin.hardiman_bouchaud(
                         _loads("times_json", times_json), t_horizon, n_windows
+                    )
+                }
+            if action == "queue_imbalance":
+                return fin.queue_imbalance(
+                    _loads("bid_q_json", bid_q_json),
+                    _loads("ask_q_json", ask_q_json),
+                    _loads("bid_rate_json", bid_rate_json),
+                    _loads("ask_rate_json", ask_rate_json),
+                )
+            if action == "realized_vol_tick":
+                return {
+                    "realized_vol": fin.realized_vol_tick(
+                        _loads("mid_json", mid_json), window
                     )
                 }
             return {"error": f"Unknown action: {action}"}
@@ -599,7 +634,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             description=(
                 "Signal-combination kernel: 'order_book_imbalance', "
                 "'information_ratio', 'effective_independent_n', "
-                "'alpha_combination', or 'convergence_gate'."
+                "'alpha_combination', 'convergence_gate', or 'spread_reversion'."
             )
         ),
         v_bid_json: str = Field(
@@ -609,6 +644,15 @@ def register_quant_tools(mcp: FastMCP) -> None:
         v_ask_json: str = Field(
             default="[]",
             description="JSON list of ask volumes (order_book_imbalance).",
+        ),
+        bid_px_json: str = Field(
+            default="[]", description="JSON list of bid prices (spread_reversion)."
+        ),
+        ask_px_json: str = Field(
+            default="[]", description="JSON list of ask prices (spread_reversion)."
+        ),
+        window: int = Field(
+            default=20, description="Rolling window for the spread z-score (spread_reversion)."
         ),
         ic: float = Field(
             default=0.0,
@@ -685,6 +729,12 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     _loads("strengths_json", strengths_json),
                     strong_threshold,
                     min_agree,
+                )
+            if action == "spread_reversion":
+                return fin.spread_reversion(
+                    _loads("bid_px_json", bid_px_json),
+                    _loads("ask_px_json", ask_px_json),
+                    window,
                 )
             return {"error": f"Unknown action: {action}"}
         except ValueError as exc:
