@@ -24,12 +24,27 @@ All agents in the ecosystem inherit enterprise-grade infrastructure from `agent-
 | **Resource Scheduling** | ✅ Built-in | Priority queuing + preemption limits (CONCEPT:OS-5.2) |
 | **Session Concurrency** | ✅ Built-in | Enqueue/reject/interrupt/rollback (CONCEPT:OS-5.3) |
 
+## LLM Trainer
+
+Beyond engine-backed classical ML, this project is the **agent-driven LLM trainer**
+for the ecosystem — it can **create, pretrain from random init, and fine-tune** models:
+robust SFT/DPO/GRPO with precision/accumulation/clipping/scheduling/checkpoint-resume
+and FSDP+DeepSpeed scale-out (`CONCEPT:ML-001/005`), a corpus curation engine
+(`CONCEPT:ML-002`), pretraining from scratch with a trained BPE tokenizer
+(`CONCEPT:ML-003`), MLflow + KG tracking (`CONCEPT:ML-004`), and an agent workflow that
+runs the whole loop (`CONCEPT:ML-007`). See **[Installation](installation.md)** for the
+capability→dependency matrix and **[Model Training](training.md)** for the recipes.
+
 ## Concept Registry
 
-This project implements or inherits the following ecosystem concepts:
+This project implements or inherits the following ecosystem concepts (full
+`CONCEPT:DSCI-*` + `CONCEPT:ML-*` registry in **[Concepts](concepts.md)**):
 
 | Concept ID | Description | Source |
 |:-----------|:------------|:-------|
+| ML-001 … ML-007 | **LLM trainer** — hardening, curation, pretrain, tracking, scale-out, eval, agent workflow | this project (cross-repo) |
+| DSCI-004 | Model Training Operations (in-house training substrate) | this project |
+| AHE-3.1 | Training Substrate (reward / distillation) | `agent-utilities` (bridge) |
 | AHE-3.8 | **Agent-Interpretable Model Evolver** | `agent-utilities` (inherited) |
 | AHE-3.16 | **LLM-Graded Interpretability Tests** | `agent-utilities` (inherited) |
 | ECO-4.1 | MCP & Universal Skills | `agent-utilities` (inherited) |
