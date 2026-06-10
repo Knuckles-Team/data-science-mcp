@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://knuckles-team.github.io/data-science-mcp/overview/">
+        <link rel="canonical" href="https://knuckles-team.github.io/data-science-mcp/installation/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../overview/">
       
       
-        <link rel="next" href="../installation/">
+        <link rel="next" href="../deployment/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Overview - data-science-mcp</title>
+        <title>Installation - data-science-mcp</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#data-science-mcp-concept-overview" class="md-skip">
+        <a href="#installation-dependencies" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Installation
             
           </span>
         </div>
@@ -253,11 +253,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../overview/" class="md-tabs__link">
         
   
   
@@ -274,9 +272,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../installation/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -447,6 +447,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -466,7 +493,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Installation
   
 
     
@@ -484,7 +511,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Installation
   
 
     
@@ -510,10 +537,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
+  <a href="#requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Description
+        Requirements
       
     </span>
   </a>
@@ -521,10 +548,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enterprise-readiness" class="md-nav__link">
+  <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enterprise Readiness
+        Install
       
     </span>
   </a>
@@ -532,10 +559,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#llm-trainer" class="md-nav__link">
+  <a href="#extras-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        LLM Trainer
+        Extras → dependencies
       
     </span>
   </a>
@@ -543,10 +570,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#concept-registry" class="md-nav__link">
+  <a href="#capability-what-you-need" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Concept Registry
+        Capability → what you need
       
     </span>
   </a>
@@ -554,10 +581,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
+  <a href="#prebuilt-docker-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture
+        Prebuilt Docker image
       
     </span>
   </a>
@@ -565,41 +592,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mcp-configuration" class="md-nav__link">
+  <a href="#gpu-host-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="MCP Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#stdio-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        stdio Mode
+        GPU-host notes
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#streamable-http-mode" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streamable HTTP Mode
+        Verify the install
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
   
 </li>
       
@@ -607,33 +628,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -773,10 +767,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
+  <a href="#requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Description
+        Requirements
       
     </span>
   </a>
@@ -784,10 +778,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enterprise-readiness" class="md-nav__link">
+  <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enterprise Readiness
+        Install
       
     </span>
   </a>
@@ -795,10 +789,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#llm-trainer" class="md-nav__link">
+  <a href="#extras-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        LLM Trainer
+        Extras → dependencies
       
     </span>
   </a>
@@ -806,10 +800,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#concept-registry" class="md-nav__link">
+  <a href="#capability-what-you-need" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Concept Registry
+        Capability → what you need
       
     </span>
   </a>
@@ -817,10 +811,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
+  <a href="#prebuilt-docker-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture
+        Prebuilt Docker image
       
     </span>
   </a>
@@ -828,41 +822,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mcp-configuration" class="md-nav__link">
+  <a href="#gpu-host-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="MCP Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#stdio-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        stdio Mode
+        GPU-host notes
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#streamable-http-mode" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streamable HTTP Mode
+        Verify the install
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
   
 </li>
       
@@ -886,167 +874,215 @@
   
 
 
-<h1 id="data-science-mcp-concept-overview">data-science-mcp — Concept Overview<a class="headerlink" href="#data-science-mcp-concept-overview" title="Permanent link">&para;</a></h1>
+<h1 id="installation-dependencies">Installation &amp; Dependencies<a class="headerlink" href="#installation-dependencies" title="Permanent link">&para;</a></h1>
+<p><code>data-science-mcp</code> installs light by default and pulls heavy ML/GPU dependencies only
+through <strong>optional extras</strong>, so you install exactly what a capability needs. The core
+package imports and runs (planning, data curation, engine-backed ML) with <strong>no torch
+and no GPU</strong>.</p>
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Python 3.11–3.13</strong> (<code>requires-python = "&gt;=3.11,&lt;3.14"</code>).</li>
+<li>The Rust <strong><code>epistemic-graph</code></strong> compute engine (installed as a dependency via
+  <code>epistemic-graph[datascience]</code>). All classical ML compute runs in the engine over
+  its MessagePack/UDS protocol — there is no scikit-learn compute path.</li>
+</ul>
+<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Core (engine-backed ML + data curation + plan-only training):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span>data-science-mcp
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># A capability bundle (see the matrix below):</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;data-science-mcp[training]&quot;</span><span class="w">          </span><span class="c1"># run SFT/DPO/GRPO + pretrain</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;data-science-mcp[training,tracking]&quot;</span><span class="w"> </span><span class="c1"># + MLflow experiment tracking</span>
+</span></code></pre></div>
+<p>From source (this repo), optionally with <a href="https://docs.astral.sh/uv/"><code>uv</code></a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Knuckles-Team/data-science-mcp.git
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>data-science-mcp
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[training]&quot;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># or: uv pip install -e &quot;.[training]&quot; &amp;&amp; uv run data-science-mcp</span>
+</span></code></pre></div>
 <blockquote>
-<p><strong>Category</strong>: Intelligence | <strong>Ecosystem Role</strong>: MCP Server + A2A Agent
-Built on <a href="https://github.com/Knuckles-Team/agent-utilities"><code>agent-utilities</code></a> — the unified AGI Harness.</p>
+<p><strong><code>[all]</code> does <em>not</em> include the GPU training extras.</strong> It bundles the agent +
+sample-dataset deps (<code>agent</code>, <code>datasets</code>) but <strong>not</strong> <code>training</code> /
+<code>training-scale</code> / <code>training-fast</code>, because those are heavy and (for
+<code>training-scale</code>) need a CUDA toolchain. Install training extras explicitly.</p>
 </blockquote>
-<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).</p>
-<h2 id="enterprise-readiness">Enterprise Readiness<a class="headerlink" href="#enterprise-readiness" title="Permanent link">&para;</a></h2>
-<p>All agents in the ecosystem inherit enterprise-grade infrastructure from <code>agent-utilities</code>:</p>
+<h2 id="extras-dependencies">Extras → dependencies<a class="headerlink" href="#extras-dependencies" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Feature</th>
-<th style="text-align: left;">Status</th>
-<th style="text-align: left;">Source</th>
+<th>Extra</th>
+<th>Brings in</th>
+<th>Weight</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong>JWT/OIDC Authentication</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;"><code>agent-utilities[auth]</code> — Authlib JWKS + API key middleware</td>
+<td><em>(core)</em></td>
+<td><code>agent-utilities[mcp]</code>, <code>epistemic-graph[datascience]</code>, <code>polars</code>, <code>numpy</code></td>
+<td>light, no GPU</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>OpenTelemetry Instrumentation</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;"><code>agent-utilities[logfire]</code> — OTLP export, FastAPI auto-instrumentation</td>
+<td><code>datasets</code></td>
+<td><code>scikit-learn</code></td>
+<td>light — sample-dataset loaders only (iris/diabetes/…), <strong>not</strong> compute</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>HashiCorp Vault Integration</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;"><code>agent-utilities[vault]</code> — <code>secret://</code>, <code>env://</code>, <code>vault://</code> URI schemes</td>
+<td><code>training</code></td>
+<td><code>torch</code>, <code>transformers</code>, <code>peft</code>, <code>bitsandbytes</code>, <code>accelerate</code>, <code>datasets</code> (HF), <code>tokenizers</code>, <code>httpx</code></td>
+<td>heavy, GPU-oriented (CPU-installable)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Audit Logging</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Append-only compliance trail with 30+ action types (CONCEPT:OS-5.4)</td>
+<td><code>training-scale</code></td>
+<td><code>deepspeed</code>, <code>flash-attn</code></td>
+<td><strong>GPU host only</strong> — needs the CUDA toolchain (<code>nvcc</code>); <strong>not</strong> CI/CPU-installable</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Token Usage Analytics</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">4-bucket tracking with budget alerting (CONCEPT:OS-5.4)</td>
+<td><code>training-fast</code></td>
+<td><code>liger-kernel</code></td>
+<td>fused Triton kernels (supported GPU archs)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Prompt Injection Defense</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">25+ pattern scanner + jailbreak taxonomy (CONCEPT:OS-5.1)</td>
+<td><code>eval</code></td>
+<td><code>lm-eval</code></td>
+<td>EleutherAI benchmark harness</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Guardrail Engine</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Input/output interception with block/redact/warn (CONCEPT:OS-5.3)</td>
+<td><code>tracking</code></td>
+<td><code>mlflow</code></td>
+<td>experiment-tracking dashboard (self-hostable). <code>wandb</code> is supported by <code>RunTracker</code> but install it yourself</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Action Execution Pipeline</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Token, cost, duration, and node transition limits Dry-run / commit / rollback phases (CONCEPT:ORCH-1.4)</td>
+<td><code>agent</code></td>
+<td><code>agent-utilities[agent,logfire]</code></td>
+<td>the bundled Pydantic-AI A2A agent runtime</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Resource Scheduling</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Priority queuing + preemption limits (CONCEPT:OS-5.2)</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Session Concurrency</strong></td>
-<td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Enqueue/reject/interrupt/rollback (CONCEPT:OS-5.3)</td>
+<td><code>all</code></td>
+<td><code>agent-utilities[mcp,agent,logfire]</code>, <code>epistemic-graph[datascience]</code>, <code>scikit-learn</code></td>
+<td>everything <strong>except</strong> the GPU training extras</td>
 </tr>
 </tbody>
 </table>
-<h2 id="llm-trainer">LLM Trainer<a class="headerlink" href="#llm-trainer" title="Permanent link">&para;</a></h2>
-<p>Beyond engine-backed classical ML, this project is the <strong>agent-driven LLM trainer</strong>
-for the ecosystem — it can <strong>create, pretrain from random init, and fine-tune</strong> models:
-robust SFT/DPO/GRPO with precision/accumulation/clipping/scheduling/checkpoint-resume
-and FSDP+DeepSpeed scale-out (<code>CONCEPT:ML-001/005</code>), a corpus curation engine
-(<code>CONCEPT:ML-002</code>), pretraining from scratch with a trained BPE tokenizer
-(<code>CONCEPT:ML-003</code>), MLflow + KG tracking (<code>CONCEPT:ML-004</code>), and an agent workflow that
-runs the whole loop (<code>CONCEPT:ML-007</code>). See <strong><a href="../installation/">Installation</a></strong> for the
-capability→dependency matrix and <strong><a href="../training/">Model Training</a></strong> for the recipes.</p>
-<h2 id="concept-registry">Concept Registry<a class="headerlink" href="#concept-registry" title="Permanent link">&para;</a></h2>
-<p>This project implements or inherits the following ecosystem concepts (full
-<code>CONCEPT:DSCI-*</code> + <code>CONCEPT:ML-*</code> registry in <strong><a href="../concepts/">Concepts</a></strong>):</p>
+<p>All heavy deps are <strong>lazily imported</strong> — they load only when a capability that needs
+them actually executes, so the package installs and imports without them.</p>
+<h2 id="capability-what-you-need">Capability → what you need<a class="headerlink" href="#capability-what-you-need" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Concept ID</th>
-<th style="text-align: left;">Description</th>
-<th style="text-align: left;">Source</th>
+<th>Capability</th>
+<th>Tools / API</th>
+<th>Needs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">ML-001 … ML-007</td>
-<td style="text-align: left;"><strong>LLM trainer</strong> — hardening, curation, pretrain, tracking, scale-out, eval, agent workflow</td>
-<td style="text-align: left;">this project (cross-repo)</td>
+<td>Engine-backed ML (fit/predict/evaluate/cross-validate)</td>
+<td><code>fit_model</code>, <code>predict</code>, <code>evaluate_model</code>, <code>cross_validate</code>, <code>MLEngine</code></td>
+<td>core + a running <strong>epistemic-graph</strong> engine (<code>EPISTEMIC_GRAPH_SOCKET</code>/<code>_TCP</code>)</td>
 </tr>
 <tr>
-<td style="text-align: left;">DSCI-004</td>
-<td style="text-align: left;">Model Training Operations (in-house training substrate)</td>
-<td style="text-align: left;">this project</td>
+<td>Sample datasets (iris/diabetes/…)</td>
+<td><code>load_dataset</code></td>
+<td><code>[datasets]</code> (CSV needs nothing extra — uses polars)</td>
 </tr>
 <tr>
-<td style="text-align: left;">AHE-3.1</td>
-<td style="text-align: left;">Training Substrate (reward / distillation)</td>
-<td style="text-align: left;"><code>agent-utilities</code> (bridge)</td>
+<td>Quant / finance kernels</td>
+<td><code>quant_*</code></td>
+<td>core + epistemic-graph engine</td>
 </tr>
 <tr>
-<td style="text-align: left;">AHE-3.8</td>
-<td style="text-align: left;"><strong>Agent-Interpretable Model Evolver</strong></td>
-<td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
+<td><strong>Corpus curation</strong> (dedup/decontaminate/quality-filter/pack/lineage)</td>
+<td><code>curate_corpus</code>, <code>dedup_corpus</code>, <code>decontaminate_corpus</code>, <code>dataset_lineage</code> (CONCEPT:ML-002)</td>
+<td><strong>core only</strong> (pure-Python; epistemic-graph HNSW accelerates near-dup search when present)</td>
 </tr>
 <tr>
-<td style="text-align: left;">AHE-3.16</td>
-<td style="text-align: left;"><strong>LLM-Graded Interpretability Tests</strong></td>
-<td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
+<td>HF <code>datasets</code> streaming corpora</td>
+<td><code>stream_corpus({"hf": …})</code></td>
+<td><code>[training]</code></td>
 </tr>
 <tr>
-<td style="text-align: left;">ECO-4.1</td>
-<td style="text-align: left;">MCP &amp; Universal Skills</td>
-<td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
+<td><strong>Plan</strong> a training run (steps/effective-batch/params)</td>
+<td><code>train_sft</code>/<code>train_dpo</code>/<code>train_grpo</code>/<code>pretrain_model</code>/<code>train_tokenizer</code> with <code>execute=false</code></td>
+<td><strong>core only</strong> (no torch)</td>
 </tr>
 <tr>
-<td style="text-align: left;">KG-2.17</td>
-<td style="text-align: left;"><strong>Model Display Optimization</strong></td>
-<td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
+<td><strong>Run</strong> SFT / DPO / GRPO fine-tunes</td>
+<td>same tools with <code>execute=true</code></td>
+<td><code>[training]</code> + a GPU</td>
+</tr>
+<tr>
+<td>LoRA / QLoRA adapters</td>
+<td><code>LoraSpec(quant_4bit=…)</code>, <code>merge_adapters_ties</code></td>
+<td><code>[training]</code> (QLoRA fits a 1.5B–8B base on one 24 GB card)</td>
+</tr>
+<tr>
+<td><strong>Pretrain from random init</strong> (CONCEPT:ML-003)</td>
+<td><code>pretrain_model</code>, <code>train_tokenizer</code>, <code>run_pretrain_pipeline</code></td>
+<td><code>[training]</code> + a GPU (small models ≤~1.5B in a homelab)</td>
+</tr>
+<tr>
+<td>Multi-GPU <strong>FSDP</strong></td>
+<td><code>TrainConfig(distributed="fsdp")</code> + <code>launch/</code></td>
+<td><code>[training]</code> (FSDP ships with accelerate+torch)</td>
+</tr>
+<tr>
+<td>Multi-GPU <strong>DeepSpeed ZeRO-3</strong></td>
+<td><code>TrainConfig(distributed="deepspeed")</code></td>
+<td><code>[training-scale]</code> (GPU host)</td>
+</tr>
+<tr>
+<td>FlashAttention-2</td>
+<td><code>TrainConfig(attn_impl="flash_attention_2")</code></td>
+<td><code>[training-scale]</code> (GPU host)</td>
+</tr>
+<tr>
+<td>Fused kernels</td>
+<td><code>TrainConfig(use_liger=True)</code></td>
+<td><code>[training-fast]</code></td>
+</tr>
+<tr>
+<td>Benchmark eval (hellaswag/arc/gsm8k…)</td>
+<td><code>evaluate_benchmarks</code> (CONCEPT:ML-006)</td>
+<td><code>[eval]</code></td>
+</tr>
+<tr>
+<td>Experiment tracking</td>
+<td><code>TrainConfig(tracker="mlflow", kg_log=True)</code></td>
+<td><code>[tracking]</code> (KG mirror needs the agent-utilities KG facade)</td>
+</tr>
+<tr>
+<td>A2A agent / Web UI</td>
+<td><code>data-science-agent</code></td>
+<td><code>[agent]</code></td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>📖 <strong>Full Registry</strong>: See the <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/overview.md">agent-utilities concept index</a> for the complete 5-Pillar concept registry.</p>
-</blockquote>
-<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<p>This project follows the standardized agent-package pattern:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>data-science-mcp/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── data_science_mcp/        # Source code
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── __init__.py
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   ├── agent_server.py      # Entry point (create_graph_agent_server)
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── api_client.py        # REST/GraphQL API wrapper
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── mcp_server.py        # FastMCP tool definitions
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── tests/                   # Test suite
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── docs/                    # Documentation
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── pyproject.toml           # Package metadata
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── mcp_config.json          # MCP server configuration
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── main_agent.json          # Agent identity &amp; system prompt
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── Dockerfile               # Container deployment
+<h2 id="prebuilt-docker-image">Prebuilt Docker image<a class="headerlink" href="#prebuilt-docker-image" title="Permanent link">&para;</a></h2>
+<p>A multi-stage, slim image is published on every release (entrypoint <code>data-science-mcp</code>):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>pull<span class="w"> </span>knucklessg1/data-science-mcp:latest
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-i<span class="w"> </span>knucklessg1/data-science-mcp:latest<span class="w">   </span><span class="c1"># stdio transport (default)</span>
 </span></code></pre></div>
-<h2 id="mcp-configuration">MCP Configuration<a class="headerlink" href="#mcp-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="stdio-mode">stdio Mode<a class="headerlink" href="#stdio-mode" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;data-science-mcp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uv&quot;</span><span class="p">,</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--with&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data-science-mcp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data-mcp&quot;</span><span class="p">],</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">}</span>
+<p>For an HTTP server with a published port, see <a href="../deployment/">Deployment</a>.</p>
+<h2 id="gpu-host-notes">GPU-host notes<a class="headerlink" href="#gpu-host-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>training-scale</code> (<code>deepspeed</code>, <code>flash-attn</code>) compiles CUDA extensions — install on a
+  GPU host with the matching CUDA toolchain, never in CI/CPU images.</li>
+<li>On <strong>Blackwell (GB10, sm_120)</strong> pin CUDA-12.6+/cu12x-enabled <code>torch</code>/<code>peft</code>/
+  <code>bitsandbytes</code>/<code>vllm</code> builds.</li>
+<li>Real fine-tunes/pretrains need a GPU; everything above the "Run" rows is
+  CPU-testable (plan, curate, toy-model smokes). See <a href="../training/">Model Training</a> for
+  the GPU runbook and <a href="../concepts/">Concepts</a> for the <code>CONCEPT:ML-*</code> registry.</li>
+</ul>
+<h2 id="verify-the-install">Verify the install<a class="headerlink" href="#verify-the-install" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>data-science-mcp<span class="w"> </span>--help
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import data_science_mcp; print(data_science_mcp.__version__)&quot;</span>
 </span></code></pre></div>
-<h3 id="streamable-http-mode">Streamable HTTP Mode<a class="headerlink" href="#streamable-http-mode" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>data-mcp<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--port<span class="w"> </span><span class="m">8001</span>
-</span></code></pre></div>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="../deployment/">Deployment</a></strong> — run it as a long-lived MCP server and A2A agent behind Caddy + DNS.</li>
+<li><strong><a href="../usage/">Usage</a></strong> — call the tools, the <code>MLEngine</code> API, and the CLI.</li>
+<li><strong><a href="../training/">Model Training</a></strong> — the SFT/DPO/GRPO + pretrain recipes and the agent workflow.</li>
+</ul>
 
 
 
@@ -1084,7 +1120,7 @@ capability→dependency matrix and <strong><a href="../training/">Model Training
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+          <a href="../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1094,20 +1130,20 @@ capability→dependency matrix and <strong><a href="../training/">Model Training
                 Previous
               </span>
               <div class="md-ellipsis">
-                Home
+                Overview
               </div>
             </div>
           </a>
         
         
           
-          <a href="../installation/" class="md-footer__link md-footer__link--next" aria-label="Next: Installation">
+          <a href="../deployment/" class="md-footer__link md-footer__link--next" aria-label="Next: Deployment">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Installation
+                Deployment
               </div>
             </div>
             <div class="md-footer__button md-icon">
