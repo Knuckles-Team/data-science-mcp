@@ -1,7 +1,7 @@
 # Concept Registry — data-science-mcp
 
-> **Prefix**: `CONCEPT:DSCI-*`
-> **Version**: 0.8.0
+> **Prefixes**: `CONCEPT:DSCI-*` (this project) · `CONCEPT:ML-*` (cross-repo LLM trainer)
+> **Version**: 0.9.0
 > **Bridge**: [`CONCEPT:ECO-4.0`](../../agent-utilities/docs/concepts.md) (Unified Toolkit Ingestion)
 
 ---
@@ -17,6 +17,26 @@
 | `CONCEPT:DSCI-005` | State-Space / Stat-Arb Operations | MCP tool domain `quant_statespace` — Kalman filter/beta/volatility, ADF, OU calibration + thresholds, Markov transition (engine `client.finance.*`, KG-2.20h) |
 | `CONCEPT:DSCI-006` | Signal-Combination Operations | MCP tool domain `quant_signals` — order-book imbalance, information ratio, effective independent N, alpha combination, convergence gate; plus `empirical_kelly` (quant_sizing) and `brier_score` (quant_validation) (engine `client.finance.*`, KG-2.20i) |
 | `CONCEPT:DSCI-007` | SABR Volatility-Surface Operations | MCP tool domain `quant_derivatives` — Hagan-2002 SABR `implied_vol` / `smile` / `calibrate` (fit α,ρ,ν with β fixed → {alpha,beta,rho,nu,rmse,converged}) delegating to engine `client.finance.sabr_*` (KG-2.20j) |
+
+## LLM Trainer Concepts (`CONCEPT:ML-*`)
+
+The high-caliber LLM trainer — create, **pretrain from random init**, and fine-tune
+models, driven by AI agents. This is a deliberate **cross-repo family** (it spans
+`data-science-mcp` + `agent-utilities` + `universal-skills`), so it uses a repo-neutral
+`ML-*` prefix rather than `DSCI-*`. It expands [`CONCEPT:DSCI-004`](#project-specific-concepts)
+(Model Training Operations) and bridges [`CONCEPT:AHE-3.1`](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md)
+(the in-house training substrate). See [Model Training](training.md), [Installation](installation.md),
+and the SDD spec at `.specify/specs/llm-model-trainer/`.
+
+| Concept ID | Name | Description |
+|------------|------|-------------|
+| `CONCEPT:ML-001` | Trainer Hardening | Shared `trainers/loop.py::run_loop` — precision (fp16 scaler / bf16 autocast), gradient accumulation, clipping, LR scheduling, checkpoint save+resume, metrics. SFT/DPO/GRPO/pretrain all route through it; `TrainConfig` defaults reproduce prior behaviour exactly |
+| `CONCEPT:ML-002` | Corpus Curation Engine | `data_engine.py` (+ `mcp/mcp_data_engine.py`) — stream / exact+near dedup / decontaminate / quality-filter / pack / `DatasetVersion` lineage; epistemic-graph HNSW/LSH `find_similar_pairs` accelerates the all-pairs search (local-cosine fallback) |
+| `CONCEPT:ML-003` | Pretrain From Random Init | `tokenizer_trainer.py` (BPE) + `trainers/pretrain_trainer.py` (`PretrainSpec`, `AutoConfig`→`from_config`, packed next-token CE; kind=`pretrain`) + `run_pretrain_pipeline` |
+| `CONCEPT:ML-004` | Experiment Tracking | `tracking.py::RunTracker` — MLflow / W&B / none + best-effort epistemic-graph `TrainingRun` provenance mirror |
+| `CONCEPT:ML-005` | Distributed Scale-Out | `trainers/accelerate_launch.py` + `launch/` — FSDP **and** DeepSpeed ZeRO-3 as first-class peers + `accelerate launch` config/command builder (homelab or cloud) |
+| `CONCEPT:ML-006` | Benchmark Evaluation | `trainers/eval_hooks.evaluate_benchmarks` — EleutherAI `lm-eval` scoring alongside the AHE-3.1 reliability suite |
+| `CONCEPT:ML-007` | Agent-Driven Training | Personas `data_curator`/`training_engineer`/`eval_judge`/`ml_orchestrator` (agent-utilities) + the `ml/train_model` workflow + `model_training_team` (universal-skills) |
 
 ## Cross-Project References (from agent-utilities)
 
