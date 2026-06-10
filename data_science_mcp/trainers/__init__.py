@@ -20,12 +20,18 @@ from __future__ import annotations
 from data_science_mcp.trainers.base import TrainConfig, TrainerBase
 from data_science_mcp.trainers.dpo_trainer import DpoTrainer, build_dpo_trainer
 from data_science_mcp.trainers.grpo_trainer import GrpoTrainer, build_grpo_trainer
+from data_science_mcp.trainers.pretrain_trainer import (
+    PretrainSpec,
+    PretrainTrainer,
+    build_pretrain_trainer,
+)
 from data_science_mcp.trainers.sft_trainer import SftTrainer, build_sft_trainer
 
 TRAINERS: dict[str, type[TrainerBase]] = {
     "sft": SftTrainer,
     "dpo": DpoTrainer,
     "grpo": GrpoTrainer,
+    "pretrain": PretrainTrainer,
 }
 
 
@@ -43,9 +49,12 @@ __all__ = [
     "SftTrainer",
     "DpoTrainer",
     "GrpoTrainer",
+    "PretrainTrainer",
+    "PretrainSpec",
     "build_sft_trainer",
     "build_dpo_trainer",
     "build_grpo_trainer",
+    "build_pretrain_trainer",
     "TRAINERS",
     "get_trainer",
 ]

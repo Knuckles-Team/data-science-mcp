@@ -151,4 +151,87 @@ def run_sft_pipeline(
     return report
 
 
-__all__ = ["DeploymentTarget", "register_checkpoint", "run_sft_pipeline"]
+def run_pretrain_pipeline(
+    config: TrainConfig,
+    *,
+    corpus: list[dict[str, Any]] | list[str],
+    spec: Any = None,
+    tokenizer_spec: Any = None,
+    model: Any = None,
+    tokenizer: Any = None,
+    train_tokenizer_first: bool = False,
+    eval_cases: list[dict[str, Any]] | None = None,
+    generate_fn: Callable[[str], str] | None = None,
+    registry: Any = None,
+    deploy: DeploymentTarget | None = None,
+    checkpoint_id: str | None = None,
+) -> dict[str, Any]:
+    """Pretrain-from-random-init pipeline (CONCEPT:ML-003), mirroring the SFT one.
+
+    Flow: (optional) train a tokenizer from the corpus → build the random-init model
+    → pretrain over packed sequences → (optional) reliability-eval → save checkpoint
+    → register/bind a role (live with no hot-path edit). Everything but the GPU run
+    is deterministic and CPU-testable with an injected toy model/tokenizer.
+
+    Args:
+        config: trainer hyper-parameters (``max_seq_len`` is the pack/block length).
+        corpus: ``{text}`` records (or raw strings) to pretrain on.
+        spec: a ``PretrainSpec`` (architecture); defaults to the small-LM preset.
+        tokenizer_spec: a ``TokenizerSpec`` used when ``train_tokenizer_first``.
+        model/tokenizer: inject a toy pair for a CPU smoke; omit for the live build.
+        train_tokenizer_first: train a BPE tokenizer over the corpus before building.
+    """
+    from data_science_mcp.trainers import PretrainSpec, PretrainTrainer  # noqa: PLC0415
+
+    report: dict[str, Any] = {}
+    records = [r if isinstance(r, dict) else {"text": r} for r in corpus]
+    report["data"] = {"records": len(records)}
+
+    # 1) (optional) train a tokenizer from the corpus.
+    if train_tokenizer_first and tokenizer is None:
+        from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
+            TokenizerSpec,
+            train_tokenizer,
+        )
+
+        tspec = tokenizer_spec or TokenizerSpec()
+        tokenizer = train_tokenizer(
+            (str(r.get("text", "")) for r in records),
+            spec=tspec,
+            output_dir=config.output_dir or None,
+        )
+        report["tokenizer"] = {"vocab_size": len(tokenizer)}
+
+    # 2) Build trainer (random-init model from spec) + plan.
+    trainer = PretrainTrainer(config, spec or PretrainSpec())
+    report["plan"] = trainer.plan(records)
+
+    # 3) Pretrain.
+    report["train"] = trainer.train(records, model=model, tokenizer=tokenizer)
+
+    # 4) Reliability evaluation (optional).
+    if eval_cases:
+        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+
+        report["eval"] = evaluate_checkpoint(generate_fn or (lambda x: x), eval_cases)
+
+    # 5) Deploy seam — identical to the SFT pipeline.
+    cid = checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
+    if registry is not None and deploy is not None:
+        definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
+        report["deployment"] = {
+            "checkpoint_id": cid,
+            "role": deploy.role,
+            "model_id": definition.model_id,
+            "resolved": registry.pick_for_role(deploy.role).model_dump(),
+        }
+
+    return report
+
+
+__all__ = [
+    "DeploymentTarget",
+    "register_checkpoint",
+    "run_sft_pipeline",
+    "run_pretrain_pipeline",
+]
