@@ -137,11 +137,18 @@ def _near_pairs_local(
 def _near_pairs_engine(
     vectors: np.ndarray, ids: list[str], threshold: float
 ) -> list[tuple[int, int, float]] | None:
-    """Try the epistemic-graph Rust ``find_similar_pairs`` (LSH/HNSW). ``None`` on miss."""
-    try:  # pragma: no cover - requires a live engine + matching client
-        from epistemic_graph.client import SyncEpistemicGraphClient  # noqa: PLC0415
+    """Try the epistemic-graph Rust ``find_similar_pairs`` (LSH/HNSW). ``None`` on miss.
 
-        client = SyncEpistemicGraphClient.connect()
+    Reuses the cached :meth:`MLEngine._rust_client` singleton instead of opening a
+    fresh connection (background thread + event loop + socket) per call — the old
+    ``SyncEpistemicGraphClient.connect()`` here leaked one of each on every dedup.
+    """
+    try:  # pragma: no cover - requires a live engine + matching client
+        from .ml_engine import MLEngine  # noqa: PLC0415 — lazy to avoid import cycle
+
+        client = MLEngine._rust_client()
+        if client is None:
+            return None
         ds = getattr(client, "datascience", client)
         fn = getattr(ds, "find_similar_pairs", None)
         if fn is None:
@@ -164,6 +171,12 @@ def _near_pairs_engine(
         return None
 
 
+#: Above this row count the local O(n²) near-duplicate fallback is refused rather
+#: than silently burning CPU for minutes when the Rust engine is unavailable.
+#: Override with DSM_NEAR_PAIRS_LOCAL_MAX (0 disables the cap).
+_NEAR_PAIRS_LOCAL_MAX = int(os.environ.get("DSM_NEAR_PAIRS_LOCAL_MAX", "20000"))
+
+
 def near_duplicate_pairs(
     texts: list[str], *, threshold: float = 0.9, dim: int = 256, use_engine: bool = True
 ) -> list[tuple[int, int, float]]:
@@ -173,12 +186,28 @@ def near_duplicate_pairs(
         if texts
         else np.zeros((0, dim))
     )
-    if use_engine and len(texts) > 1:
-        eng = _near_pairs_engine(
-            vectors, [str(i) for i in range(len(texts))], threshold
-        )
+    n = len(texts)
+    if use_engine and n > 1:
+        eng = _near_pairs_engine(vectors, [str(i) for i in range(n)], threshold)
         if eng is not None:
             return eng
+        # Engine expected but unavailable → O(n²) local path. Make the perf cliff
+        # LOUD (warning, not debug) and refuse above the cap, so a missing engine
+        # surfaces instead of quietly running for minutes on a large corpus.
+        if _NEAR_PAIRS_LOCAL_MAX and n > _NEAR_PAIRS_LOCAL_MAX:
+            raise RuntimeError(
+                f"near_duplicate_pairs: epistemic-graph engine unavailable and "
+                f"n={n} exceeds the local O(n^2) cap ({_NEAR_PAIRS_LOCAL_MAX}). "
+                f"Start the engine (EPISTEMIC_GRAPH_SOCKET / EPISTEMIC_GRAPH_TCP) "
+                f"for the Rust LSH/HNSW path, raise DSM_NEAR_PAIRS_LOCAL_MAX, or "
+                f"call with use_engine=False to force the local path."
+            )
+        logger.warning(
+            "near_duplicate_pairs: engine unavailable; falling back to local "
+            "O(n^2) cosine for n=%d (set EPISTEMIC_GRAPH_SOCKET/TCP for the Rust "
+            "LSH/HNSW path)",
+            n,
+        )
     return _near_pairs_local(vectors, threshold)
 
 
