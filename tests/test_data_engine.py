@@ -138,3 +138,24 @@ def test_data_engine_tools_register_and_curate():
     assert out["provenance"]["kind"] == "DatasetVersion"
     assert out["n_out"] >= 1
     assert any("survive" in r["text"] for r in out["kept"])
+
+
+def test_near_duplicate_pairs_loud_bounded_fallback(monkeypatch):
+    """B5: engine-miss fallback is loud + capped, never a silent O(n^2) cliff."""
+    import pytest
+
+    # Force the engine to "miss" so the local fallback path is taken.
+    monkeypatch.setattr(de, "_near_pairs_engine", lambda *a, **k: None)
+    monkeypatch.setattr(de, "_NEAR_PAIRS_LOCAL_MAX", 5)
+
+    # Over the cap with use_engine=True (engine expected) → refuse loudly.
+    with pytest.raises(RuntimeError):
+        de.near_duplicate_pairs([f"t{i}" for i in range(6)])
+
+    # Below the cap → warn + fall back to local, returning a list.
+    out = de.near_duplicate_pairs([f"doc number {i}" for i in range(3)])
+    assert isinstance(out, list)
+
+    # Explicit opt-out bypasses both the engine and the cap.
+    out2 = de.near_duplicate_pairs([f"t{i}" for i in range(6)], use_engine=False)
+    assert isinstance(out2, list)
