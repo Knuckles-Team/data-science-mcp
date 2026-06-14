@@ -35,11 +35,19 @@ class OpenAICompatibleBackend(InferenceBackend):
         *,
         api_key: str = "EMPTY",
         timeout: float = 120.0,
+        default_adapter: str | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key
         self.timeout = timeout
+        # LoRA hot-swap serving: when set (or passed per-call), the served model
+        # name is the adapter id. vLLM started with ``--enable-lora --lora-modules
+        # <name>=<path>`` (or sent a runtime ``/v1/load_lora_adapter``) serves each
+        # adapter under its name, so selecting a specialist is a per-request swap on
+        # one base-model server — no reload. This is the seam the SAI factory's
+        # weight arm (AHE-3.29) uses to serve a freshly-trained specialist.
+        self.default_adapter = default_adapter
 
     # -- engine-specific hooks ------------------------------------------------ #
     def _constrained_params(
@@ -67,9 +75,14 @@ class OpenAICompatibleBackend(InferenceBackend):
         json_schema: dict[str, Any] | None = None,
         regex: str | None = None,
         grammar: str | None = None,
+        adapter: str | None = None,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        """Sample ``n`` completions with per-token logprobs (lazy ``httpx``)."""
+        """Sample ``n`` completions with per-token logprobs (lazy ``httpx``).
+
+        ``adapter`` (or the backend's ``default_adapter``) selects a served LoRA
+        specialist by name for this request; ``None`` serves the base ``model``.
+        """
         try:
             import httpx  # noqa: PLC0415
         except ImportError as e:  # pragma: no cover - without the extra
@@ -78,8 +91,9 @@ class OpenAICompatibleBackend(InferenceBackend):
                 "`data-science-mcp[training]`"
             ) from e
 
+        served_model = adapter or self.default_adapter or self.model
         payload: dict[str, Any] = {
-            "model": self.model,
+            "model": served_model,
             "prompt": prompt,
             "n": n,
             "max_tokens": max_tokens,
