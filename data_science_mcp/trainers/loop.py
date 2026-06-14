@@ -170,8 +170,9 @@ def run_loop(
     accelerator: Any | None = None,
     tracker: Any | None = None,
     total_steps: int | None = None,
+    should_pause: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
-    """Drive training; return ``{steps, losses, checkpoints, final_lr, resumed_from_step}``.
+    """Drive training; return ``{steps, losses, checkpoints, final_lr, resumed_from_step, paused}``.
 
     Args:
         config: a ``TrainConfig`` (precision/grad_accum/clip/save/resume/max_steps).
@@ -183,6 +184,10 @@ def run_loop(
             recorded by the closure itself.
         scheduler/accelerator/tracker: optional; see module docstring.
         total_steps: planned optimizer steps (for tracker context only).
+        should_pause: optional cooperative-yield check (CONCEPT:ML-011). Polled after
+            each optimizer step; when it returns ``True`` the loop force-saves a
+            checkpoint and stops early with ``paused=True`` so a GPU-slot scheduler
+            can preempt the run and resume it later via ``config.resume_from``.
     """
     torch = _torch()
     accum = max(1, int(getattr(config, "grad_accum", 1) or 1))
@@ -203,6 +208,7 @@ def run_loop(
     step = 0
     micro = 0
     stop = False
+    paused = False
     optimizer.zero_grad(set_to_none=True)
 
     def _forward(item: Any) -> Any:
@@ -260,6 +266,16 @@ def run_loop(
                 if max_steps is not None and step >= max_steps:
                     stop = True
                     break
+                if should_pause is not None and should_pause():
+                    # Cooperative preempt: persist a resume point and yield the slot.
+                    ck = _save_checkpoint(
+                        model, optimizer, scheduler, config, start_step + step
+                    )
+                    if ck and ck not in checkpoints:
+                        checkpoints.append(ck)
+                    paused = True
+                    stop = True
+                    break
         if stop:
             break
 
@@ -274,6 +290,7 @@ def run_loop(
         "checkpoints": checkpoints,
         "final_lr": _cur_lr(optimizer),
         "resumed_from_step": start_step,
+        "paused": paused,
     }
 
 

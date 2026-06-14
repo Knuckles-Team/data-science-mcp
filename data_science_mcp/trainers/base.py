@@ -91,6 +91,12 @@ class TrainConfig:
     tracker: str = "none"  # none | mlflow | wandb
     run_name: str | None = None
     kg_log: bool = False  # mirror the run into the epistemic-graph as a TrainingRun
+    # provenance lineage (PROV-O): the curated DatasetVersion this run consumed and
+    # the upstream run it continues (e.g. PPO ← reward ← sft ← pretrain). Emitted on
+    # the TrainingRun node as `was_derived_from` so the dataset→…→model chain is
+    # queryable via /sparql + OWL transitive closure (CONCEPT:ML-011 lineage).
+    dataset_version: str | None = None
+    parent_run: str | None = None
 
 
 class TrainerBase(ABC):

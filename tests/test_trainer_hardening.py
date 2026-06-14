@@ -178,3 +178,14 @@ def test_run_tracker_none_is_noop_but_records():
 def test_tracker_from_config_defaults_off():
     t = RunTracker.from_config(TrainConfig())
     assert t.backend == "none" and t.kg_log is False
+
+
+def test_tracker_provenance_carries_lineage():
+    """TrainingRun emits PROV-O was_derived_from for the dataset→…→run chain."""
+    cfg = TrainConfig(
+        tracker="none", dataset_version="corpus@v3", parent_run="sft-run-1"
+    )
+    payload = RunTracker.from_config(cfg, params={"trainer": "ppo"}).start().end({})
+    assert payload["dataset_version"] == "corpus@v3"
+    assert payload["parent_run"] == "sft-run-1"
+    assert set(payload["was_derived_from"]) == {"corpus@v3", "sft-run-1"}
