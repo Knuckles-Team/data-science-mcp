@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Shortcut-resistant search-task corpora (CONCEPT:KG-2.67/2.68/2.69, AHE-3.27)** —
+- **Shortcut-resistant search-task corpora (CONCEPT:KG-2.70/2.71/2.72, AHE-3.30)** —
   `data_science_mcp/search_task_corpus.py`: turns agent-utilities' synthesized
   shortcut-resistant search tasks + solver trajectories (FORT-Searcher,
   arXiv:2606.12087) into the in-house corpora, reusing the existing builders

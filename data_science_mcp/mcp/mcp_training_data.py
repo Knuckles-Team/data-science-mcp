@@ -29,7 +29,7 @@ def register_training_data_tools(mcp: FastMCP) -> None:
                 shortcut-resistant search variants ``search_sft`` |
                 ``search_dpo`` | ``search_grpo`` that consume synthesized tasks +
                 solver trajectories and reward by realized search difficulty
-                (CONCEPT:KG-2.67/2.68/2.69, AHE-3.27).
+                (CONCEPT:KG-2.70/2.71/2.72, AHE-3.30).
             items_json: JSON list of input records (traces / samples / groups).
             options_json: JSON object of options (e.g. ``{"min_steps": 3}`` for
                 ``filter_difficulty``; ``{"weights": {...}}`` for ``search_grpo``).
