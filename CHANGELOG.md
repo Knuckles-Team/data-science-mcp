@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Shortcut-resistant search-task corpora (CONCEPT:KG-2.67/2.68/2.69, AHE-3.27)** —
+  `data_science_mcp/search_task_corpus.py`: turns agent-utilities' synthesized
+  shortcut-resistant search tasks + solver trajectories (FORT-Searcher,
+  arXiv:2606.12087) into the in-house corpora, reusing the existing builders
+  unchanged. `tasks_to_sft` (gold trajectory → SFT), `trajectories_to_preference_pairs`
+  (shortcut trajectory as the DPO `rejected`), and `rollouts_to_grpo` +
+  `search_reward` (rollouts rewarded by realized search difficulty — solving cost /
+  late answer-hit / low prior-shortcut). Surfaced via new `build_training_dataset`
+  kinds `search_sft` / `search_dpo` / `search_grpo`. Where FORT trains SFT-only, this
+  also mints the DPO/GRPO corpora the same data affords.
 - **Deterministic training-data & reward engine (CONCEPT:AHE-3.1)** — `data_science_mcp/training_data.py`:
   pure-Python builders (`build_sft_examples`, `build_preference_pairs` w/ failure-point anchoring,
   `build_grpo_groups` w/ group-normalized advantages, `filter_by_difficulty`, `score_reward`) reusing the
