@@ -114,6 +114,66 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
         return _json(_go)
 
     @mcp.tool(tags={"data-engine"})
+    def prepare_pretrain_data(
+        corpus_spec_json: str, out_path: str, options_json: str = "{}"
+    ) -> str:
+        """Tokenize a corpus into a flat-token HDF5 file for pretraining (CONCEPT:ML-010).
+
+        The large-scale data path for training from scratch: streams the corpus,
+        encodes each doc (EOS-separated), and writes a contiguous ``tokens`` array
+        that the pretrain trainer batches on the fly (no padding, bounded memory).
+
+        Args:
+            corpus_spec_json: JSON corpus spec — a list of ``{text}`` / strings, or a
+                ``{"hf": "name", "split": ...}`` dict, or a path string to a
+                ``.jsonl`` / ``.jsonl.zst`` / ``.txt`` file (see ``stream_corpus``).
+            out_path: output path; ``.h5``/``.hdf5`` → HDF5, else a ``.npy`` array.
+            options_json: ``{tokenizer (HF name or local dir, required to execute),
+                text_key, append_eos, eos_id, limit, dtype, flush_every,
+                execute: bool}``.
+
+        Returns:
+            JSON ``{plan, executed, out_path?, n_docs?, n_tokens?}`` (or ``{error}``).
+        """
+
+        def _go() -> dict[str, Any]:
+            from data_science_mcp.data_engine import (  # noqa: PLC0415
+                prepare_pretrain_data as _prep,
+            )
+
+            spec = json.loads(corpus_spec_json)
+            opts = json.loads(options_json or "{}")
+            tok_ref = opts.get("tokenizer")
+            plan = {
+                "out_path": out_path,
+                "format": "hdf5" if out_path.endswith((".h5", ".hdf5")) else "npy",
+                "tokenizer": tok_ref,
+                "append_eos": opts.get("append_eos", True),
+                "limit": opts.get("limit"),
+            }
+            if not opts.get("execute"):
+                return {"plan": plan, "executed": False, "note": "set execute=true to run"}
+            if not tok_ref:
+                return {"plan": plan, "executed": False, "error": "options.tokenizer (HF name or local dir) is required to execute"}
+            try:
+                from transformers import AutoTokenizer  # noqa: PLC0415
+            except ImportError:
+                return {"plan": plan, "executed": False, "error": "transformers required — install data-science-mcp[training]"}
+            tok = AutoTokenizer.from_pretrained(tok_ref)
+            report = _prep(
+                spec,
+                tok,
+                out_path,
+                **_pick(
+                    opts,
+                    {"text_key", "append_eos", "eos_id", "limit", "dtype", "flush_every"},
+                ),
+            )
+            return {"plan": plan, "executed": True, **report}
+
+        return _json(_go)
+
+    @mcp.tool(tags={"data-engine"})
     def dataset_lineage(
         name: str, version: str = "v1", options_json: str = "{}"
     ) -> str:

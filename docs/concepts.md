@@ -37,6 +37,11 @@ and the SDD spec at `.specify/specs/llm-model-trainer/`.
 | `CONCEPT:ML-005` | Distributed Scale-Out | `trainers/accelerate_launch.py` + `launch/` — FSDP **and** DeepSpeed ZeRO-3 as first-class peers + `accelerate launch` config/command builder (homelab or cloud) |
 | `CONCEPT:ML-006` | Benchmark Evaluation | `trainers/eval_hooks.evaluate_benchmarks` — EleutherAI `lm-eval` scoring alongside the AHE-3.1 reliability suite |
 | `CONCEPT:ML-007` | Agent-Driven Training | Personas `data_curator`/`training_engineer`/`eval_judge`/`ml_orchestrator` (agent-utilities) + the `ml/train_model` workflow + `model_training_team` (universal-skills) |
+| `CONCEPT:ML-008` | Reward Model | `trainers/reward_trainer.py` (Bradley-Terry pairwise loss `objectives.bradley_terry_loss`) on a scalar head (`trainers/value_head.py`); consumes the preference corpus; tool `train_reward`. The RLHF stage between SFT and PPO |
+| `CONCEPT:ML-009` | PPO (actor-critic) | `trainers/ppo_trainer.py` — rollout → reward (verifier or ML-008 reward model) → GAE (`objectives.gae`) + value head → clipped surrogate (`grpo_surrogate`) + value loss (`objectives.value_function_loss`) + KL-to-reference; tool `train_ppo`; `training_pipeline.run_rlhf_pipeline` chains SFT→reward→PPO |
+| `CONCEPT:ML-010` | Flat-Token Pretrain Data | `data_engine.prepare_pretrain_data` / `read_token_blocks` — stream (`.jsonl`/`.jsonl.zst`/HF) → tokenize (EOS-sep) → contiguous HDF5/`.npy` token array, batched on the fly (no padding); tool `prepare_pretrain_data` |
+| `CONCEPT:ML-011` | Training-Job Dispatch | `training_job_runner.py` runs a trainer as a `JobRunner` on the agent-utilities GPU-slot scheduler (KG-2.65): checkpoint on `should_pause`, auto-resume on backfill; the `train_model` workflow submits to a GPU host or falls back to `accelerate launch` |
+| `CONCEPT:ML-012` | Chat + Reasoning Format | `chat_template.py` — learnable role markers + `<think>/<answer>` (ordinary tokens) + answer extractor; `eval_hooks.evaluate_gsm8k` / `gsm8k_reward` verifiable exact-match reward |
 
 ## Cross-Project References (from agent-utilities)
 

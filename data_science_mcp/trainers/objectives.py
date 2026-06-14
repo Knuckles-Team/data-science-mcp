@@ -9,10 +9,15 @@ through:
 
 * :func:`sft_cross_entropy` — next-token CE with label masking (OpenSeeker/MeMo SFT).
 * :func:`sequence_logprob`   — summed per-token log-prob of a completion under a model.
+* :func:`token_logprob`      — per-token log-prob of the realised tokens → ``(batch, seq-1)`` (PPO).
 * :func:`dpo_loss`           — Bradley-Terry preference loss with a frozen reference (MedCausalX DPO).
-* :func:`grpo_surrogate`     — group-relative clipped policy-gradient surrogate (ATLAS/SDAR GRPO).
+* :func:`bradley_terry_loss` — pairwise reward-model loss ``-logσ(s_chosen − s_rejected)`` (CONCEPT:ML-008).
+* :func:`grpo_surrogate`     — group-relative clipped policy-gradient surrogate (ATLAS/SDAR GRPO; reused by PPO).
 * :func:`token_masked_surrogate` — GRPO surrogate restricted to functional tokens (ATLAS LA-GRPO).
-* :func:`approx_kl`          — k3 (Schulman) low-variance KL estimate for the GRPO penalty.
+* :func:`gae`                — generalized advantage estimation over per-token rewards/values (CONCEPT:ML-009 PPO).
+* :func:`value_function_loss`— (optionally clipped) value-head MSE regression to GAE returns (CONCEPT:ML-009 PPO).
+* :func:`whiten`             — mean-0 / var-1 normalisation of advantages (PPO stability).
+* :func:`approx_kl`          — k3 (Schulman) low-variance KL estimate for the GRPO/PPO penalty.
 
 These mirror the C1 Rust ``candle`` kernels named in ``WAVE_C_INFRA.md`` §C1; the
 Rust path is a later drop-in for throughput. Every function is a pure tensor
@@ -81,6 +86,43 @@ def sequence_logprob(
     return (token_logp * mask).sum(dim=-1)
 
 
+def token_logprob(
+    logits: "torch.Tensor",
+    labels: "torch.Tensor",
+) -> "torch.Tensor":
+    """Per-token log-prob of the realised next token → ``(batch, seq-1)``.
+
+    The PPO building block: unlike :func:`sequence_logprob` (which sums to one
+    scalar per sequence) this keeps the per-position log-prob ``log π(t+1 | ≤t)`` so
+    PPO can form per-token ratios and a per-token KL penalty. Shifted so position
+    *t* scores token *t+1*; callers mask padding/prompt positions themselves.
+    """
+    torch = _torch()
+    shift_logits = logits[:, :-1, :]
+    shift_labels = labels[:, 1:]
+    logp = torch.log_softmax(shift_logits, dim=-1)
+    return logp.gather(-1, shift_labels.unsqueeze(-1)).squeeze(-1)
+
+
+def bradley_terry_loss(
+    chosen_scores: "torch.Tensor",
+    rejected_scores: "torch.Tensor",
+    *,
+    margin: float = 0.0,
+) -> "torch.Tensor":
+    """Pairwise reward-model loss ``-logσ(s_chosen − s_rejected − margin)`` (CONCEPT:ML-008).
+
+    ``chosen_scores`` / ``rejected_scores`` are ``(batch,)`` scalar rewards read off
+    the reward head (last real token). Trains the head so a preferred response
+    scores higher than its rejected partner; ``margin`` optionally enforces a gap.
+    Returns a scalar (mean over the batch).
+    """
+    torch = _torch()
+    return -torch.nn.functional.logsigmoid(
+        chosen_scores - rejected_scores - margin
+    ).mean()
+
+
 def dpo_loss(
     policy_chosen_logp: "torch.Tensor",
     policy_rejected_logp: "torch.Tensor",
@@ -145,6 +187,83 @@ def token_masked_surrogate(
     return grpo_surrogate(
         logprob, old_logprob, advantage, clip_eps=clip_eps, mask=functional_mask
     )
+
+
+def whiten(x: "torch.Tensor", mask: "torch.Tensor | None" = None) -> "torch.Tensor":
+    """Mean-0 / unit-variance normalise ``x`` (over the masked elements).
+
+    PPO whitens advantages before the surrogate to stabilise the policy-gradient
+    scale across batches. With a ``mask`` (1 = valid token) only the valid entries
+    drive the statistics; invalid entries are still returned (callers re-mask).
+    """
+    torch = _torch()
+    if mask is not None:
+        n = mask.sum().clamp_min(1.0)
+        mean = (x * mask).sum() / n
+        var = (((x - mean) * mask) ** 2).sum() / n
+    else:
+        mean = x.mean()
+        var = x.var(unbiased=False)
+    return (x - mean) / torch.sqrt(var + 1e-8)
+
+
+def gae(
+    rewards: "torch.Tensor",
+    values: "torch.Tensor",
+    *,
+    mask: "torch.Tensor | None" = None,
+    gamma: float = 1.0,
+    lam: float = 0.95,
+) -> "tuple[torch.Tensor, torch.Tensor]":
+    """Generalized Advantage Estimation over per-token rewards/values (CONCEPT:ML-009).
+
+    ``rewards`` / ``values`` are ``(batch, seq)`` per-token tensors (``values`` from
+    the value head; ``rewards`` typically the terminal reward at the last response
+    token plus a per-token KL penalty). Returns ``(advantages, returns)`` of the same
+    shape, where ``returns = advantages + values`` are the value-head regression
+    targets. Computed with a reverse recursion
+    ``δ_t = r_t + γ V_{t+1} − V_t``, ``A_t = δ_t + γλ A_{t+1}``; an optional ``mask``
+    (1 = valid token) zeroes bootstrap across padding.
+    """
+    torch = _torch()
+    m = mask if mask is not None else torch.ones_like(values)
+    adv = torch.zeros_like(values)
+    last = torch.zeros(values.size(0), dtype=values.dtype, device=values.device)
+    seq = values.size(1)
+    for t in range(seq - 1, -1, -1):
+        next_v = values[:, t + 1] * m[:, t + 1] if t + 1 < seq else torch.zeros_like(last)
+        delta = rewards[:, t] + gamma * next_v - values[:, t]
+        last = delta + gamma * lam * last
+        adv[:, t] = last * m[:, t]
+    returns = adv + values
+    return adv, returns
+
+
+def value_function_loss(
+    values: "torch.Tensor",
+    returns: "torch.Tensor",
+    *,
+    old_values: "torch.Tensor | None" = None,
+    clip: float | None = None,
+    mask: "torch.Tensor | None" = None,
+) -> "torch.Tensor":
+    """Value-head regression loss to the GAE returns (CONCEPT:ML-009 PPO).
+
+    Mean squared error ``(V − R)²`` over the valid tokens. When ``old_values`` and
+    ``clip`` are given, the PPO value-clipping variant is used — the larger of the
+    unclipped and clipped (to ``old_values ± clip``) squared errors — which damps
+    large value updates. Returns a scalar.
+    """
+    torch = _torch()
+    unclipped = (values - returns) ** 2
+    if old_values is not None and clip is not None:
+        clipped_v = old_values + torch.clamp(values - old_values, -clip, clip)
+        sq = torch.maximum(unclipped, (clipped_v - returns) ** 2)
+    else:
+        sq = unclipped
+    if mask is not None:
+        return 0.5 * (sq * mask).sum() / mask.sum().clamp_min(1.0)
+    return 0.5 * sq.mean()
 
 
 def approx_kl(logprob: "torch.Tensor", ref_logprob: "torch.Tensor") -> "torch.Tensor":

@@ -58,10 +58,17 @@ class TrainConfig:
     lora: LoraSpec | None = None
     # DPO
     beta: float = 0.1
-    # GRPO
+    # GRPO / PPO (clip_eps + kl_coef are shared: the clipped-surrogate ε and the
+    # KL-to-reference penalty coefficient)
     clip_eps: float = 0.2
     kl_coef: float = 0.0
     group_size: int = 4
+    # PPO (CONCEPT:ML-009)
+    vf_coef: float = 0.5  # value-loss weight in the PPO total
+    gamma: float = 1.0  # GAE discount (1.0 = undiscounted, typical for LM RL)
+    gae_lambda: float = 0.95  # GAE λ
+    value_clip: float | None = None  # PPO value-clipping range (None = unclipped MSE)
+    reward_source: str = "verifier"  # verifier | reward_model (PPO reward signal)
     # --- robustness / throughput (CONCEPT:ML-001) ---------------------------
     precision: str = "fp32"  # fp32 | fp16 | bf16 → AMP autocast (+ GradScaler on fp16)
     gradient_checkpointing: bool = False

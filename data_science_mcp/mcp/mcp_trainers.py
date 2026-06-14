@@ -47,6 +47,12 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             "clip_eps",
             "kl_coef",
             "group_size",
+            # PPO (CONCEPT:ML-009)
+            "vf_coef",
+            "gamma",
+            "gae_lambda",
+            "value_clip",
+            "reward_source",
             # robustness / throughput (CONCEPT:ML-001)
             "precision",
             "gradient_checkpointing",
@@ -124,6 +130,40 @@ def register_trainer_tools(mcp: FastMCP) -> None:
                 + ``execute``.
         """
         return _dispatch("grpo", dataset_json, options_json, _run)
+
+    @mcp.tool(tags={"model-training"})
+    def train_reward(dataset_json: str = "[]", options_json: str = "{}") -> str:
+        """Train a Bradley-Terry reward model on preference pairs (CONCEPT:ML-008).
+
+        The RLHF stage between SFT and PPO: fits a scalar reward head so a preferred
+        response scores higher than its rejected partner. The trained reward model
+        then scores PPO rollouts (``train_ppo`` with ``reward_source=reward_model``).
+
+        Args:
+            dataset_json: JSON list of ``{prompt, chosen, rejected}`` records (the
+                same corpus as ``train_dpo``; build with
+                ``build_training_dataset kind=dpo``).
+            options_json: JSON ``TrainConfig`` fields + ``{"execute": bool}``.
+        """
+        return _dispatch("reward", dataset_json, options_json, _run)
+
+    @mcp.tool(tags={"model-training"})
+    def train_ppo(dataset_json: str = "[]", options_json: str = "{}") -> str:
+        """Proximal Policy Optimization with GAE + value head (CONCEPT:ML-009).
+
+        Full actor-critic RLHF policy optimisation. Consumes scored rollouts; for
+        the verifier reward source embed a scalar ``reward`` per record (generate the
+        completions upstream with ``RolloutBuffer`` against a served vLLM/SGLang
+        backend). A reward-model reward source needs an in-process reward model, so
+        prefer the ``train_model`` workflow for the model-scored path.
+
+        Args:
+            dataset_json: JSON list of ``{prompt, completion, reward?}`` records.
+            options_json: JSON ``TrainConfig`` fields (incl. ``clip_eps``, ``kl_coef``,
+                ``vf_coef``, ``gamma``, ``gae_lambda``, ``value_clip``,
+                ``reward_source``) + ``{"execute": bool}``.
+        """
+        return _dispatch("ppo", dataset_json, options_json, _run)
 
     @mcp.tool(tags={"model-training"})
     def merge_adapters_ties(
