@@ -39,11 +39,15 @@ class RunTracker:
         run_name: str | None = None,
         kg_log: bool = False,
         params: dict[str, Any] | None = None,
+        dataset_version: str | None = None,
+        parent_run: str | None = None,
     ) -> None:
         self.backend = (backend or "none").lower()
         self.run_name = run_name
         self.kg_log = kg_log
         self.params = dict(params or {})
+        self.dataset_version = dataset_version
+        self.parent_run = parent_run
         # In-memory mirror — always populated, so a run is inspectable/testable
         # even with no external tracker and forms the KG provenance payload.
         self.records: list[dict[str, Any]] = []
@@ -62,6 +66,8 @@ class RunTracker:
             run_name=getattr(config, "run_name", None),
             kg_log=getattr(config, "kg_log", False),
             params=params,
+            dataset_version=getattr(config, "dataset_version", None),
+            parent_run=getattr(config, "parent_run", None),
         )
 
     # --- lifecycle ----------------------------------------------------------
@@ -141,7 +147,13 @@ class RunTracker:
         return payload
 
     def provenance(self) -> dict[str, Any]:
-        """The run as a single provenance record (KG ``TrainingRun`` payload)."""
+        """The run as a single provenance record (KG ``TrainingRun`` payload).
+
+        ``was_derived_from`` carries the PROV-O lineage edges (the curated
+        ``DatasetVersion`` and the upstream run) so the dataset→…→model chain is
+        recoverable by transitive closure over the graph.
+        """
+        derived = [x for x in (self.dataset_version, self.parent_run) if x]
         return {
             "kind": "TrainingRun",
             "run_name": self.run_name,
@@ -149,6 +161,9 @@ class RunTracker:
             "params": _flat(self.params),
             "metrics": self.records,
             "summary": self.summary,
+            "dataset_version": self.dataset_version,
+            "parent_run": self.parent_run,
+            "was_derived_from": derived,
         }
 
 

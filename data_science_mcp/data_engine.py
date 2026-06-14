@@ -62,20 +62,39 @@ def stream_corpus(
             yield {text_key: r} if isinstance(r, str) else dict(r)
         return
     if isinstance(spec, str) and os.path.isfile(spec):
-        if spec.endswith(".jsonl"):
-            with open(spec, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        yield json.loads(line)
-        else:  # plain text — one record per non-empty line
-            with open(spec, encoding="utf-8") as f:
-                for line in f:
-                    line = line.rstrip("\n")
-                    if line.strip():
-                        yield {text_key: line}
+        is_jsonl = ".jsonl" in spec
+        with _open_text(spec) as f:
+            for line in f:
+                line = line.strip() if is_jsonl else line.rstrip("\n")
+                if not line.strip():
+                    continue
+                yield json.loads(line) if is_jsonl else {text_key: line}
         return
     raise ValueError(f"unsupported corpus spec: {type(spec).__name__}")
+
+
+def _open_text(path: str) -> Any:
+    """Open a corpus file for line iteration, transparently zstd-decompressing.
+
+    Pile-style shards ship as ``.jsonl.zst``; this streams them through the
+    ``zstandard`` decompressor (an optional dep, imported lazily) so the large
+    pretraining corpora the from-scratch path consumes work without a manual
+    decompress step.
+    """
+    if path.endswith(".zst"):
+        try:
+            import io  # noqa: PLC0415
+
+            import zstandard  # noqa: PLC0415
+        except ImportError as e:  # pragma: no cover - without the extra
+            raise RuntimeError(
+                "zstandard is required to stream .zst corpora; install "
+                "`data-science-mcp[training]`"
+            ) from e
+        fh = open(path, "rb")  # noqa: SIM115 - wrapped reader closes it
+        reader = zstandard.ZstdDecompressor().stream_reader(fh)
+        return io.TextIOWrapper(reader, encoding="utf-8")
+    return open(path, encoding="utf-8")
 
 
 def _stream_hf(spec: dict[str, Any], default_split: str) -> Iterator[dict[str, Any]]:
@@ -333,6 +352,149 @@ def pack_sequences(
 
 
 # --------------------------------------------------------------------------- #
+# Large-scale pretrain data prep (flat-token HDF5)  (CONCEPT:ML-010)            #
+# --------------------------------------------------------------------------- #
+def _token_encode_fn(tokenizer: Any) -> Callable[[str], list[int]]:
+    """Adapt any tokenizer to ``text -> list[int]`` via its ``.encode``.
+
+    Works for an HF ``AutoTokenizer``, a ``tiktoken`` ``Encoding``, our trained BPE
+    tokenizer, or a toy object in tests — all expose ``.encode(text)``.
+    """
+    enc = getattr(tokenizer, "encode", None)
+    if not callable(enc):
+        raise ValueError("tokenizer must expose a callable .encode(text) -> list[int]")
+    return lambda t: list(enc(t))
+
+
+def prepare_pretrain_data(
+    spec: Any,
+    tokenizer: Any,
+    out_path: str,
+    *,
+    text_key: str = "text",
+    append_eos: bool = True,
+    eos_id: int | None = None,
+    limit: int | None = None,
+    dtype: str = "int32",
+    flush_every: int = 1_000_000,
+) -> dict[str, Any]:
+    """Tokenize a streamed corpus into a flat 1-D token array on disk (CONCEPT:ML-010).
+
+    The pretraining-throughput data path the from-scratch trainer needs: stream
+    ``spec`` (list / ``.jsonl`` / ``.jsonl.zst`` / HF dataset — see
+    :func:`stream_corpus`), encode each doc with ``tokenizer.encode`` (appending the
+    EOS so doc boundaries survive), and append to a contiguous ``tokens`` dataset.
+    Per-example boundaries are recovered on the fly at batch time
+    (:func:`read_token_blocks`), so there is no padding and no per-example pickling.
+
+    ``out_path`` ending ``.h5``/``.hdf5`` writes a resizable HDF5 ``tokens`` dataset
+    (streamed in ``flush_every``-token chunks, so memory stays bounded on huge
+    corpora); any other extension writes a single ``.npy`` array (dependency-light,
+    used by the CPU tests). Returns ``{out_path, n_docs, n_tokens, dtype, eos_id}``.
+    """
+    encode = _token_encode_fn(tokenizer)
+    if append_eos and eos_id is None:
+        eos_id = getattr(tokenizer, "eos_token_id", None)
+    is_h5 = out_path.endswith((".h5", ".hdf5"))
+    buf: list[np.ndarray] = []
+    npy_chunks: list[np.ndarray] = []
+    n_docs = n_tokens = 0
+    h5f = dset = None
+    try:
+        if is_h5:
+            try:
+                import h5py  # noqa: PLC0415
+            except ImportError as e:  # pragma: no cover - without the extra
+                raise RuntimeError(
+                    "h5py is required for HDF5 token output; install "
+                    "`data-science-mcp[training]` or use a .npy out_path"
+                ) from e
+            h5f = h5py.File(out_path, "w")
+            dset = h5f.create_dataset(
+                "tokens", (0,), maxshape=(None,), dtype=dtype, chunks=True
+            )
+
+        def _flush() -> None:
+            nonlocal buf
+            if not buf:
+                return
+            arr = np.concatenate(buf) if len(buf) > 1 else buf[0]
+            if is_h5:
+                old = dset.shape[0]
+                dset.resize((old + arr.size,))
+                dset[old:] = arr
+            else:
+                npy_chunks.append(arr)
+            buf = []
+
+        for rec in stream_corpus(spec, text_key=text_key):
+            ids = encode(str(rec.get(text_key, "")))
+            if append_eos and eos_id is not None:
+                ids.append(int(eos_id))
+            if not ids:
+                continue
+            buf.append(np.asarray(ids, dtype=dtype))
+            n_docs += 1
+            n_tokens += len(ids)
+            if sum(b.size for b in buf) >= flush_every:
+                _flush()
+            if limit is not None and n_docs >= limit:
+                break
+        _flush()
+        if is_h5:
+            h5f.attrs["n_docs"] = n_docs
+            h5f.attrs["n_tokens"] = n_tokens
+            h5f.attrs["eos_id"] = -1 if eos_id is None else int(eos_id)
+        else:
+            arr = (
+                np.concatenate(npy_chunks)
+                if npy_chunks
+                else np.zeros((0,), dtype=dtype)
+            )
+            np.save(out_path, arr)
+    finally:
+        if h5f is not None:
+            h5f.close()
+    return {
+        "out_path": out_path,
+        "n_docs": n_docs,
+        "n_tokens": n_tokens,
+        "dtype": dtype,
+        "eos_id": eos_id,
+    }
+
+
+def load_token_array(path: str) -> np.ndarray:
+    """Load the flat token array written by :func:`prepare_pretrain_data`."""
+    if path.endswith((".h5", ".hdf5")):
+        import h5py  # noqa: PLC0415
+
+        with h5py.File(path, "r") as f:
+            return f["tokens"][:]
+    if not path.endswith(".npy"):
+        path = path + ".npy"
+    return np.load(path)
+
+
+def read_token_blocks(
+    path: str, block_size: int, *, drop_remainder: bool = True
+) -> Iterator[list[int]]:
+    """Yield contiguous ``block_size`` token windows from a prepared token file.
+
+    The on-the-fly batch-boundary read: a flat token stream is sliced into fixed
+    windows at train time (no stored per-example structure). The trailing partial
+    window is dropped unless ``drop_remainder=False``.
+    """
+    if block_size <= 0:
+        raise ValueError("block_size must be positive")
+    tokens = load_token_array(path)
+    n = len(tokens)
+    end = (n // block_size) * block_size if drop_remainder else n
+    for i in range(0, end, block_size):
+        yield tokens[i : i + block_size].tolist()
+
+
+# --------------------------------------------------------------------------- #
 # Provenance                                                                    #
 # --------------------------------------------------------------------------- #
 def dataset_provenance(
@@ -391,5 +553,8 @@ __all__ = [
     "decontaminate",
     "quality_filter",
     "pack_sequences",
+    "prepare_pretrain_data",
+    "load_token_array",
+    "read_token_blocks",
     "dataset_provenance",
 ]

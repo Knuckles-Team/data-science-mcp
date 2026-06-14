@@ -256,9 +256,101 @@ def run_pretrain_pipeline(
     return report
 
 
+def run_rlhf_pipeline(
+    config: TrainConfig,
+    *,
+    preference_pairs: list[dict[str, Any]] | None = None,
+    ppo_dataset: list[dict[str, Any]] | None = None,
+    sft_examples: list[dict[str, Any]] | None = None,
+    run_sft: bool = False,
+    model: Any = None,
+    tokenizer: Any = None,
+    value_model: Any = None,
+    reward_model: Any = None,
+    reward_fn: Callable[[str, str], float] | None = None,
+    eval_cases: list[dict[str, Any]] | None = None,
+    gsm8k_cases: list[dict[str, Any]] | None = None,
+    generate_fn: Callable[[str], str] | None = None,
+    registry: Any = None,
+    deploy: DeploymentTarget | None = None,
+    checkpoint_id: str | None = None,
+) -> dict[str, Any]:
+    """Full RLHF pipeline: (SFT →) reward model → PPO → eval → deploy (CONCEPT:ML-009).
+
+    Chains the new RLHF stages on top of the existing SFT/pretrain pipelines:
+
+        (sft) → train reward model (Bradley-Terry) → PPO (reward model | verifier)
+              → reliability + GSM8K eval → register/bind role (live)
+
+    The reward model trained here is the **same object** PPO then scores rollouts
+    with (the reward trainer trains the injected/loaded scorer in place), so
+    ``reward_source="reward_model"`` needs no extra wiring. For the verifier path
+    pass ``reward_fn`` (e.g. :func:`trainers.eval_hooks.gsm8k_reward` bound to a gold)
+    and set ``config.reward_source="verifier"``. Everything but the GPU run is
+    CPU-testable with injected toy modules.
+
+    Returns ``{stages:{sft?, reward?, ppo}, eval?, gsm8k?, deployment?}``.
+    """
+    report: dict[str, Any] = {"stages": {}}
+
+    # 1) Optional SFT warm-start (trains the policy in place when injected).
+    if run_sft and sft_examples:
+        sft = get_trainer("sft", config)
+        report["stages"]["sft"] = sft.train(
+            sft_examples, model=model, tokenizer=tokenizer
+        )
+
+    # 2) Reward model (skip for a pure verifier run with no pairs).
+    using_reward_model = config.reward_source == "reward_model"
+    if preference_pairs and (using_reward_model or reward_model is not None):
+        reward_trainer = get_trainer("reward", config)
+        report["stages"]["reward"] = reward_trainer.train(
+            preference_pairs, model=reward_model, tokenizer=tokenizer
+        )
+
+    # 3) PPO — the reward model trained above (in place) is reused as the scorer.
+    ppo = get_trainer("ppo", config)
+    report["stages"]["ppo"] = ppo.train(
+        ppo_dataset or [],
+        model=model,
+        tokenizer=tokenizer,
+        value_model=value_model,
+        reward_model=reward_model,
+        reward_fn=reward_fn,
+    )
+
+    # 4) Eval gates — reliability suite + (optional) GSM8K accuracy.
+    if eval_cases:
+        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+
+        report["eval"] = evaluate_checkpoint(
+            _resolve_eval_generate_fn(generate_fn), eval_cases
+        )
+    if gsm8k_cases:
+        from data_science_mcp.trainers.eval_hooks import evaluate_gsm8k  # noqa: PLC0415
+
+        report["gsm8k"] = evaluate_gsm8k(
+            _resolve_eval_generate_fn(generate_fn), gsm8k_cases
+        )
+
+    # 5) Deploy seam — identical to the SFT/pretrain pipelines.
+    cid = checkpoint_id or f"ppo-{(config.base_model or 'model').replace('/', '-')}"
+    if registry is not None and deploy is not None:
+        definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
+        report["deployment"] = {
+            "checkpoint_id": cid,
+            "role": deploy.role,
+            "model_id": definition.model_id,
+            "resolved": registry.pick_for_role(deploy.role).model_dump(),
+        }
+
+    return report
+
+
 __all__ = [
     "DeploymentTarget",
     "register_checkpoint",
     "run_sft_pipeline",
     "run_pretrain_pipeline",
+    "run_rlhf_pipeline",
 ]

@@ -127,6 +127,7 @@ class PretrainTrainer(TrainerBase):
         model: Any | None = None,
         tokenizer: Any | None = None,
         optimizer: Any | None = None,
+        should_pause: Any = None,
         **_: Any,
     ) -> dict[str, Any]:
         """Pretrain over ``{text}`` records (packed into ``max_seq_len`` blocks)."""
@@ -206,6 +207,7 @@ class PretrainTrainer(TrainerBase):
             accelerator=accel,
             tracker=tracker,
             total_steps=total,
+            should_pause=should_pause,
         )
         losses = out["losses"]
         report = {
@@ -220,6 +222,7 @@ class PretrainTrainer(TrainerBase):
             "base_model": self.config.base_model,
             "checkpoints": out["checkpoints"],
             "resumed_from_step": out["resumed_from_step"],
+            "paused": out.get("paused", False),
         }
         tracker.end({"final_loss": report["final_loss"], "steps": out["steps"]})
         return report

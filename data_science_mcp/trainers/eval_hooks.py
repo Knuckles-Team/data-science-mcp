@@ -117,9 +117,58 @@ def evaluate_benchmarks(
     return {"tasks": tasks, "results": out.get("results", {})}
 
 
+def gsm8k_reward(prompt: str, completion: str, gold: Any) -> float:
+    """Verifiable GSM8K reward: ``1.0`` if the final answer matches ``gold`` else ``0.0``.
+
+    The PPO/GRPO ``reward_source="verifier"`` signal for math reasoning — exact-match
+    on the ``<answer>…</answer>`` span (CONCEPT:ML-012 chat format), no reward model
+    needed. ``prompt`` is unused but kept for the ``reward_fn(prompt, completion)``
+    signature the trainers expect; bind ``gold`` per prompt via a closure.
+    """
+    from data_science_mcp.chat_template import answer_matches  # noqa: PLC0415
+
+    return 1.0 if answer_matches(completion, gold) else 0.0
+
+
+def evaluate_gsm8k(
+    generate_fn: GenerateFn, cases: list[dict[str, Any]], *, limit: int | None = None
+) -> dict[str, Any]:
+    """Greedy-decode GSM8K cases and score exact-match accuracy (CONCEPT:ML-012).
+
+    ``cases`` are ``{"question": str, "answer": str}`` (GSM8K ``answer`` carries the
+    gold after ``####``; a bare numeric ``answer`` also works). Returns
+    ``{cases, accuracy, results:[{question, output, gold, correct}]}`` — the
+    per-stage metric the post-training eval table reports.
+    """
+    from data_science_mcp.chat_template import answer_matches, gsm8k_gold  # noqa: PLC0415
+
+    rows = cases[:limit] if limit is not None else cases
+    results: list[dict[str, Any]] = []
+    for case in rows:
+        q = str(case.get("question", case.get("input", "")))
+        gold = gsm8k_gold(str(case.get("answer", ""))) or str(case.get("answer", ""))
+        out = generate_fn(q)
+        results.append(
+            {
+                "question": q,
+                "output": out,
+                "gold": gold,
+                "correct": answer_matches(out, gold),
+            }
+        )
+    n = len(results) or 1
+    return {
+        "cases": len(results),
+        "accuracy": sum(1 for r in results if r["correct"]) / n,
+        "results": results,
+    }
+
+
 __all__ = [
     "evaluate_checkpoint",
     "evaluate_benchmarks",
+    "evaluate_gsm8k",
+    "gsm8k_reward",
     "ReliabilityEvalHook",
     "GenerateFn",
 ]
