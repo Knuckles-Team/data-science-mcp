@@ -62,6 +62,9 @@ from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
 from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
     register_training_data_tools,
 )
+from data_science_mcp.mcp.mcp_kernel_specialize import (  # noqa: E402
+    register_kernel_specialize_tools,
+)
 from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
     register_trainer_tools,
 )
@@ -589,6 +592,7 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         register_model_training_tools(mcp)
         register_training_data_tools(mcp)
         register_trainer_tools(mcp)
+        register_kernel_specialize_tools(mcp)
         registered_tags.append("model-training")
 
     if DEFAULT_MODEL_EVOLUTIONTOOL:
