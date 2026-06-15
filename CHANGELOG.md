@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **RLHF stack + flat-token pretrain data (CONCEPT:ML-008..012)** — fills the from-scratch-through-RLHF
+  gaps as native capabilities reusing the `run_loop` spine: ML-008 Bradley-Terry reward model
+  (`trainers/reward_trainer.py` on a shared scalar `value_head.py`, tool `train_reward`); ML-009 PPO
+  (`trainers/ppo_trainer.py` — rollout-consuming actor-critic with GAE, clipped surrogate, value loss,
+  KL-to-reference, tool `train_ppo`; `run_rlhf_pipeline` chains SFT→reward→PPO with eval gates);
+  ML-010 flat-token pretrain data (`prepare_pretrain_data`/`read_token_blocks` streaming incl.
+  `.jsonl.zst` → contiguous HDF5/`.npy`, tool `prepare_pretrain_data`); ML-012 chat format
+  (`chat_template.py` `<think>`/`<answer>` + `evaluate_gsm8k`/`gsm8k_reward` verifiable exact-match).
+- **GPU-slot training dispatch + run lineage (CONCEPT:ML-011)** — `training_job_runner.py` wraps a
+  trainer as a `GpuSlotScheduler` (KG-2.65) `JobRunner` that checkpoints + yields on preempt and
+  resumes from checkpoint on backfill (cooperative `should_pause` hook in `run_loop`). `TrainingRun`
+  provenance now carries `dataset_version`/`parent_run` + a PROV-O `was_derived_from` edge so the
+  dataset→…→model lineage is queryable.
+- **Machine-verifiable GPU/compute-kernel SAI specialization (CONCEPT:AHE-3.28/3.29)** —
+  `kernel_tasks.py` (`KernelTask` + fused-softmax/layernorm/matmul suite, device-agnostic numpy
+  references) + `kernel_verifier.py` (`KernelVerifier`: correctness-gated speedup reward, isolated
+  subprocess with wall timeout, fails closed). `build_kernel_task`/`run_kernel_specialization` drive
+  the `SaiFactoryController` closed loop to a faster, correct kernel measured by adaptation speed,
+  exposed through the gateway as the `ds_specialize_kernel` MCP tool (plan-first when no inference
+  backend is configured).
+- **LoRA hot-swap serving + per-task adapter library (SAI weight-arm seam)** —
+  `inference/openai_compatible.py` per-request `adapter` swap (one base-model vLLM `--enable-lora`
+  server serves N specialists by name, no reload) + `adapter_library.py` (`AdapterLibrary` maps
+  `task_signature` → trained LoRA specialist so many specialists coexist on one base, each routed by
+  `task:`/`adapter:`/`base:` tags via `pick_for_task`). Closes the gap where adapters were trained
+  but never served.
 - **Shortcut-resistant search-task corpora (CONCEPT:KG-2.70/2.71/2.72, AHE-3.30)** —
   `data_science_mcp/search_task_corpus.py`: turns agent-utilities' synthesized
   shortcut-resistant search tasks + solver trajectories (FORT-Searcher,
@@ -46,6 +72,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hot-path edit (idempotent re-deploy). CPU-smoke-tested end-to-end on a toy model + the role-binding deploy seam
   against a real `ModelRegistry` (`tests/test_training_pipeline.py`, 4 tests). GB10 runs the real OpenSeeker SFT;
   see `docs/training.md`. The only GPU-gated step is the fine-tune itself.
+
+### Fixed
+- **`data-science-mcp` ↔ `epistemic-graph` seam hardening (B5)** — `_near_pairs_engine` reused the
+  cached `MLEngine._rust_client()` singleton instead of opening (and leaking) a fresh
+  `SyncEpistemicGraphClient.connect()` — with its own thread/event-loop/socket — on every
+  `near_duplicate_pairs` call. The local O(n²) cosine fallback now **warns** (was silent
+  `logger.debug`) with the row count and **refuses** above `DSM_NEAR_PAIRS_LOCAL_MAX` (default 20k)
+  rather than burning CPU on a missing engine; `use_engine=False` still forces the local path.
 
 ## [0.8.0] - 2026-05-22
 
