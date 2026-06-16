@@ -42,6 +42,7 @@ and the SDD spec at `.specify/specs/llm-model-trainer/`.
 | `CONCEPT:ML-010` | Flat-Token Pretrain Data | `data_engine.prepare_pretrain_data` / `read_token_blocks` — stream (`.jsonl`/`.jsonl.zst`/HF) → tokenize (EOS-sep) → contiguous HDF5/`.npy` token array, batched on the fly (no padding); tool `prepare_pretrain_data` |
 | `CONCEPT:ML-011` | Training-Job Dispatch | `training_job_runner.py` runs a trainer as a `JobRunner` on the agent-utilities GPU-slot scheduler (KG-2.65): checkpoint on `should_pause`, auto-resume on backfill; the `train_model` workflow submits to a GPU host or falls back to `accelerate launch` |
 | `CONCEPT:ML-012` | Chat + Reasoning Format | `chat_template.py` — learnable role markers + `<think>/<answer>` (ordinary tokens) + answer extractor; `eval_hooks.evaluate_gsm8k` / `gsm8k_reward` verifiable exact-match reward |
+| `CONCEPT:ML-013` | CacheRL Cached Rollouts + Hybrid Thinking | `cache_agent_loop.py` — three-tier fuzzy tool-call cache (`ThreeTierToolCache` exact→fuzzy→semantic) wrapped by `CacheAgentLoop` so multi-turn RL rollouts serve repeated tool calls from cache (live-execution cost ↓, `calls_saved`/`hit_rate` measure it) + `ThinkingTraceAugmenter` interleaving model "why-this-tool" rationale and per-segment provenance labels; reward half (token-mask + cache-tier-aware reward) in agent-utilities AHE-3.49. Distils arXiv:2606.14179 |
 
 ## Cross-Project References (from agent-utilities)
 
