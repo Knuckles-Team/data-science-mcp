@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "0.25.0"
+version = "0.26.0"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.15)."
 readme = "README.md"
 authors = [{ name = "Audel Rouhi", email = "knucklessg1@gmail.com" }]
@@ -17,15 +17,15 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "agent-utilities[mcp]>=0.49.0",
-    "epistemic-graph[datascience]>=0.29.0",
+    "agent-utilities[mcp]>=0.50.0",
+    "epistemic-graph[datascience]>=0.30.0",
     "polars>=1.0.0",
     "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
 agent = [
-    "agent-utilities[agent,logfire]>=0.49.0"]
+    "agent-utilities[agent,logfire]>=0.50.0"]
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
 # Rust engine). It is optional and only powers the built-in sample-dataset
@@ -70,8 +70,8 @@ tracking = [
     "mlflow>=2.14.0"]
 
 all = [
-    "agent-utilities[mcp,agent,logfire]>=0.49.0",
-    "epistemic-graph[datascience]>=0.29.0",
+    "agent-utilities[mcp,agent,logfire]>=0.50.0",
+    "epistemic-graph[datascience]>=0.30.0",
     "scikit-learn>=1.5.0"]
 
 [project.scripts]
