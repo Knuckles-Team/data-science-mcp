@@ -76,7 +76,7 @@ class KernelVerifier:
         except (ValueError, IndexError):
             return VerifierResult(
                 reward=0.0, passed=False,
-                detail={"task": self.task.name, "error": "unparseable runner output",
+                detail={"task": self.task.name, "error": "unparsable runner output",
                         "stdout": raw[-1][:500]},
             )
 

@@ -11,7 +11,7 @@ This is the concrete live caller of the otherwise task-agnostic controller: the
 ``generate_fn`` is the candidate-kernel author (an LLM via an inference backend in
 production; injectable for tests), and the optional ``weight_arm`` is the
 harvest→fine-tune→serve path (Phase 2). Exposed for the data-science MCP surface
-so a specialization run is invokable end-to-end.
+so a specialization run is invocable end-to-end.
 """
 
 from __future__ import annotations
