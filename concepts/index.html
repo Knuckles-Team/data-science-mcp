@@ -890,6 +890,36 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <td>Agent-Driven Training</td>
 <td>Personas <code>data_curator</code>/<code>training_engineer</code>/<code>eval_judge</code>/<code>ml_orchestrator</code> (agent-utilities) + the <code>ml/train_model</code> workflow + <code>model_training_team</code> (universal-skills)</td>
 </tr>
+<tr>
+<td><code>CONCEPT:ML-008</code></td>
+<td>Reward Model</td>
+<td><code>trainers/reward_trainer.py</code> (Bradley-Terry pairwise loss <code>objectives.bradley_terry_loss</code>) on a scalar head (<code>trainers/value_head.py</code>); consumes the preference corpus; tool <code>train_reward</code>. The RLHF stage between SFT and PPO</td>
+</tr>
+<tr>
+<td><code>CONCEPT:ML-009</code></td>
+<td>PPO (actor-critic)</td>
+<td><code>trainers/ppo_trainer.py</code> — rollout → reward (verifier or ML-008 reward model) → GAE (<code>objectives.gae</code>) + value head → clipped surrogate (<code>grpo_surrogate</code>) + value loss (<code>objectives.value_function_loss</code>) + KL-to-reference; tool <code>train_ppo</code>; <code>training_pipeline.run_rlhf_pipeline</code> chains SFT→reward→PPO</td>
+</tr>
+<tr>
+<td><code>CONCEPT:ML-010</code></td>
+<td>Flat-Token Pretrain Data</td>
+<td><code>data_engine.prepare_pretrain_data</code> / <code>read_token_blocks</code> — stream (<code>.jsonl</code>/<code>.jsonl.zst</code>/HF) → tokenize (EOS-sep) → contiguous HDF5/<code>.npy</code> token array, batched on the fly (no padding); tool <code>prepare_pretrain_data</code></td>
+</tr>
+<tr>
+<td><code>CONCEPT:ML-011</code></td>
+<td>Training-Job Dispatch</td>
+<td><code>training_job_runner.py</code> runs a trainer as a <code>JobRunner</code> on the agent-utilities GPU-slot scheduler (KG-2.65): checkpoint on <code>should_pause</code>, auto-resume on backfill; the <code>train_model</code> workflow submits to a GPU host or falls back to <code>accelerate launch</code></td>
+</tr>
+<tr>
+<td><code>CONCEPT:ML-012</code></td>
+<td>Chat + Reasoning Format</td>
+<td><code>chat_template.py</code> — learnable role markers + <code>&lt;think&gt;/&lt;answer&gt;</code> (ordinary tokens) + answer extractor; <code>eval_hooks.evaluate_gsm8k</code> / <code>gsm8k_reward</code> verifiable exact-match reward</td>
+</tr>
+<tr>
+<td><code>CONCEPT:ML-013</code></td>
+<td>CacheRL Cached Rollouts + Hybrid Thinking</td>
+<td><code>cache_agent_loop.py</code> — three-tier fuzzy tool-call cache (<code>ThreeTierToolCache</code> exact→fuzzy→semantic) wrapped by <code>CacheAgentLoop</code> so multi-turn RL rollouts serve repeated tool calls from cache (live-execution cost ↓, <code>calls_saved</code>/<code>hit_rate</code> measure it) + <code>ThinkingTraceAugmenter</code> interleaving model "why-this-tool" rationale and per-segment provenance labels; reward half (token-mask + cache-tier-aware reward) in agent-utilities AHE-3.49. Distils arXiv:2606.14179</td>
+</tr>
 </tbody>
 </table>
 <h2 id="cross-project-references-from-agent-utilities">Cross-Project References (from agent-utilities)<a class="headerlink" href="#cross-project-references-from-agent-utilities" title="Permanent link">&para;</a></h2>
