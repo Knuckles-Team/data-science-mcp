@@ -48,7 +48,10 @@ training = [
     "accelerate>=0.34.0",
     "datasets>=2.20.0",
     "tokenizers>=0.19.0",
-    "httpx>=0.27.0"]
+    "httpx>=0.27.0",
+    # CONCEPT:KG-2.6 — re-homed TradingLSTM walk-forward trainer
+    # (data_science_mcp/training/trading_lstm.py) needs StandardScaler + metrics.
+    "scikit-learn>=1.5.0"]
 
 # Multi-GPU / multi-node scale-out. DeepSpeed ZeRO-3 + FlashAttention-2 are
 # GPU-HOST installs (need nvcc/CUDA toolchain); NOT CI/CPU-installable. FSDP needs
