@@ -24,10 +24,9 @@ import os
 import sys
 from typing import Any
 
-from dotenv import find_dotenv, load_dotenv
 
 from agent_utilities.base_utilities import to_boolean
-from agent_utilities.mcp_utilities import create_mcp_server
+from agent_utilities.mcp_utilities import create_mcp_server, load_config
 from agent_utilities.base_utilities import get_logger
 
 __version__ = "0.27.0"
@@ -574,7 +573,7 @@ def register_prompts(mcp: FastMCP) -> None:
 
 def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
     """Initialize and return the Data Science MCP instance."""
-    load_dotenv(find_dotenv())
+    load_config()
 
     args, mcp, middlewares = create_mcp_server(
         name="Data Science MCP",
