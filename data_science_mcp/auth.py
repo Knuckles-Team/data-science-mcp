@@ -1,12 +1,12 @@
 #!/usr/bin/python
 # coding: utf-8
 
-import os
 import requests
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+from agent_utilities.core.config import setting
 from agent_utilities.core.exceptions import AuthError, UnauthorizedError
 
 _client = None
@@ -16,14 +16,11 @@ def get_client():
     """Get or create a singleton API client instance."""
     global _client
     if _client is None:
-        base_url = os.getenv("DATA_SCIENCE_MCP_URL", "http://localhost:8080")
-        token = os.getenv("DATA_SCIENCE_MCP_TOKEN", "")
-        verify = os.getenv("DATA_SCIENCE_MCP_SSL_VERIFY") or os.getenv(
-            "DATA_SCIENCE_MCP_VERIFY", "True"
-        ).lower() in (
-            "true",
-            "1",
-            "yes",
+        base_url = setting("DATA_SCIENCE_MCP_URL", "http://localhost:8080")
+        token = setting("DATA_SCIENCE_MCP_TOKEN", "")
+        verify = bool(
+            setting("DATA_SCIENCE_MCP_SSL_VERIFY", None)
+            or setting("DATA_SCIENCE_MCP_VERIFY", True)
         )
 
         try:

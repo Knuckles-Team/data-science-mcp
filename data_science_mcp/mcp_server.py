@@ -20,13 +20,15 @@ from fastmcp import Context, FastMCP
 from pydantic import Field
 import json
 import logging
-import os
 import sys
 from typing import Any
 
 
-from agent_utilities.base_utilities import to_boolean
-from agent_utilities.mcp_utilities import create_mcp_server, load_config
+from agent_utilities.mcp_utilities import (
+    create_mcp_server,
+    load_config,
+    register_tool_surface,
+)
 from agent_utilities.base_utilities import get_logger
 
 __version__ = "0.27.0"
@@ -35,20 +37,9 @@ __version__ = "0.27.0"
 logger = get_logger(name="MCP_Server")
 logger.setLevel(logging.INFO)
 
-# ── Environment-variable toggles ─────────────────────────────────────
-DEFAULT_MODEL_TRAININGTOOL = to_boolean(os.getenv("MODEL_TRAININGTOOL", "True"))
-DEFAULT_MODEL_EVOLUTIONTOOL = to_boolean(os.getenv("MODEL_EVOLUTIONTOOL", "True"))
-DEFAULT_INTERPRETABILITYTOOL = to_boolean(
-    os.getenv("INTERPRETABILITYTOOL", "True"),
-)
-DEFAULT_DATA_MANAGEMENTTOOL = to_boolean(
-    os.getenv("DATA_MANAGEMENTTOOL", "True"),
-)
-DEFAULT_DATA_ENGINETOOL = to_boolean(os.getenv("DATA_ENGINETOOL", "True"))
-DEFAULT_QUANTTOOL = to_boolean(os.getenv("QUANTTOOL", "True"))
-
 # ── Model Training Tools ─────────────────────────────────────────────
 
+from data_science_mcp.auth import get_client  # noqa: E402
 from data_science_mcp.ml_engine import MLEngine  # noqa: E402
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
@@ -585,36 +576,33 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         ),
     )
 
-    registered_tags = []
+    # mcp_data_engine is imported lazily (see module-top note) so the package's
+    # OPTIONAL_MODULES loader does not swallow a transient partial-init error.
+    from data_science_mcp.mcp.mcp_data_engine import register_data_engine_tools
 
-    if DEFAULT_MODEL_TRAININGTOOL:
-        register_model_training_tools(mcp)
-        register_training_data_tools(mcp)
-        register_trainer_tools(mcp)
-        register_kernel_specialize_tools(mcp)
-        registered_tags.append("model-training")
+    # Explicit registry preserves the original per-domain toggle grouping: several
+    # register_*_tools share one <TAG>TOOL env var (e.g. all training surfaces are
+    # gated by MODEL_TRAININGTOOL). register_tool_surface gates each via
+    # setting(env_var, True) per MCP_TOOL_MODE.
+    tool_registry = [
+        ("model-training", "MODEL_TRAININGTOOL", register_model_training_tools),
+        ("training-data", "MODEL_TRAININGTOOL", register_training_data_tools),
+        ("trainer", "MODEL_TRAININGTOOL", register_trainer_tools),
+        ("kernel-specialize", "MODEL_TRAININGTOOL", register_kernel_specialize_tools),
+        ("model-evolution", "MODEL_EVOLUTIONTOOL", register_model_evolution_tools),
+        ("interpretability", "INTERPRETABILITYTOOL", register_interpretability_tools),
+        ("data-management", "DATA_MANAGEMENTTOOL", register_data_management_tools),
+        ("data-engine", "DATA_ENGINETOOL", register_data_engine_tools),
+        ("quant", "QUANTTOOL", register_quant_tools),
+    ]
 
-    if DEFAULT_MODEL_EVOLUTIONTOOL:
-        register_model_evolution_tools(mcp)
-        registered_tags.append("model-evolution")
-
-    if DEFAULT_INTERPRETABILITYTOOL:
-        register_interpretability_tools(mcp)
-        registered_tags.append("interpretability")
-
-    if DEFAULT_DATA_MANAGEMENTTOOL:
-        register_data_management_tools(mcp)
-        registered_tags.append("data-management")
-
-    if DEFAULT_DATA_ENGINETOOL:
-        from data_science_mcp.mcp.mcp_data_engine import register_data_engine_tools
-
-        register_data_engine_tools(mcp)
-        registered_tags.append("data-engine")
-
-    if DEFAULT_QUANTTOOL:
-        register_quant_tools(mcp)
-        registered_tags.append("quant")
+    registered_tags = register_tool_surface(
+        mcp,
+        client_cls=MLEngine,
+        get_client=get_client,
+        service="data-science-mcp",
+        tool_registry=tool_registry,
+    )
 
     register_prompts(mcp)
 
