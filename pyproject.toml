@@ -94,7 +94,7 @@ data-science-mcp = "data_science_mcp.prompts"
 include-package-data = true
 
 [tool.setuptools.package-data]
-data_science_mcp = [ "mcp_config.json", "agent/**", "skills/**", "prompts/**",]
+data_science_mcp = [ "mcp_config.json", "skills/**", "prompts/**",]
 
 [tool.vulture]
 ignore_names = ["request", "config"]

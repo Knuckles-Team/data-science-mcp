@@ -1,6 +1,6 @@
 services:
   data-science-mcp-mcp:
-    image: knucklessg1/data-science-mcp:latest
+    image: knucklessg1/data-science-mcp:mcp
     container_name: data-science-mcp-mcp
     hostname: data-science-mcp-mcp
     restart: always
