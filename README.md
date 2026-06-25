@@ -130,6 +130,15 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
 
 ### MCP Configuration Examples
 
+> **Install the slim `[mcp]` extra.** All examples below install
+> `data-science-mcp[mcp]` — the MCP-server extra that pulls only the FastMCP /
+> FastAPI tooling (`agent-utilities[mcp]`). It deliberately **excludes** the heavy
+> agent runtime (`pydantic-ai`, `dspy`, `llama-index`, `tree-sitter`), so
+> `uvx`/container installs are dramatically smaller and faster. Use the full
+> `[agent]` extra only when you need the integrated Pydantic AI agent (see
+> [Installation](#installation)). (The epistemic-graph compute engine is a core
+> dependency in every extra, including `[mcp]`.)
+
 #### stdio Transport (Recommended for local IDEs e.g., Cursor, Claude Desktop)
 Configure your IDE's `mcp.json` to launch the MCP server via `uvx`:
 
@@ -140,7 +149,7 @@ Configure your IDE's `mcp.json` to launch the MCP server via `uvx`:
       "command": "uvx",
       "args": [
         "--from",
-        "data-science-mcp",
+        "data-science-mcp[mcp]",
         "data-science-mcp"
       ],
       "env": {
@@ -162,7 +171,7 @@ Configure your client's `mcp.json` to launch the Streamable-HTTP server via `uvx
       "command": "uvx",
       "args": [
         "--from",
-        "data-science-mcp",
+        "data-science-mcp[mcp]",
         "data-science-mcp"
       ],
       "env": {
@@ -199,8 +208,15 @@ docker run -d \
   -e PORT=8000 \
   -e DATA_SCIENCE_MCP_URL="your_value" \
   -e DATA_SCIENCE_MCP_TOKEN="your_value" \
-  knucklessg1/data-science-mcp:latest
+  knucklessg1/data-science-mcp:mcp
 ```
+
+> The `:mcp` tag is the **slim MCP-server image** (built from
+> `docker/Dockerfile --target mcp`, installing `data-science-mcp[mcp]`). The default
+> `:latest` tag is the **full agent image** (`--target agent`, `data-science-mcp[agent]`)
+> which also bundles the Pydantic AI agent — use it when you run
+> `data-science-agent` (the agent), not just the MCP server. See
+> [Container images](#container-images-mcp-vs-agent).
 
 ---
 
@@ -218,6 +234,69 @@ consumed from a **remote deployment**. The
 - **Remote URL** — connect to a server deployed behind Caddy at
   `http://data-science-mcp.arpa/mcp` using the `"url"` key.
 <!-- END GENERATED: additional-deployment-options -->
+
+---
+
+## Environment Variables
+
+Every variable the server reads, grouped by purpose.
+
+### MCP server / transport
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TRANSPORT` | `stdio`, `streamable-http`, or `sse` | `stdio` |
+| `HOST` | Bind host (HTTP transports) | `0.0.0.0` |
+| `PORT` | Bind port (HTTP transports) | `8000` |
+| `MCP_TOOL_MODE` | Tool surface: `condensed`, `verbose`, or `both` | `condensed` |
+| `MCP_ENABLED_TOOLS` / `MCP_DISABLED_TOOLS` | Comma-separated tool allow/deny list | — |
+| `MCP_ENABLED_TAGS` / `MCP_DISABLED_TAGS` | Comma-separated tag allow/deny list | — |
+| `DEBUG` | Verbose logging | `False` |
+| `PYTHONUNBUFFERED` | Unbuffered stdout (recommended in containers) | `1` |
+
+### Connection
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATA_SCIENCE_MCP_URL` | Base service URL | `http://localhost:8080` |
+| `DATA_SCIENCE_MCP_TOKEN` | API token | — |
+
+### Training / inference backend (full `[training]` extra)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `INFERENCE_BACKEND` | Served-model rollout backend (`vllm` or `sglang`) | — |
+| `INFERENCE_BASE_URL` | OpenAI-compatible inference server base URL | — |
+
+### Tool toggles
+Each action-routed tool can be disabled individually via its toggle env var (set to `false`).
+The full list is in the [Available MCP Tools](#available-mcp-tools) table above.
+| Variable | Tools |
+|----------|-------|
+| `MODEL_TRAININGTOOL` | training / fit / eval / corpus / kernel tools |
+| `MODEL_EVOLUTIONTOOL` | Pareto-frontier evolution + model ranking |
+| `INTERPRETABILITYTOOL` | interpretability test generation + grading suite |
+| `DATA_MANAGEMENTTOOL` | dataset load / describe / split |
+| `DATA_ENGINETOOL` | corpus curation / dedup / decontaminate / lineage |
+| `QUANTTOOL` | quant compute kernels |
+
+### Telemetry & governance
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENABLE_OTEL` | Enable OpenTelemetry export | `True` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint | — |
+| `OTEL_EXPORTER_OTLP_PUBLIC_KEY` / `OTEL_EXPORTER_OTLP_SECRET_KEY` | OTLP auth keys | — |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | OTLP protocol (e.g. `http/protobuf`) | — |
+| `EUNOMIA_TYPE` | Authorization mode: `none`, `embedded`, `remote` | `none` |
+| `EUNOMIA_POLICY_FILE` | Embedded policy file | `mcp_policies.json` |
+| `EUNOMIA_REMOTE_URL` | Remote Eunomia server URL | — |
+
+### Agent CLI (full `[agent]` runtime only)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MCP_URL` | URL of the MCP server the agent connects to | `http://localhost:8000/mcp` |
+| `PROVIDER` | LLM provider (e.g. `openai`) | `openai` |
+| `MODEL_ID` | Model id (e.g. `gpt-4o`) | `gpt-4o` |
+| `ENABLE_WEB_UI` | Serve the AG-UI web interface | `True` |
+
+See [`.env.example`](.env.example) for a copy-paste starting point.
 
 ## Agent
 
@@ -243,7 +322,7 @@ version: '3.8'
 
 services:
   data-science-mcp-mcp:
-    image: knucklessg1/data-science-mcp:latest
+    image: knucklessg1/data-science-mcp:mcp
     container_name: data-science-mcp-mcp
     hostname: data-science-mcp-mcp
     restart: always
@@ -327,15 +406,57 @@ Built directly upon the enterprise-ready [`agent-utilities`](https://github.com/
 
 ## Installation
 
-Install the Python package locally:
+Pick the extra that matches what you want to run:
+
+| Extra | Installs | Use when |
+|-------|----------|----------|
+| `data-science-mcp[mcp]` | Slim MCP server only (`agent-utilities[mcp]` — FastMCP/FastAPI) + the core epistemic-graph engine | You only run the **MCP server** (smallest install / image) |
+| `data-science-mcp[agent]` | Full agent runtime (`agent-utilities[agent,logfire]` — Pydantic AI) | You run the **integrated agent** |
+| `data-science-mcp[all]` | Everything (`mcp` + `agent` + `scikit-learn` sample-dataset loaders) | Development / both surfaces |
+
+Heavy ML extras are opt-in and imported lazily — add them only when needed:
+`[training]` (torch/PEFT gradient trainers), `[training-scale]` (DeepSpeed/FlashAttention,
+GPU-host only), `[training-fast]` (Liger Triton kernels), `[datasets]` (scikit-learn sample
+loaders), `[eval]` (lm-eval), `[tracking]` (MLflow). See **[docs/training.md](docs/training.md)**.
 
 ```bash
-# Using uv (highly recommended)
-uv pip install data-science-mcp[all]
+# MCP server only (recommended for tool hosting — slim deps)
+uv pip install "data-science-mcp[mcp]"
 
-# Using standard pip
-python -m pip install data-science-mcp[all]
+# Full agent runtime (Pydantic AI)
+uv pip install "data-science-mcp[agent]"
+
+# Everything (development)
+uv pip install "data-science-mcp[all]"      # or: python -m pip install "data-science-mcp[all]"
 ```
+
+### Container images (`:mcp` vs `:agent`)
+
+One multi-stage `docker/Dockerfile` builds two right-sized images, selected by `--target`:
+
+| Image tag | Build target | Contents | Entrypoint |
+|-----------|--------------|----------|------------|
+| `knucklessg1/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **slim**, no `pydantic-ai`/`dspy`/`llama-index`/`tree-sitter` | `data-science-mcp` |
+| `knucklessg1/data-science-mcp:latest` | `--target agent` (default) | `data-science-mcp[agent]` — **full** agent runtime | `data-science-agent` |
+
+```bash
+docker build --target mcp   -t knucklessg1/data-science-mcp:mcp    docker/   # slim MCP server
+docker build --target agent -t knucklessg1/data-science-mcp:latest docker/   # full agent
+```
+
+`docker/mcp.compose.yml` runs the slim `:mcp` server; `docker/agent.compose.yml` runs the
+agent (`:latest`) with a co-located `:mcp` sidecar.
+
+### Knowledge-graph database (`epistemic-graph`)
+
+`data-science-mcp` depends directly on the **epistemic-graph** compute engine
+(`epistemic-graph[datascience]`) — its model-training / evaluation / evolution compute runs in
+that Rust engine, so the engine is a core dependency in **every** extra (including `[mcp]`). For
+production — or to share one knowledge graph across multiple agents — run **epistemic-graph as
+its own database container** and point the server at it instead of embedding it. Deployment
+recipes (single-node + Raft HA), connection config, and the full database architecture (with
+diagrams) are documented in the
+[epistemic-graph deployment guide](https://knuckles-team.github.io/epistemic-graph/deployment/).
 
 ---
 
