@@ -58,7 +58,6 @@ engine** and no GPU dep here; the runtime cost is `httpx` only.
     - `mcp_server.py`: Main MCP server entry point and tool registration.
     - `agent_server.py`: Pydantic AI agent definition and logic.
     - `skills/`: Directory containing modular agent skills (if applicable).
-    - `agent/`: Internal agent logic and prompt templates.
 
 ### Architecture Diagram
 ```mermaid
@@ -128,12 +127,7 @@ data-science-agent
 │   ├── __init__.py
 │   ├── agent_server.py
 │   ├── auth.py
-│   ├── mcp_server.py
-│   └── agent/
-│       ├── IDENTITY.md
-│       ├── USER.md
-│       ├── MCP_AGENTS.md
-│       └── ...
+│   └── mcp_server.py
 ├── pyproject.toml
 └── requirements.txt
 ```
