@@ -62,6 +62,8 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 <!-- MCP-TOOLS-TABLE:START -->
 
+#### Condensed action-routed tools (default — `MCP_TOOL_MODE=condensed`)
+
 | MCP Tool | Toggle Env Var | Description |
 |----------|----------------|-------------|
 | `build_training_dataset` | `MODEL_TRAININGTOOL` | Build an SFT/DPO/GRPO training corpus from traces (CONCEPT:AHE-3.1). |
@@ -102,7 +104,26 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `train_sft` | `MODEL_TRAININGTOOL` | Supervised fine-tune on an ``sft`` corpus (CONCEPT:AHE-3.1). |
 | `train_tokenizer` | `MODEL_TRAININGTOOL` | Train a byte-level BPE tokenizer from scratch (CONCEPT:ML-003). |
 
-_37 action-routed tools (default `MCP_TOOL_MODE=condensed`). Each is enabled unless its toggle is set false; set `MCP_TOOL_MODE=verbose` (or `both`) for the 1:1 per-operation surface. Auto-generated — do not edit._
+#### Verbose 1:1 API-mapped tools (`MCP_TOOL_MODE=verbose` or `both`)
+
+<details>
+<summary>9 per-operation tools — one per public API method (click to expand)</summary>
+
+| MCP Tool | Toggle Env Var | Description |
+|----------|----------------|-------------|
+| `data_science_cross_validate` | `ML_ENGINETOOL` | Run k-fold cross-validation via the engine. |
+| `data_science_describe_dataset` | `ML_ENGINETOOL` | Get descriptive statistics for a loaded dataset. |
+| `data_science_evaluate` | `ML_ENGINETOOL` | Evaluate a fitted model. |
+| `data_science_fit` | `ML_ENGINETOOL` | Fit a model on a dataset via the epistemic-graph engine. |
+| `data_science_interpretability_reference` | `ML_ENGINETOOL` | Compute reference answers for the interpretability suite without any |
+| `data_science_load_dataset` | `ML_ENGINETOOL` | Load a dataset by name or file path. |
+| `data_science_predict` | `ML_ENGINETOOL` | Generate predictions from a fitted model. |
+| `data_science_ranked_models` | `ML_ENGINETOOL` | Rank fitted models by stored test R² (backend-agnostic, no recompute). |
+| `data_science_split_dataset` | `ML_ENGINETOOL` | Split a dataset into train/test/validation sizes. |
+
+</details>
+
+_37 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
 <!-- MCP-TOOLS-TABLE:END -->
 
 Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/mcp.md](docs/mcp.md).
@@ -258,10 +279,25 @@ consumed from a **remote deployment**. The
 | `EUNOMIA_REMOTE_URL` | `http://eunomia-server:8000` |  |
 | `DATA_SCIENCE_MCP_URL` | `http://localhost:8080` |  |
 | `DATA_SCIENCE_MCP_TOKEN` | `your_token_here` |  |
+| `DATA_SCIENCE_MCP_SSL_VERIFY` | — | TLS verification for the upstream client. Set to a CA bundle path or False to disable. |
+| `DATA_SCIENCE_MCP_VERIFY` | `True` | Legacy alias for DATA_SCIENCE_MCP_SSL_VERIFY (truthy enables verification). |
+| `INFERENCE_BACKEND` | `vllm` | options: vllm, sglang |
+| `INFERENCE_BASE_URL` | — | Base URL of the running inference server, e.g. http://host:30000 |
+| `INFERENCE_MODEL` | — | Served model id exposed by the inference server. |
+| `INFERENCE_API_KEY` | `EMPTY` | Bearer token for the inference server (default "EMPTY" for local servers). |
+| `EPISTEMIC_GRAPH_SOCKET` | — | Unix domain socket path to the epistemic-graph engine. |
+| `GRAPH_SERVICE_SOCKET` | — | Alternate UDS env var honored by the engine client. |
+| `EPISTEMIC_GRAPH_TCP` | — | TCP host:port for the epistemic-graph engine (takes precedence over the socket). |
+| `DSM_NEAR_PAIRS_LOCAL_MAX` | `20000` | Cap on local O(n^2) near-pair fallback before requiring the Rust path (0 disables the cap). |
 | `MODEL_TRAININGTOOL` | `True` |  |
 | `MODEL_EVOLUTIONTOOL` | `True` |  |
 | `INTERPRETABILITYTOOL` | `True` |  |
 | `DATA_MANAGEMENTTOOL` | `True` |  |
+| `DATA_ENGINETOOL` | `True` |  |
+| `QUANTTOOL` | `True` |  |
+| `TRAINERTOOL` | `True` | Sub-surfaces of model-training; the code gates these via MODEL_TRAININGTOOL. |
+| `TRAINING_DATATOOL` | `True` |  |
+| `KERNEL_SPECIALIZETOOL` | `True` |  |
 
 #### Inherited agent-utilities variables (apply to every connector)
 
@@ -282,7 +318,7 @@ consumed from a **remote deployment**. The
 | `MODEL_ID` | `gpt-4o` | Model id for the agent |
 | `ENABLE_WEB_UI` | `True` | Serve the AG-UI web interface |
 
-_17 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
+_32 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
 <!-- ENV-VARS-TABLE:END -->
 
 
