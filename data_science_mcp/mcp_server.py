@@ -31,7 +31,7 @@ from agent_utilities.mcp_utilities import (
 )
 from agent_utilities.base_utilities import get_logger
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
