@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Inference-backend interface for served-model generation (CONCEPT:AHE-3.1).
+"""Inference-backend interface for served-model generation (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 The trainer substrate needs to *talk to a running inference server* in two
 places: GRPO rollouts (sample many completions per prompt, with per-token

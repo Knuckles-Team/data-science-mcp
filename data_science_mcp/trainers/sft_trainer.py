@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Supervised fine-tuning trainer (CONCEPT:AHE-3.1).
+"""Supervised fine-tuning trainer (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Consumes the ``sft`` corpus from
 :func:`data_science_mcp.training_data.build_sft_examples`

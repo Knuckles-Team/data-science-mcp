@@ -1,4 +1,4 @@
-"""MCP tools for the corpus curation engine (CONCEPT:ML-002).
+"""MCP tools for the corpus curation engine (CONCEPT:DS-AHE.trainer.data-engine).
 
 Exposes :mod:`data_science_mcp.data_engine` as action-routed MCP tools so an agent
 (the ``data_curator`` persona) can build a clean training corpus: quality-filter →
@@ -20,7 +20,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"data-engine"})
     def dedup_corpus(records_json: str = "[]", options_json: str = "{}") -> str:
-        """Remove exact + near-duplicate records (CONCEPT:ML-002).
+        """Remove exact + near-duplicate records (CONCEPT:DS-AHE.trainer.data-engine).
 
         Args:
             records_json: JSON list of ``{text: ...}`` records.
@@ -35,7 +35,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
     def decontaminate_corpus(
         records_json: str = "[]", eval_texts_json: str = "[]", options_json: str = "{}"
     ) -> str:
-        """Drop training records that leak held-out eval examples (CONCEPT:ML-002).
+        """Drop training records that leak held-out eval examples (CONCEPT:DS-AHE.trainer.data-engine).
 
         Args:
             records_json: JSON list of ``{text: ...}`` records.
@@ -117,7 +117,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
     def prepare_pretrain_data(
         corpus_spec_json: str, out_path: str, options_json: str = "{}"
     ) -> str:
-        """Tokenize a corpus into a flat-token HDF5 file for pretraining (CONCEPT:ML-010).
+        """Tokenize a corpus into a flat-token HDF5 file for pretraining (CONCEPT:DS-AHE.trainer.data-transformation).
 
         The large-scale data path for training from scratch: streams the corpus,
         encodes each doc (EOS-separated), and writes a contiguous ``tokens`` array
@@ -177,7 +177,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
     def dataset_lineage(
         name: str, version: str = "v1", options_json: str = "{}"
     ) -> str:
-        """Record a ``DatasetVersion`` provenance node (CONCEPT:ML-002).
+        """Record a ``DatasetVersion`` provenance node (CONCEPT:DS-AHE.trainer.data-engine).
 
         Args:
             name: dataset name.

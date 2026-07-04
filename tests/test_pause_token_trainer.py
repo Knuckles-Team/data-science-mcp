@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the trainable ``<pause>``-token recommender (CONCEPT:KG-2.93, PauseRec).
+"""Tests for the trainable ``<pause>``-token recommender (CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative, PauseRec).
 
 Re-homed from agent-utilities (the training track moved to data-science-mcp so
 core stays torch-free). Validates the *real* PauseRec mechanism: pause tokens that

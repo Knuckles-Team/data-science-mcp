@@ -1,4 +1,4 @@
-"""Tests for the deterministic training-data & reward engine (CONCEPT:AHE-3.1).
+"""Tests for the deterministic training-data & reward engine (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Pure-Python builders (no engine/GPU) + MCP tool registration.
 """

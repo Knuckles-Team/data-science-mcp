@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Direct Preference Optimization trainer (CONCEPT:AHE-3.1).
+"""Direct Preference Optimization trainer (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Consumes the ``dpo`` corpus from
 :func:`data_science_mcp.training_data.build_preference_pairs`

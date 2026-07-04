@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Shared optimisation loop for every trainer (CONCEPT:ML-001).
+"""Shared optimisation loop for every trainer (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer).
 
 The SFT/DPO/GRPO (and pretrain) trainers differ only in their per-step **loss**;
 the surrounding machinery — gradient accumulation, mixed precision, gradient
@@ -184,7 +184,7 @@ def run_loop(
             recorded by the closure itself.
         scheduler/accelerator/tracker: optional; see module docstring.
         total_steps: planned optimizer steps (for tracker context only).
-        should_pause: optional cooperative-yield check (CONCEPT:ML-011). Polled after
+        should_pause: optional cooperative-yield check (CONCEPT:AU-AHE.trainer.join-inference). Polled after
             each optimizer step; when it returns ``True`` the loop force-saves a
             checkpoint and stops early with ``paused=True`` so a GPU-slot scheduler
             can preempt the run and resume it later via ``config.resume_from``.

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the from-random-init pretraining path (CONCEPT:ML-003).
+"""Tests for the from-random-init pretraining path (CONCEPT:DS-AHE.trainer.concept-2).
 
 Pure planning + a CPU smoke of the pretrain loop on the toy model (packed
 sequences, next-token CE through the shared run_loop). The real random-init build

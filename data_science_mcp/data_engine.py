@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Corpus streaming + curation engine (CONCEPT:ML-002).
+"""Corpus streaming + curation engine (CONCEPT:DS-AHE.trainer.data-engine).
 
 The data-quality front of the LLM-training stack: turn raw text into a clean,
 deduplicated, decontaminated, packed corpus — because data quality, not optimizer
@@ -352,7 +352,7 @@ def pack_sequences(
 
 
 # --------------------------------------------------------------------------- #
-# Large-scale pretrain data prep (flat-token HDF5)  (CONCEPT:ML-010)            #
+# Large-scale pretrain data prep (flat-token HDF5)  (CONCEPT:DS-AHE.trainer.data-transformation)            #
 # --------------------------------------------------------------------------- #
 def _token_encode_fn(tokenizer: Any) -> Callable[[str], list[int]]:
     """Adapt any tokenizer to ``text -> list[int]`` via its ``.encode``.
@@ -378,7 +378,7 @@ def prepare_pretrain_data(
     dtype: str = "int32",
     flush_every: int = 1_000_000,
 ) -> dict[str, Any]:
-    """Tokenize a streamed corpus into a flat 1-D token array on disk (CONCEPT:ML-010).
+    """Tokenize a streamed corpus into a flat 1-D token array on disk (CONCEPT:DS-AHE.trainer.data-transformation).
 
     The pretraining-throughput data path the from-scratch trainer needs: stream
     ``spec`` (list / ``.jsonl`` / ``.jsonl.zst`` / HF dataset — see

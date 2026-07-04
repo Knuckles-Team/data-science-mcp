@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the Wave-C gradient trainer scaffold (CONCEPT:AHE-3.1).
+"""Tests for the Wave-C gradient trainer scaffold (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Covers the pure pieces (TIES merge, tokenizer plan, rollout buffer, trainer
 planning, loss kernels) and a CPU smoke of each trainer on a tiny dependency-

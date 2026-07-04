@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""End-to-end fine-tune pipeline + deploy seam (Wave D, CONCEPT:AHE-3.1).
+"""End-to-end fine-tune pipeline + deploy seam (Wave D, CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Ties the in-house training substrate into one runnable flow:
 
@@ -189,7 +189,7 @@ def run_pretrain_pipeline(
     deploy: DeploymentTarget | None = None,
     checkpoint_id: str | None = None,
 ) -> dict[str, Any]:
-    """Pretrain-from-random-init pipeline (CONCEPT:ML-003), mirroring the SFT one.
+    """Pretrain-from-random-init pipeline (CONCEPT:DS-AHE.trainer.concept-2), mirroring the SFT one.
 
     Flow: (optional) train a tokenizer from the corpus → build the random-init model
     → pretrain over packed sequences → (optional) reliability-eval → save checkpoint
@@ -275,7 +275,7 @@ def run_rlhf_pipeline(
     deploy: DeploymentTarget | None = None,
     checkpoint_id: str | None = None,
 ) -> dict[str, Any]:
-    """Full RLHF pipeline: (SFT →) reward model → PPO → eval → deploy (CONCEPT:ML-009).
+    """Full RLHF pipeline: (SFT →) reward model → PPO → eval → deploy (CONCEPT:DS-AHE.trainer.per-token-value).
 
     Chains the new RLHF stages on top of the existing SFT/pretrain pipelines:
 

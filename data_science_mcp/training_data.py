@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Deterministic training-data & reward engine (CONCEPT:AHE-3.1).
+"""Deterministic training-data & reward engine (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 The data-quality half of the in-house training substrate (Wave C). Pure Python —
 no torch, no GPU — it turns execution traces into the SFT / DPO / GRPO corpora and

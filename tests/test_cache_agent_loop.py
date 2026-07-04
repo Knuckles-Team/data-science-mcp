@@ -1,4 +1,4 @@
-"""CacheRL cached-rollout + thinking-augmentation tests — CONCEPT:ML-013."""
+"""CacheRL cached-rollout + thinking-augmentation tests — CONCEPT:DS-AHE.optimization.cache-agent-loop."""
 
 from data_science_mcp.cache_agent_loop import (
     CacheAgentLoop,

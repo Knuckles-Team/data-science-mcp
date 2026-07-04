@@ -89,7 +89,7 @@ class MLEngine:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    # ── Rust epistemic-graph engine integration (CONCEPT:KG-2.22) ──────
+    # ── Rust epistemic-graph engine integration (CONCEPT:EG-KG.compute.rust-native-training-loss) ──────
     @classmethod
     def _rust_client(cls) -> Any:
         """Return a cached SyncEpistemicGraphClient, or None if unreachable.

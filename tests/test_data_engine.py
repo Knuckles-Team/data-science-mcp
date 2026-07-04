@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the corpus curation engine (CONCEPT:ML-002).
+"""Tests for the corpus curation engine (CONCEPT:DS-AHE.trainer.data-engine).
 
 Pure-Python coverage (``use_engine=False`` for determinism); the epistemic-graph
 all-pairs acceleration is exercised opportunistically only when a live engine is

@@ -1,4 +1,4 @@
-"""MCP tools for the deterministic training-data & reward engine (CONCEPT:AHE-3.1).
+"""MCP tools for the deterministic training-data & reward engine (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Exposes the pure-Python dataset/reward builders in
 :mod:`data_science_mcp.training_data` (the Wave-C data-quality engine) as
@@ -22,14 +22,14 @@ def register_training_data_tools(mcp: FastMCP) -> None:
     def build_training_dataset(
         kind: str, items_json: str = "[]", options_json: str = "{}"
     ) -> str:
-        """Build an SFT/DPO/GRPO training corpus from traces (CONCEPT:AHE-3.1).
+        """Build an SFT/DPO/GRPO training corpus from traces (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             kind: ``sft`` | ``dpo`` | ``grpo`` | ``filter_difficulty``, or the
                 shortcut-resistant search variants ``search_sft`` |
                 ``search_dpo`` | ``search_grpo`` that consume synthesized tasks +
                 solver trajectories and reward by realized search difficulty
-                (CONCEPT:KG-2.70/2.71/2.72, AHE-3.30).
+                (CONCEPT:AU-KG.retrieval.evidence-graph-workspace/2.71/2.72, AHE-3.30).
             items_json: JSON list of input records (traces / samples / groups).
             options_json: JSON object of options (e.g. ``{"min_steps": 3}`` for
                 ``filter_difficulty``; ``{"weights": {...}}`` for ``search_grpo``).
@@ -68,7 +68,7 @@ def register_training_data_tools(mcp: FastMCP) -> None:
     def compose_reward(
         components_json: str, weights_json: str, conditions_json: str = "{}"
     ) -> str:
-        """Composite, conditionally-gated reward score (CONCEPT:AHE-3.1).
+        """Composite, conditionally-gated reward score (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             components_json: JSON object ``{name: value}``.

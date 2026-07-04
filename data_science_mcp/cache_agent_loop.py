@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""CacheRL cached rollouts + hybrid-thinking augmentation — CONCEPT:ML-013.
+"""CacheRL cached rollouts + hybrid-thinking augmentation — CONCEPT:DS-AHE.optimization.cache-agent-loop.
 
 Distils **CacheRL: Multi-Turn Tool-Calling Agents via Cached Rollouts and Hybrid
 Reward** (arXiv:2606.14179). Multi-turn tool-calling RL is dominated by the cost

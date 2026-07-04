@@ -61,17 +61,17 @@ them actually executes, so the package installs and imports without them.
 | Engine-backed ML (fit/predict/evaluate/cross-validate) | `fit_model`, `predict`, `evaluate_model`, `cross_validate`, `MLEngine` | core + a running **epistemic-graph** engine (`EPISTEMIC_GRAPH_SOCKET`/`_TCP`) |
 | Sample datasets (iris/diabetes/…) | `load_dataset` | `[datasets]` (CSV needs nothing extra — uses polars) |
 | Quant / finance kernels | `quant_*` | core + epistemic-graph engine |
-| **Corpus curation** (dedup/decontaminate/quality-filter/pack/lineage) | `curate_corpus`, `dedup_corpus`, `decontaminate_corpus`, `dataset_lineage` (CONCEPT:ML-002) | **core only** (pure-Python; epistemic-graph HNSW accelerates near-dup search when present) |
+| **Corpus curation** (dedup/decontaminate/quality-filter/pack/lineage) | `curate_corpus`, `dedup_corpus`, `decontaminate_corpus`, `dataset_lineage` (CONCEPT:DS-AHE.trainer.data-engine) | **core only** (pure-Python; epistemic-graph HNSW accelerates near-dup search when present) |
 | HF `datasets` streaming corpora | `stream_corpus({"hf": …})` | `[training]` |
 | **Plan** a training run (steps/effective-batch/params) | `train_sft`/`train_dpo`/`train_grpo`/`pretrain_model`/`train_tokenizer` with `execute=false` | **core only** (no torch) |
 | **Run** SFT / DPO / GRPO fine-tunes | same tools with `execute=true` | `[training]` + a GPU |
 | LoRA / QLoRA adapters | `LoraSpec(quant_4bit=…)`, `merge_adapters_ties` | `[training]` (QLoRA fits a 1.5B–8B base on one 24 GB card) |
-| **Pretrain from random init** (CONCEPT:ML-003) | `pretrain_model`, `train_tokenizer`, `run_pretrain_pipeline` | `[training]` + a GPU (small models ≤~1.5B in a homelab) |
+| **Pretrain from random init** (CONCEPT:DS-AHE.trainer.concept-2) | `pretrain_model`, `train_tokenizer`, `run_pretrain_pipeline` | `[training]` + a GPU (small models ≤~1.5B in a homelab) |
 | Multi-GPU **FSDP** | `TrainConfig(distributed="fsdp")` + `launch/` | `[training]` (FSDP ships with accelerate+torch) |
 | Multi-GPU **DeepSpeed ZeRO-3** | `TrainConfig(distributed="deepspeed")` | `[training-scale]` (GPU host) |
 | FlashAttention-2 | `TrainConfig(attn_impl="flash_attention_2")` | `[training-scale]` (GPU host) |
 | Fused kernels | `TrainConfig(use_liger=True)` | `[training-fast]` |
-| Benchmark eval (hellaswag/arc/gsm8k…) | `evaluate_benchmarks` (CONCEPT:ML-006) | `[eval]` |
+| Benchmark eval (hellaswag/arc/gsm8k…) | `evaluate_benchmarks` (CONCEPT:DS-AHE.trainer.concept-5) | `[eval]` |
 | Experiment tracking | `TrainConfig(tracker="mlflow", kg_log=True)` | `[tracking]` (KG mirror needs the agent-utilities KG facade) |
 | A2A agent / Web UI | `data-science-agent` | `[agent]` |
 

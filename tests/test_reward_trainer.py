@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Reward-model trainer + Bradley-Terry kernel (CONCEPT:ML-008).
+"""Reward-model trainer + Bradley-Terry kernel (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 
 CPU smoke on a tiny dependency-injected scalar model — no transformers / GPU.
 """

@@ -1,4 +1,4 @@
-"""LSTM trading model + walk-forward training (CONCEPT:KG-2.6).
+"""LSTM trading model + walk-forward training (CONCEPT:AU-KG.research.research-pipeline-runner).
 
 Re-homed from ``agent_utilities.domains.finance.models`` /
 ``agent_utilities.domains.finance.evaluation`` so agent-utilities core stays
@@ -97,7 +97,7 @@ def evaluate_trading_signal(
 ) -> tuple[float, float, float]:
     """
 
-    CONCEPT:KG-2.6
+    CONCEPT:AU-KG.research.research-pipeline-runner
         Evaluates signal against directional accuracy, ROC-AUC, Sharpe, and Drawdown.
     """
     pred_direction = (predictions > 0.5).astype(int)

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Flat-token pretrain data prep (CONCEPT:ML-010).
+"""Flat-token pretrain data prep (CONCEPT:DS-AHE.trainer.data-transformation).
 
 Pure-numpy ``.npy`` path so it runs without h5py; exercises tokenize → flat array →
 block reader round-trip and the streaming corpus shapes.

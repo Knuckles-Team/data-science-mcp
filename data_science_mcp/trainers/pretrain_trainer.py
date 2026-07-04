@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Pretrain a causal LM from random init (CONCEPT:ML-003).
+"""Pretrain a causal LM from random init (CONCEPT:DS-AHE.trainer.concept-2).
 
 The "from scratch" trainer: it builds a model with **random weights** from an
 architecture spec (``AutoConfig`` → ``AutoModelForCausalLM.from_config`` — NOT

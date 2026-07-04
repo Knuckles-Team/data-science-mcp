@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Experiment tracking for the training substrate (CONCEPT:ML-004).
+"""Experiment tracking for the training substrate (CONCEPT:DS-AHE.trainer.concept-3).
 
 A single :class:`RunTracker` abstraction over the trackers the trainers emit to.
 Three backends, all **lazy** and all **best-effort** (telemetry must never crash a

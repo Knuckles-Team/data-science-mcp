@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Checkpoint → reliability-suite evaluation bridge (CONCEPT:AHE-3.1).
+"""Checkpoint → reliability-suite evaluation bridge (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 After a trainer produces a checkpoint, we want the same regression gate the rest
 of the framework uses — the **AHE-3.1 reliability suite**
@@ -89,7 +89,7 @@ def evaluate_benchmarks(
     batch_size: int | str = "auto",
     device: str | None = None,
 ) -> dict[str, Any]:
-    """Score a checkpoint on standard benchmarks via ``lm-eval`` (CONCEPT:ML-006).
+    """Score a checkpoint on standard benchmarks via ``lm-eval`` (CONCEPT:DS-AHE.trainer.concept-5).
 
     A complement to the AHE-3.1 reliability suite: where that measures grounding /
     safety regressions, this runs community benchmarks (e.g. ``hellaswag``,
@@ -121,7 +121,7 @@ def gsm8k_reward(prompt: str, completion: str, gold: Any) -> float:
     """Verifiable GSM8K reward: ``1.0`` if the final answer matches ``gold`` else ``0.0``.
 
     The PPO/GRPO ``reward_source="verifier"`` signal for math reasoning — exact-match
-    on the ``<answer>…</answer>`` span (CONCEPT:ML-012 chat format), no reward model
+    on the ``<answer>…</answer>`` span (CONCEPT:DS-AHE.trainer.chat-format chat format), no reward model
     needed. ``prompt`` is unused but kept for the ``reward_fn(prompt, completion)``
     signature the trainers expect; bind ``gold`` per prompt via a closure.
     """
@@ -133,7 +133,7 @@ def gsm8k_reward(prompt: str, completion: str, gold: Any) -> float:
 def evaluate_gsm8k(
     generate_fn: GenerateFn, cases: list[dict[str, Any]], *, limit: int | None = None
 ) -> dict[str, Any]:
-    """Greedy-decode GSM8K cases and score exact-match accuracy (CONCEPT:ML-012).
+    """Greedy-decode GSM8K cases and score exact-match accuracy (CONCEPT:DS-AHE.trainer.chat-format).
 
     ``cases`` are ``{"question": str, "answer": str}`` (GSM8K ``answer`` carries the
     gold after ``####``; a bare numeric ``answer`` also works). Returns

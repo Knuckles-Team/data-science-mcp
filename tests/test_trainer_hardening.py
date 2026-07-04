@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the Phase-0 trainer hardening (CONCEPT:ML-001/004/005).
+"""Tests for the Phase-0 trainer hardening (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer/004/005).
 
 Covers the additive robustness/scale features on the shared optimisation loop —
 gradient accumulation, gradient clipping, LR scheduling, checkpoint save/resume,

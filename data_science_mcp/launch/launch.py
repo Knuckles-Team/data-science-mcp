@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Distributed launch configs + ``accelerate launch`` command builder (CONCEPT:ML-005).
+"""Distributed launch configs + ``accelerate launch`` command builder (CONCEPT:DS-AHE.trainer.concept-4).
 
 FSDP and DeepSpeed ZeRO-3 are first-class peers. This module emits the matching
 launch configuration (an Accelerate YAML for FSDP, a DeepSpeed JSON for ZeRO-3) and

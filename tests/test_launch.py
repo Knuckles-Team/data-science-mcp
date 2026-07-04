@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the distributed launcher + benchmark eval (CONCEPT:ML-005/006).
+"""Tests for the distributed launcher + benchmark eval (CONCEPT:DS-AHE.trainer.concept-4/006).
 
 Config builders and the ``accelerate launch`` argv are pure/CPU-testable; the
 actual multi-GPU run and lm-eval scoring happen on a GPU host.

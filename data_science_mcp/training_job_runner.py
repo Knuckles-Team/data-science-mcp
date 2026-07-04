@@ -1,8 +1,8 @@
 #!/usr/bin/python
-"""Training-job runner for the GPU-slot scheduler (CONCEPT:ML-011).
+"""Training-job runner for the GPU-slot scheduler (CONCEPT:AU-AHE.trainer.join-inference).
 
 Bridges the data-science-mcp trainers to the agent-utilities single-GPU-slot
-scheduler (CONCEPT:KG-2.65), so a long training run shares the one GPU slot with
+scheduler (CONCEPT:AU-KG.compute.code-intelligence-tools), so a long training run shares the one GPU slot with
 interactive inference: an inference submission **preempts** the training job, which
 checkpoints at the next optimizer step and **auto-resumes from that checkpoint**
 when the slot frees.

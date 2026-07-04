@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Differentiable training objectives — torch loss kernels (CONCEPT:AHE-3.1).
+"""Differentiable training objectives — torch loss kernels (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 The gradient half of the in-house training substrate (Wave C). Where
 :mod:`data_science_mcp.training_data` builds the *corpora* (deterministic, no GPU)
@@ -11,11 +11,11 @@ through:
 * :func:`sequence_logprob`   — summed per-token log-prob of a completion under a model.
 * :func:`token_logprob`      — per-token log-prob of the realised tokens → ``(batch, seq-1)`` (PPO).
 * :func:`dpo_loss`           — Bradley-Terry preference loss with a frozen reference (MedCausalX DPO).
-* :func:`bradley_terry_loss` — pairwise reward-model loss ``-logσ(s_chosen − s_rejected)`` (CONCEPT:ML-008).
+* :func:`bradley_terry_loss` — pairwise reward-model loss ``-logσ(s_chosen − s_rejected)`` (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 * :func:`grpo_surrogate`     — group-relative clipped policy-gradient surrogate (ATLAS/SDAR GRPO; reused by PPO).
 * :func:`token_masked_surrogate` — GRPO surrogate restricted to functional tokens (ATLAS LA-GRPO).
-* :func:`gae`                — generalized advantage estimation over per-token rewards/values (CONCEPT:ML-009 PPO).
-* :func:`value_function_loss`— (optionally clipped) value-head MSE regression to GAE returns (CONCEPT:ML-009 PPO).
+* :func:`gae`                — generalized advantage estimation over per-token rewards/values (CONCEPT:DS-AHE.trainer.per-token-value PPO).
+* :func:`value_function_loss`— (optionally clipped) value-head MSE regression to GAE returns (CONCEPT:DS-AHE.trainer.per-token-value PPO).
 * :func:`whiten`             — mean-0 / var-1 normalisation of advantages (PPO stability).
 * :func:`approx_kl`          — k3 (Schulman) low-variance KL estimate for the GRPO/PPO penalty.
 
@@ -110,7 +110,7 @@ def bradley_terry_loss(
     *,
     margin: float = 0.0,
 ) -> "torch.Tensor":
-    """Pairwise reward-model loss ``-logσ(s_chosen − s_rejected − margin)`` (CONCEPT:ML-008).
+    """Pairwise reward-model loss ``-logσ(s_chosen − s_rejected − margin)`` (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 
     ``chosen_scores`` / ``rejected_scores`` are ``(batch,)`` scalar rewards read off
     the reward head (last real token). Trains the head so a preferred response
@@ -215,7 +215,7 @@ def gae(
     gamma: float = 1.0,
     lam: float = 0.95,
 ) -> "tuple[torch.Tensor, torch.Tensor]":
-    """Generalized Advantage Estimation over per-token rewards/values (CONCEPT:ML-009).
+    """Generalized Advantage Estimation over per-token rewards/values (CONCEPT:DS-AHE.trainer.per-token-value).
 
     ``rewards`` / ``values`` are ``(batch, seq)`` per-token tensors (``values`` from
     the value head; ``rewards`` typically the terminal reward at the last response
@@ -247,7 +247,7 @@ def value_function_loss(
     clip: float | None = None,
     mask: "torch.Tensor | None" = None,
 ) -> "torch.Tensor":
-    """Value-head regression loss to the GAE returns (CONCEPT:ML-009 PPO).
+    """Value-head regression loss to the GAE returns (CONCEPT:DS-AHE.trainer.per-token-value PPO).
 
     Mean squared error ``(V − R)²`` over the valid tokens. When ``old_values`` and
     ``clip`` are given, the PPO value-clipping variant is used — the larger of the

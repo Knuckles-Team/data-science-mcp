@@ -40,7 +40,7 @@ def agent_server():
         "AGENT_DESCRIPTION",
         meta.get(
             "description",
-            "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).",
+            "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview).",
         ),
     )
     DEFAULT_AGENT_SYSTEM_PROMPT = os.getenv(

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the Wave-D fine-tune pipeline + deploy seam (CONCEPT:AHE-3.1).
+"""Tests for the Wave-D fine-tune pipeline + deploy seam (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Exercises the whole flow on a toy model (CPU, no GPU/HF download) and the
 model-registry role-binding deploy seam against a real ModelRegistry.

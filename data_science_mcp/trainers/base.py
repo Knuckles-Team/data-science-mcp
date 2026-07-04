@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Trainer base + shared config (CONCEPT:AHE-3.1).
+"""Trainer base + shared config (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 :class:`TrainerBase` is the common spine for the SFT/DPO/GRPO trainers. It holds
 the :class:`TrainConfig`, exposes a **pure** :meth:`plan` (step/batch accounting
@@ -63,13 +63,13 @@ class TrainConfig:
     clip_eps: float = 0.2
     kl_coef: float = 0.0
     group_size: int = 4
-    # PPO (CONCEPT:ML-009)
+    # PPO (CONCEPT:DS-AHE.trainer.per-token-value)
     vf_coef: float = 0.5  # value-loss weight in the PPO total
     gamma: float = 1.0  # GAE discount (1.0 = undiscounted, typical for LM RL)
     gae_lambda: float = 0.95  # GAE λ
     value_clip: float | None = None  # PPO value-clipping range (None = unclipped MSE)
     reward_source: str = "verifier"  # verifier | reward_model (PPO reward signal)
-    # --- robustness / throughput (CONCEPT:ML-001) ---------------------------
+    # --- robustness / throughput (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer) ---------------------------
     precision: str = "fp32"  # fp32 | fp16 | bf16 → AMP autocast (+ GradScaler on fp16)
     gradient_checkpointing: bool = False
     max_grad_norm: float | None = None  # gradient clipping
@@ -83,18 +83,18 @@ class TrainConfig:
     attn_impl: str | None = None  # e.g. "flash_attention_2"
     use_liger: bool = False  # fuse kernels via liger-kernel when available
     pack_sequences: bool = False  # concat+split for pretrain throughput
-    # --- scale-out (CONCEPT:ML-005) -----------------------------------------
+    # --- scale-out (CONCEPT:DS-AHE.trainer.concept-4) -----------------------------------------
     distributed: str = "none"  # none | fsdp | deepspeed  (equal first-class peers)
     cpu_offload: bool = False
     zero_stage: int = 3  # DeepSpeed ZeRO stage when distributed="deepspeed"
-    # --- tracking (CONCEPT:ML-004) ------------------------------------------
+    # --- tracking (CONCEPT:DS-AHE.trainer.concept-3) ------------------------------------------
     tracker: str = "none"  # none | mlflow | wandb
     run_name: str | None = None
     kg_log: bool = False  # mirror the run into the epistemic-graph as a TrainingRun
     # provenance lineage (PROV-O): the curated DatasetVersion this run consumed and
     # the upstream run it continues (e.g. PPO ← reward ← sft ← pretrain). Emitted on
     # the TrainingRun node as `was_derived_from` so the dataset→…→model chain is
-    # queryable via /sparql + OWL transitive closure (CONCEPT:ML-011 lineage).
+    # queryable via /sparql + OWL transitive closure (CONCEPT:AU-AHE.trainer.join-inference lineage).
     dataset_version: str | None = None
     parent_run: str | None = None
 

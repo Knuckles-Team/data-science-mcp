@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""PPO trainer + GAE/value/whiten kernels + chat-format verifier (CONCEPT:ML-009/ML-012).
+"""PPO trainer + GAE/value/whiten kernels + chat-format verifier (CONCEPT:DS-AHE.trainer.per-token-value/ML-012).
 
 CPU smoke on tiny dependency-injected policy/value models — no transformers / GPU.
 """
@@ -113,7 +113,7 @@ def test_token_logprob_shape():
     assert (lp <= 0).all()
 
 
-# --- chat template + GSM8K verifier (CONCEPT:ML-012) ----------------------- #
+# --- chat template + GSM8K verifier (CONCEPT:DS-AHE.trainer.chat-format) ----------------------- #
 def test_chat_template_extract_answer():
     from data_science_mcp.chat_template import extract_answer, render_think_answer
 
@@ -178,7 +178,7 @@ def test_ppo_trainer_empty_dataset():
 
 
 def test_run_rlhf_pipeline_reward_then_ppo():
-    """SFT-free RLHF: reward model (in place) → PPO scored by it (CONCEPT:ML-009)."""
+    """SFT-free RLHF: reward model (in place) → PPO scored by it (CONCEPT:DS-AHE.trainer.per-token-value)."""
     from data_science_mcp.training_pipeline import run_rlhf_pipeline
 
     tok, policy, value = _ppo_setup()

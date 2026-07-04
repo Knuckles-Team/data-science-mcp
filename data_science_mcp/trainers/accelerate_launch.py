@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Distributed/precision preparation via 🤗 Accelerate (CONCEPT:ML-005).
+"""Distributed/precision preparation via 🤗 Accelerate (CONCEPT:DS-AHE.trainer.concept-4).
 
 A thin seam between the trainers and `accelerate.Accelerator`, supporting **FSDP**
 and **DeepSpeed ZeRO-3 as equal first-class peers** (user-selected). It is a no-op

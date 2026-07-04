@@ -1,7 +1,7 @@
 """Integration tests for the epistemic-graph Rust compute path in MLEngine.
 
 These exercise fit / predict / evaluate / describe / split / cross_validate
-routed to the Rust engine (CONCEPT:KG-2.22). The engine is started by the
+routed to the Rust engine (CONCEPT:EG-KG.compute.rust-native-training-loss). The engine is started by the
 session-scoped `epistemic_graph_engine` fixture (see conftest.py); the data
 fixtures depend on `require_engine`, which skips cleanly if no engine could be
 started/reached. Engine reachability is resolved at fixture-setup time (not at

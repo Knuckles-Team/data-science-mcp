@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Chat + reasoning format for from-scratch RLHF (CONCEPT:ML-012).
+"""Chat + reasoning format for from-scratch RLHF (CONCEPT:DS-AHE.trainer.chat-format).
 
 A dependency-free, pure-string chat template using **learnable role markers** and a
 ``<think>…</think><answer>…</answer>`` reasoning format. The markers are ordinary
@@ -27,7 +27,7 @@ THINK_OPEN, THINK_CLOSE = "<think>", "</think>"
 ANSWER_OPEN, ANSWER_CLOSE = "<answer>", "</answer>"
 
 #: The marker vocabulary to register as ``extra_tokens`` when training a tokenizer
-#: (CONCEPT:ML-003) so they stay single, stable tokens.
+#: (CONCEPT:DS-AHE.trainer.concept-2) so they stay single, stable tokens.
 ROLE_MARKERS: tuple[str, ...] = (
     SYSTEM,
     USER,

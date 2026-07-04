@@ -1,11 +1,11 @@
 #!/usr/bin/python
-"""Proximal Policy Optimization trainer (CONCEPT:ML-009).
+"""Proximal Policy Optimization trainer (CONCEPT:DS-AHE.trainer.per-token-value).
 
 The classic RLHF policy-optimisation stage the in-house substrate was missing
 (GRPO is the value-free cousin; this is full actor-critic PPO). Per item it:
 
 1. scores the completion's reward — from a **verifier** (``reward_fn``) or a trained
-   **reward model** (CONCEPT:ML-008), selected by ``config.reward_source``;
+   **reward model** (CONCEPT:DS-AHE.reward.one-sequence-level-score), selected by ``config.reward_source``;
 2. computes per-token policy log-probs (:func:`objectives.token_logprob`) and the
    frozen-reference log-probs for a per-token KL penalty;
 3. reads per-token values from a value head

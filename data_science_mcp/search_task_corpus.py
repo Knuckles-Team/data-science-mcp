@@ -2,7 +2,7 @@
 """Shortcut-resistant search tasks → SFT / DPO / GRPO corpora.
 
 The trainer-side glue for agent-utilities' search-task synthesizer
-(CONCEPT:KG-2.70/2.71/2.72) and realized-difficulty signatures (CONCEPT:AHE-3.30),
+(CONCEPT:AU-KG.retrieval.evidence-graph-workspace/2.71/2.72) and realized-difficulty signatures (CONCEPT:AU-AHE.reward.search-task-corpus),
 distilled from FORT-Searcher (arXiv:2606.12087). It turns synthesized
 shortcut-resistant tasks and the trajectories a solver produces on them into the
 three in-house corpora — reusing the existing builders in

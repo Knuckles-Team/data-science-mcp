@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Tests for the inference-backend abstraction (CONCEPT:AHE-3.1).
+"""Tests for the inference-backend abstraction (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Pure-Python / CPU only: no torch, no GPU, no real server. The network layer is
 exercised by injecting a fake ``httpx`` module so we can assert the exact request

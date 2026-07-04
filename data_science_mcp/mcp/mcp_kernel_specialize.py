@@ -42,7 +42,7 @@ def register_kernel_specialize_tools(mcp: FastMCP) -> None:
             description="Reward target (speedup) defining 'specialized enough'.",
         ),
     ) -> dict[str, Any]:
-        """Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AHE-3.29).
+        """Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AU-AHE.harness.sai-controller).
 
         Authors candidate kernels with the configured inference backend, scores each
         by correctness-gated speedup (``KernelVerifier``), and runs the closed loop;

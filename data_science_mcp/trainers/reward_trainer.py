@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Reward-model trainer — Bradley-Terry pairwise scoring (CONCEPT:ML-008).
+"""Reward-model trainer — Bradley-Terry pairwise scoring (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 
 The missing RLHF stage between SFT and PPO: train a **scalar reward head** on an
 SFT/base backbone so a preferred response scores higher than its rejected partner.

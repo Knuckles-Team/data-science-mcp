@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""LoRA/QLoRA adapter management + TIES adapter merge (CONCEPT:AHE-3.1).
+"""LoRA/QLoRA adapter management + TIES adapter merge (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Adapter-lifecycle half of the Wave-C training substrate. Two concerns:
 

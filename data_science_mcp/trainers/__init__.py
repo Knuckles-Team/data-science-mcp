@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Gradient trainers for the in-house training substrate (CONCEPT:AHE-3.1).
+"""Gradient trainers for the in-house training substrate (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Concrete SFT / DPO / GRPO trainers (torch/PEFT) that consume the deterministic
 corpora from :mod:`data_science_mcp.training_data` and implement the

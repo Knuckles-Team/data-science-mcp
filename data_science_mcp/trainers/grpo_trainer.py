@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Group-Relative Policy Optimization trainer (CONCEPT:AHE-3.1).
+"""Group-Relative Policy Optimization trainer (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Consumes GRPO groups — ``{prompt, samples:[{completion, reward, advantage}]}`` —
 produced by :func:`data_science_mcp.training_data.build_grpo_groups` or

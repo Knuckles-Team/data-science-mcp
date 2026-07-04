@@ -1,4 +1,4 @@
-"""MCP tools for the Wave-C gradient trainers (CONCEPT:AHE-3.1).
+"""MCP tools for the Wave-C gradient trainers (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Exposes the SFT / DPO / GRPO trainers and the TIES adapter merge as action-routed
 MCP tools. The torch/PEFT optimiser step needs the ``data-science-mcp[training]``
@@ -47,13 +47,13 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             "clip_eps",
             "kl_coef",
             "group_size",
-            # PPO (CONCEPT:ML-009)
+            # PPO (CONCEPT:DS-AHE.trainer.per-token-value)
             "vf_coef",
             "gamma",
             "gae_lambda",
             "value_clip",
             "reward_source",
-            # robustness / throughput (CONCEPT:ML-001)
+            # robustness / throughput (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer)
             "precision",
             "gradient_checkpointing",
             "max_grad_norm",
@@ -65,11 +65,11 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             "attn_impl",
             "use_liger",
             "pack_sequences",
-            # scale-out (CONCEPT:ML-005)
+            # scale-out (CONCEPT:DS-AHE.trainer.concept-4)
             "distributed",
             "cpu_offload",
             "zero_stage",
-            # tracking (CONCEPT:ML-004)
+            # tracking (CONCEPT:DS-AHE.trainer.concept-3)
             "tracker",
             "run_name",
             "kg_log",
@@ -97,7 +97,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_sft(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """Supervised fine-tune on an ``sft`` corpus (CONCEPT:AHE-3.1).
+        """Supervised fine-tune on an ``sft`` corpus (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             dataset_json: JSON list of ``{prompt, completion}`` records (build with
@@ -111,7 +111,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_dpo(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """Preference-optimise on a ``dpo`` corpus (CONCEPT:AHE-3.1).
+        """Preference-optimise on a ``dpo`` corpus (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             dataset_json: JSON list of ``{prompt, chosen, rejected}`` records.
@@ -121,7 +121,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_grpo(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """GRPO on advantage-tagged groups (CONCEPT:AHE-3.1).
+        """GRPO on advantage-tagged groups (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             dataset_json: JSON list of ``{prompt, samples:[{completion, reward,
@@ -133,7 +133,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_reward(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """Train a Bradley-Terry reward model on preference pairs (CONCEPT:ML-008).
+        """Train a Bradley-Terry reward model on preference pairs (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 
         The RLHF stage between SFT and PPO: fits a scalar reward head so a preferred
         response scores higher than its rejected partner. The trained reward model
@@ -149,7 +149,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_ppo(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """Proximal Policy Optimization with GAE + value head (CONCEPT:ML-009).
+        """Proximal Policy Optimization with GAE + value head (CONCEPT:DS-AHE.trainer.per-token-value).
 
         Full actor-critic RLHF policy optimisation. Consumes scored rollouts; for
         the verifier reward source embed a scalar ``reward`` per record (generate the
@@ -169,7 +169,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
     def merge_adapters_ties(
         base_json: str, task_vectors_json: str, options_json: str = "{}"
     ) -> str:
-        """TIES-merge multiple task vectors onto a base (MeMo; CONCEPT:AHE-3.1).
+        """TIES-merge multiple task vectors onto a base (MeMo; CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
         Args:
             base_json: JSON ``{param: [floats]}`` base parameters.
@@ -211,7 +211,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def pretrain_model(dataset_json: str = "[]", options_json: str = "{}") -> str:
-        """Pretrain a causal LM **from random init** (CONCEPT:ML-003).
+        """Pretrain a causal LM **from random init** (CONCEPT:DS-AHE.trainer.concept-2).
 
         Args:
             dataset_json: JSON list of ``{text: ...}`` records (curate with
@@ -228,7 +228,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(tags={"model-training"})
     def train_tokenizer(corpus_json: str = "[]", options_json: str = "{}") -> str:
-        """Train a byte-level BPE tokenizer from scratch (CONCEPT:ML-003).
+        """Train a byte-level BPE tokenizer from scratch (CONCEPT:DS-AHE.trainer.concept-2).
 
         Args:
             corpus_json: JSON list of training text strings.
@@ -289,7 +289,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
 
 def _run_pretrain(kind: str, dataset: list, options: dict) -> dict[str, Any]:
-    """Plan-first runner for the random-init pretrain trainer (CONCEPT:ML-003)."""
+    """Plan-first runner for the random-init pretrain trainer (CONCEPT:DS-AHE.trainer.concept-2)."""
     from data_science_mcp.trainers import (  # noqa: PLC0415
         PretrainSpec,
         PretrainTrainer,

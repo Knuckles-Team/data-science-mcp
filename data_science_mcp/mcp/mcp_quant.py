@@ -7,7 +7,7 @@ The engine connection is the existing cached singleton on
 
 These are **action-routed** tools: one tool per domain, dispatching on an
 ``action`` argument to the matching ``client.finance.*`` kernel
-(CONCEPT:KG-2.20f market-making/sizing/validation, CONCEPT:KG-2.20g forensic).
+(CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest market-making/sizing/validation, CONCEPT:EG-KG.domains.forensic-accounting-kernels forensic).
 """
 
 import json
@@ -87,7 +87,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Market-making / HFT quoting kernels (CONCEPT:KG-2.20f).
+        """Market-making / HFT quoting kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest).
 
         Routes ``action`` to the matching engine kernel: Avellaneda-Stoikov and
         GLFT closed-form quotes (``{bid, ask, reservation, half_spread,
@@ -198,7 +198,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Order-flow / toxicity / self-excitation kernels (CONCEPT:KG-2.20f).
+        """Order-flow / toxicity / self-excitation kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest).
 
         Routes ``action`` to: Cont-Kukanov-Stoikov order-flow imbalance series,
         size-weighted microprice series, prediction-market VPIN toxicity, a
@@ -320,7 +320,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Position-sizing kernels (CONCEPT:KG-2.20f / KG-2.20i).
+        """Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i).
 
         Routes ``action`` to fractional Kelly for a YES contract, Bayesian Kelly
         under a Beta(α,β) posterior (shrinks the bet as variance grows), the
@@ -417,7 +417,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Backtest-validation / calibration kernels (CONCEPT:KG-2.20f / KG-2.20i).
+        """Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i).
 
         Routes ``action`` to purged combinatorial CV splits, the deflated Sharpe
         ratio, the probability of backtest overfitting, the Diebold-Mariano
@@ -565,7 +565,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """State-space / statistical-arbitrage kernels (CONCEPT:KG-2.20h).
+        """State-space / statistical-arbitrage kernels (CONCEPT:EG-KG.domains.state-space-statistical-arbitrage).
 
         Routes ``action`` to a 1-D Kalman filter ``{states, variances}``, a
         time-varying CAPM-beta Kalman filter ``{states, variances}``, a Kalman
@@ -688,7 +688,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Signal-combination / breadth kernels (CONCEPT:KG-2.20i).
+        """Signal-combination / breadth kernels (CONCEPT:EG-KG.domains.quant-finance).
 
         Routes ``action`` to order-book imbalance series, the fundamental-law
         information ratio ``IC·sqrt(N)``, the effective number of independent bets
@@ -759,7 +759,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """Forensic-accounting report (CONCEPT:KG-2.20g).
+        """Forensic-accounting report (CONCEPT:EG-KG.domains.forensic-accounting-kernels).
 
         Computes Beneish M / Altman Z / Piotroski F scores and the Sloan accruals
         ratio over two fiscal years via the engine, returning
@@ -814,7 +814,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=None, description="MCP context for progress reporting"
         ),
     ) -> dict:
-        """SABR stochastic-volatility surface kernels (CONCEPT:KG-2.20j).
+        """SABR stochastic-volatility surface kernels (CONCEPT:AU-KG.domains.derivatives).
 
         Routes ``action`` to the Hagan-2002 SABR lognormal implied vol for one
         strike, the implied-vol smile across a strike grid, and a least-squares

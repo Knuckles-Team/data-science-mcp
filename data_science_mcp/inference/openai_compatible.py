@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Shared OpenAI-compatible HTTP backend (CONCEPT:AHE-3.1).
+"""Shared OpenAI-compatible HTTP backend (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 vLLM and SGLang both serve an OpenAI-compatible ``/v1/completions`` endpoint, so
 one HTTP client covers both engines; the concrete backends differ only in how

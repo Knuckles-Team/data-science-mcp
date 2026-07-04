@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Special / functional token injection + embedding resize (CONCEPT:AHE-3.1).
+"""Special / functional token injection + embedding resize (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Several training-gated papers add **new tokens** to the vocabulary before
 fine-tuning: ATLAS/MedCausalX/SDAR introduce *functional* tokens (learned action /

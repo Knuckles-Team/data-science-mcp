@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Rollout buffer + served-model generation client for on-policy RL (CONCEPT:AHE-3.1).
+"""Rollout buffer + served-model generation client for on-policy RL (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 GRPO/SDAR/ATLAS need *many* sampled completions per prompt, scored with a reward,
 then group-normalised into advantages. This module is that staging area:

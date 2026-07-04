@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""SGLang inference backend (CONCEPT:AHE-3.1).
+"""SGLang inference backend (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Talks to an already-running SGLang OpenAI-compatible server
 (``python -m sglang.launch_server``). SGLang names constrained decoding

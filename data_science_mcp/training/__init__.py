@@ -8,9 +8,9 @@ first-class (optional ``[training]`` extra) dependency:
 
 * :mod:`data_science_mcp.training.trading_lstm` — the ``TradingLSTM`` (nn.Module),
   ``prepare_sequences``, ``walk_forward_validation`` LSTM trainer, and the
-  ``evaluate_trading_signal`` metrics helper (CONCEPT:KG-2.6).
+  ``evaluate_trading_signal`` metrics helper (CONCEPT:AU-KG.research.research-pipeline-runner).
 * :mod:`data_science_mcp.training.pause_token_trainer` — the trainable
-  ``<pause>``-token PauseRec recommender (CONCEPT:KG-2.93).
+  ``<pause>``-token PauseRec recommender (CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative).
 
 Everything imports lazily / guards torch so the package still imports without the
 ``[training]`` extra installed.

@@ -30,7 +30,7 @@
 
 ## Overview
 
-**Data Science Mcp** is a production-grade Agent and Model Context Protocol (MCP) server designed to interface directly with Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8)..
+**Data Science Mcp** is a production-grade Agent and Model Context Protocol (MCP) server designed to interface directly with Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview)..
 
 ---
 
@@ -46,7 +46,7 @@
 
 ## CLI or API
 
-This agent wraps the Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8). API. You can interact with it programmatically or via its integrated execution entrypoints.
+This agent wraps the Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview). API. You can interact with it programmatically or via its integrated execution entrypoints.
 
 Detailed instructions on how to use the underlying API wrappers, extended schema bindings, and developer SDK references are maintained in [docs/index.md](docs/index.md).
 
@@ -66,15 +66,15 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 | MCP Tool | Toggle Env Var | Description |
 |----------|----------------|-------------|
-| `build_training_dataset` | `MODEL_TRAININGTOOL` | Build an SFT/DPO/GRPO training corpus from traces (CONCEPT:AHE-3.1). |
-| `compose_reward` | `MODEL_TRAININGTOOL` | Composite, conditionally-gated reward score (CONCEPT:AHE-3.1). |
+| `build_training_dataset` | `MODEL_TRAININGTOOL` | Build an SFT/DPO/GRPO training corpus from traces (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
+| `compose_reward` | `MODEL_TRAININGTOOL` | Composite, conditionally-gated reward score (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
 | `cross_validate` | `MODEL_TRAININGTOOL` | Perform k-fold cross-validation for a model class. |
 | `curate_corpus` | `DATA_ENGINETOOL` | Full curation pass: quality-filter → dedup → decontaminate → lineage. |
-| `dataset_lineage` | `DATA_ENGINETOOL` | Record a ``DatasetVersion`` provenance node (CONCEPT:ML-002). |
-| `decontaminate_corpus` | `DATA_ENGINETOOL` | Drop training records that leak held-out eval examples (CONCEPT:ML-002). |
-| `dedup_corpus` | `DATA_ENGINETOOL` | Remove exact + near-duplicate records (CONCEPT:ML-002). |
+| `dataset_lineage` | `DATA_ENGINETOOL` | Record a ``DatasetVersion`` provenance node (CONCEPT:DS-AHE.trainer.data-engine). |
+| `decontaminate_corpus` | `DATA_ENGINETOOL` | Drop training records that leak held-out eval examples (CONCEPT:DS-AHE.trainer.data-engine). |
+| `dedup_corpus` | `DATA_ENGINETOOL` | Remove exact + near-duplicate records (CONCEPT:DS-AHE.trainer.data-engine). |
 | `describe_dataset` | `DATA_MANAGEMENTTOOL` | Get descriptive statistics for a loaded dataset. |
-| `ds_specialize_kernel` | `MODEL_TRAININGTOOL` | Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AHE-3.29). |
+| `ds_specialize_kernel` | `MODEL_TRAININGTOOL` | Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AU-AHE.harness.sai-controller). |
 | `evaluate_model` | `MODEL_TRAININGTOOL` | Evaluate a fitted model on a dataset split. |
 | `evolve_model_class` | `MODEL_EVOLUTIONTOOL` | Submit a model to the evolutionary Pareto frontier. |
 | `fit_model` | `MODEL_TRAININGTOOL` | Fit a machine learning model on a dataset and return metrics. |
@@ -82,27 +82,27 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `get_pareto_frontier` | `MODEL_EVOLUTIONTOOL` | Retrieve the current Pareto frontier of model classes. |
 | `grade_response` | `INTERPRETABILITYTOOL` | Grade a model interpretability response against reference answer. |
 | `load_dataset` | `DATA_MANAGEMENTTOOL` | Load and parse a dataset by name or CSV file path. |
-| `merge_adapters_ties` | `MODEL_TRAININGTOOL` | TIES-merge multiple task vectors onto a base (MeMo; CONCEPT:AHE-3.1). |
+| `merge_adapters_ties` | `MODEL_TRAININGTOOL` | TIES-merge multiple task vectors onto a base (MeMo; CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
 | `predict` | `MODEL_TRAININGTOOL` | Generate predictions using a fitted model. |
-| `prepare_pretrain_data` | `DATA_ENGINETOOL` | Tokenize a corpus into a flat-token HDF5 file for pretraining (CONCEPT:ML-010). |
-| `pretrain_model` | `MODEL_TRAININGTOOL` | Pretrain a causal LM **from random init** (CONCEPT:ML-003). |
-| `quant_derivatives` | `QUANTTOOL` | SABR stochastic-volatility surface kernels (CONCEPT:KG-2.20j). |
-| `quant_forensic` | `QUANTTOOL` | Forensic-accounting report (CONCEPT:KG-2.20g). |
-| `quant_market_making` | `QUANTTOOL` | Market-making / HFT quoting kernels (CONCEPT:KG-2.20f). |
-| `quant_microstructure` | `QUANTTOOL` | Order-flow / toxicity / self-excitation kernels (CONCEPT:KG-2.20f). |
-| `quant_signals` | `QUANTTOOL` | Signal-combination / breadth kernels (CONCEPT:KG-2.20i). |
-| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:KG-2.20f / KG-2.20i). |
-| `quant_statespace` | `QUANTTOOL` | State-space / statistical-arbitrage kernels (CONCEPT:KG-2.20h). |
-| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:KG-2.20f / KG-2.20i). |
+| `prepare_pretrain_data` | `DATA_ENGINETOOL` | Tokenize a corpus into a flat-token HDF5 file for pretraining (CONCEPT:DS-AHE.trainer.data-transformation). |
+| `pretrain_model` | `MODEL_TRAININGTOOL` | Pretrain a causal LM **from random init** (CONCEPT:DS-AHE.trainer.concept-2). |
+| `quant_derivatives` | `QUANTTOOL` | SABR stochastic-volatility surface kernels (CONCEPT:AU-KG.domains.derivatives). |
+| `quant_forensic` | `QUANTTOOL` | Forensic-accounting report (CONCEPT:EG-KG.domains.forensic-accounting-kernels). |
+| `quant_market_making` | `QUANTTOOL` | Market-making / HFT quoting kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
+| `quant_microstructure` | `QUANTTOOL` | Order-flow / toxicity / self-excitation kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
+| `quant_signals` | `QUANTTOOL` | Signal-combination / breadth kernels (CONCEPT:EG-KG.domains.quant-finance). |
+| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
+| `quant_statespace` | `QUANTTOOL` | State-space / statistical-arbitrage kernels (CONCEPT:EG-KG.domains.state-space-statistical-arbitrage). |
+| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
 | `rank_models` | `MODEL_EVOLUTIONTOOL` | Rank all registered fitted models by their test R2 score. |
 | `run_interpretability_suite` | `INTERPRETABILITYTOOL` | Run and grade the complete 6-category interpretability audit suite for a model. |
 | `split_dataset` | `DATA_MANAGEMENTTOOL` | Split a loaded dataset into train, test, and validation sets. |
-| `train_dpo` | `MODEL_TRAININGTOOL` | Preference-optimise on a ``dpo`` corpus (CONCEPT:AHE-3.1). |
-| `train_grpo` | `MODEL_TRAININGTOOL` | GRPO on advantage-tagged groups (CONCEPT:AHE-3.1). |
-| `train_ppo` | `MODEL_TRAININGTOOL` | Proximal Policy Optimization with GAE + value head (CONCEPT:ML-009). |
-| `train_reward` | `MODEL_TRAININGTOOL` | Train a Bradley-Terry reward model on preference pairs (CONCEPT:ML-008). |
-| `train_sft` | `MODEL_TRAININGTOOL` | Supervised fine-tune on an ``sft`` corpus (CONCEPT:AHE-3.1). |
-| `train_tokenizer` | `MODEL_TRAININGTOOL` | Train a byte-level BPE tokenizer from scratch (CONCEPT:ML-003). |
+| `train_dpo` | `MODEL_TRAININGTOOL` | Preference-optimise on a ``dpo`` corpus (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
+| `train_grpo` | `MODEL_TRAININGTOOL` | GRPO on advantage-tagged groups (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
+| `train_ppo` | `MODEL_TRAININGTOOL` | Proximal Policy Optimization with GAE + value head (CONCEPT:DS-AHE.trainer.per-token-value). |
+| `train_reward` | `MODEL_TRAININGTOOL` | Train a Bradley-Terry reward model on preference pairs (CONCEPT:DS-AHE.reward.one-sequence-level-score). |
+| `train_sft` | `MODEL_TRAININGTOOL` | Supervised fine-tune on an ``sft`` corpus (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
+| `train_tokenizer` | `MODEL_TRAININGTOOL` | Train a byte-level BPE tokenizer from scratch (CONCEPT:DS-AHE.trainer.concept-2). |
 
 #### Verbose 1:1 API-mapped tools (`MCP_TOOL_MODE=verbose` or `both`)
 

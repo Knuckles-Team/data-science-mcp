@@ -1,4 +1,4 @@
-"""Multi-GPU / multi-node launch configs + command builder (CONCEPT:ML-005)."""
+"""Multi-GPU / multi-node launch configs + command builder (CONCEPT:DS-AHE.trainer.concept-4)."""
 
 from data_science_mcp.launch.launch import (
     build_launch_command,

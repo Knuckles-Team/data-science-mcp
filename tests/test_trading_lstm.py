@@ -1,4 +1,4 @@
-"""CONCEPT:KG-2.6 — torch-backed TradingLSTM training (re-homed from agent-utilities core).
+"""CONCEPT:AU-KG.research.research-pipeline-runner — torch-backed TradingLSTM training (re-homed from agent-utilities core).
 
 These assertions cover the LSTM architecture, sequence preparation, and the
 signal-evaluation metrics that moved here so agent-utilities core stays torch-free

@@ -1,6 +1,6 @@
 # In-House Model Training (Wave C)
 
-> **CONCEPT:AHE-3.1** — Training Substrate · **CONCEPT:DSCI-004** — Model Training Operations
+> **CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort** — Training Substrate · **CONCEPT:DS-ECO.mcp.model-training** — Model Training Operations
 > Part of the cross-repo [In-House Training Substrate](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md).
 
 `data-science-mcp` owns the **corpus + gradient-trainer** half of the framework's
@@ -140,14 +140,14 @@ for per-paper GB10 requirements.
 
 ---
 
-# High-Caliber LLM Trainer (CONCEPT:ML-001…006)
+# High-Caliber LLM Trainer (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer…006)
 
 The substrate above is hardened into a full LLM trainer: robust fine-tuning at
 scale, a corpus curation engine, **pretraining a model from random init**, and an
 **agent-driven** workflow that runs the whole loop. See the SDD spec at
 [`.specify/specs/llm-model-trainer/`](../../../.specify/specs/llm-model-trainer/).
 
-## Robustness & throughput knobs (CONCEPT:ML-001)
+## Robustness & throughput knobs (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer)
 
 `TrainConfig` gained additive fields (defaults reproduce the original behaviour
 exactly). They flow through one shared optimisation loop, `trainers/loop.py::run_loop`:
@@ -165,7 +165,7 @@ exactly). They flow through one shared optimisation loop, `trainers/loop.py::run
 | `distributed` (`fsdp`/`deepspeed`) | sharded multi-GPU (see below) |
 | `tracker` (`mlflow`/`wandb`) + `kg_log` | experiment tracking + KG mirror |
 
-## Scale-out: FSDP **and** DeepSpeed (CONCEPT:ML-005)
+## Scale-out: FSDP **and** DeepSpeed (CONCEPT:DS-AHE.trainer.concept-4)
 
 Both are first-class peers via `trainers/accelerate_launch.py` (🤗 Accelerate). For a
 real multi-GPU/-node run, generate a launch config and command with
@@ -184,7 +184,7 @@ cmd = build_launch_command("data_science_mcp.trainers.pretrain_trainer",
 `flash-attn` and `deepspeed` are **GPU-host installs** (`[training-scale]`, need the
 CUDA toolchain) — not CI/CPU-installable.
 
-## Corpus curation engine (CONCEPT:ML-002)
+## Corpus curation engine (CONCEPT:DS-AHE.trainer.data-engine)
 
 `data_engine.py` — data quality is what separates good models from bad ones:
 
@@ -200,7 +200,7 @@ CUDA toolchain) — not CI/CPU-installable.
 MCP tools (tag `data-engine`): `curate_corpus`, `dedup_corpus`,
 `decontaminate_corpus`, `dataset_lineage`.
 
-## Pretrain from random init (CONCEPT:ML-003)
+## Pretrain from random init (CONCEPT:DS-AHE.trainer.concept-2)
 
 For genuinely *new* models (≤~1.5B in a homelab; scale the spec up on cloud GPUs):
 
@@ -223,7 +223,7 @@ The model is built with **random weights** (`AutoConfig` → `from_config`, *not
 `from_pretrained`); `tokenizer_trainer.py` trains a byte-level BPE tokenizer first.
 MCP tools: `train_tokenizer`, `pretrain_model` (plan-first like the fine-tuners).
 
-## Agent-driven training (CONCEPT:ML-007)
+## Agent-driven training (CONCEPT:AU-AHE.trainer.concept-2)
 
 The whole loop is exposed as an agent workflow. Four agent personas (prompt JSONs in
 `agent-utilities/agent_utilities/prompts/`): `data_curator`, `training_engineer`,
@@ -239,7 +239,7 @@ prepare_corpus → curate/dedup/decontaminate → (train_tokenizer) →
 
 Run it via `graph_orchestrate(action="execute_workflow", name="train_model", task=…)`.
 
-## Benchmark evaluation (CONCEPT:ML-006)
+## Benchmark evaluation (CONCEPT:DS-AHE.trainer.concept-5)
 
 Alongside the AHE-3.1 reliability suite, `eval_hooks.evaluate_benchmarks(model_path,
 tasks)` scores a checkpoint on EleutherAI `lm-eval` tasks (`[eval]` extra; graceful

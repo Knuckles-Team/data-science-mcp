@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""vLLM inference backend (CONCEPT:AHE-3.1).
+"""vLLM inference backend (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Talks to an already-running vLLM OpenAI-compatible server. vLLM exposes
 constrained decoding as ``guided_json`` / ``guided_regex`` / ``guided_grammar``

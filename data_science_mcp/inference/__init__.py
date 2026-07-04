@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Inference-backend factory (CONCEPT:AHE-3.1).
+"""Inference-backend factory (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Vendor-agnostic selection of a served-model client (vLLM / SGLang), mirroring
 ``agent_utilities.knowledge_graph.backends.create_backend``: resolve config from

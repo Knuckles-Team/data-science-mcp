@@ -2,7 +2,7 @@
 """Trainable ``<pause>``-token generative recommender -- the *training* track of PauseRec.
 
 Completes "PauseRec: Implicit Reasoning for LLM-based Generative Recommendation"
-(He et al., arXiv:2606.14142) for ``CONCEPT:KG-2.93``. Re-homed here from
+(He et al., arXiv:2606.14142) for ``CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative``. Re-homed here from
 ``agent_utilities.knowledge_graph.retrieval.pause_token_trainer`` so agent-utilities
 core stays torch-free (the serving plane must not import torch -- see
 agent-utilities/AGENTS.md "Dependency discipline"). The torch-free *inference*
@@ -98,7 +98,7 @@ class TrainResult:
 
 
 class PauseTokenRecommender:
-    """Trainable-pause-token generative recommender (CONCEPT:KG-2.93, PauseRec mechanism).
+    """Trainable-pause-token generative recommender (CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative, PauseRec mechanism).
 
     A small torch model: a learned item-embedding table, a user-history encoder
     (mean of history item embeddings), and ``n_pause_tokens`` TRAINABLE pause

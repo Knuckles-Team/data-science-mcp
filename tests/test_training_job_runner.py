@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Training-job runner ↔ GPU-slot scheduler bridge (CONCEPT:ML-011).
+"""Training-job runner ↔ GPU-slot scheduler bridge (CONCEPT:AU-AHE.trainer.join-inference).
 
 Drives a real toy SFT trainer through the runner with a fake scheduler that flips
 ``should_pause`` after a few steps, asserting the run checkpoints + yields, then

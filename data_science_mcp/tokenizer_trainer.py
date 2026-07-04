@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Train a tokenizer from scratch (CONCEPT:ML-003).
+"""Train a tokenizer from scratch (CONCEPT:DS-AHE.trainer.concept-2).
 
 The first step of pretraining a model from random init: you need a *vocabulary*
 before you can have an embedding table. This trains a byte-level BPE tokenizer with
