@@ -1,0 +1,14 @@
+{
+  "_comment": "Tier-1 mcp_tool source preset for data-science-mcp. This is a BACKEND/COMPUTE service — it ships NO native data ingestion (no kg_ingest/kg_media). The single preset below is an OPTIONAL, lightweight declaration mapping the live fitted-model registry (rank_models -> {ranked_models:[{model_id,dataset,model_str,r2_test}]}) to :ModelArtifact records; it uses only real tool/field names. Contributed presets win over the central MCP_TOOL_PRESETS.",
+  "datascience-model-registry": {
+    "server": "data-science-mcp",
+    "tool": "rank_models",
+    "action": "list",
+    "records_path": "ranked_models",
+    "id_field": "model_id",
+    "title_field": "model_str",
+    "text_field": "model_str",
+    "updated_field": "dataset",
+    "doc_type": "datascience_model"
+  }
+}
