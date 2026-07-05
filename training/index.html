@@ -922,7 +922,7 @@
 
 <h1 id="in-house-model-training-wave-c">In-House Model Training (Wave C)<a class="headerlink" href="#in-house-model-training-wave-c" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>CONCEPT:AHE-3.1</strong> — Training Substrate · <strong>CONCEPT:DSCI-004</strong> — Model Training Operations
+<p><strong>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</strong> — Training Substrate · <strong>CONCEPT:DS-ECO.mcp.model-training</strong> — Model Training Operations
 Part of the cross-repo <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md">In-House Training Substrate</a>.</p>
 </blockquote>
 <p><code>data-science-mcp</code> owns the <strong>corpus + gradient-trainer</strong> half of the framework's
@@ -1079,12 +1079,12 @@ identical.</p>
 <p>See <a href="https://github.com/Knuckles-Team/data-science-mcp/blob/main/.specify/specs/research-evolution-20260606/WAVE_C_INFRA.md"><code>WAVE_C_INFRA.md</code></a>
 for per-paper GB10 requirements.</p>
 <hr />
-<h1 id="high-caliber-llm-trainer-conceptml-001006">High-Caliber LLM Trainer (CONCEPT:ML-001…006)<a class="headerlink" href="#high-caliber-llm-trainer-conceptml-001006" title="Permanent link">&para;</a></h1>
+<h1 id="high-caliber-llm-trainer-conceptau-ahetrainerhigh-caliber-llm-trainer006">High-Caliber LLM Trainer (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer…006)<a class="headerlink" href="#high-caliber-llm-trainer-conceptau-ahetrainerhigh-caliber-llm-trainer006" title="Permanent link">&para;</a></h1>
 <p>The substrate above is hardened into a full LLM trainer: robust fine-tuning at
 scale, a corpus curation engine, <strong>pretraining a model from random init</strong>, and an
 <strong>agent-driven</strong> workflow that runs the whole loop. See the SDD spec at
 <a href="../../../.specify/specs/llm-model-trainer/"><code>.specify/specs/llm-model-trainer/</code></a>.</p>
-<h2 id="robustness-throughput-knobs-conceptml-001">Robustness &amp; throughput knobs (CONCEPT:ML-001)<a class="headerlink" href="#robustness-throughput-knobs-conceptml-001" title="Permanent link">&para;</a></h2>
+<h2 id="robustness-throughput-knobs-conceptau-ahetrainerhigh-caliber-llm-trainer">Robustness &amp; throughput knobs (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer)<a class="headerlink" href="#robustness-throughput-knobs-conceptau-ahetrainerhigh-caliber-llm-trainer" title="Permanent link">&para;</a></h2>
 <p><code>TrainConfig</code> gained additive fields (defaults reproduce the original behaviour
 exactly). They flow through one shared optimisation loop, <code>trainers/loop.py::run_loop</code>:</p>
 <table>
@@ -1137,7 +1137,7 @@ exactly). They flow through one shared optimisation loop, <code>trainers/loop.py
 </tr>
 </tbody>
 </table>
-<h2 id="scale-out-fsdp-and-deepspeed-conceptml-005">Scale-out: FSDP <strong>and</strong> DeepSpeed (CONCEPT:ML-005)<a class="headerlink" href="#scale-out-fsdp-and-deepspeed-conceptml-005" title="Permanent link">&para;</a></h2>
+<h2 id="scale-out-fsdp-and-deepspeed-conceptds-ahetrainerconcept-4">Scale-out: FSDP <strong>and</strong> DeepSpeed (CONCEPT:DS-AHE.trainer.concept-4)<a class="headerlink" href="#scale-out-fsdp-and-deepspeed-conceptds-ahetrainerconcept-4" title="Permanent link">&para;</a></h2>
 <p>Both are first-class peers via <code>trainers/accelerate_launch.py</code> (🤗 Accelerate). For a
 real multi-GPU/-node run, generate a launch config and command with
 <code>data_science_mcp.launch</code>:</p>
@@ -1151,7 +1151,7 @@ real multi-GPU/-node run, generate a launch config and command with
 </span></code></pre></div>
 <p><code>flash-attn</code> and <code>deepspeed</code> are <strong>GPU-host installs</strong> (<code>[training-scale]</code>, need the
 CUDA toolchain) — not CI/CPU-installable.</p>
-<h2 id="corpus-curation-engine-conceptml-002">Corpus curation engine (CONCEPT:ML-002)<a class="headerlink" href="#corpus-curation-engine-conceptml-002" title="Permanent link">&para;</a></h2>
+<h2 id="corpus-curation-engine-conceptds-ahetrainerdata-engine">Corpus curation engine (CONCEPT:DS-AHE.trainer.data-engine)<a class="headerlink" href="#corpus-curation-engine-conceptds-ahetrainerdata-engine" title="Permanent link">&para;</a></h2>
 <p><code>data_engine.py</code> — data quality is what separates good models from bad ones:</p>
 <ul>
 <li><code>stream_corpus</code> — list / <code>.jsonl</code> / <code>.txt</code> / 🤗 <code>datasets(streaming=True)</code>.</li>
@@ -1165,7 +1165,7 @@ CUDA toolchain) — not CI/CPU-installable.</p>
 </ul>
 <p>MCP tools (tag <code>data-engine</code>): <code>curate_corpus</code>, <code>dedup_corpus</code>,
 <code>decontaminate_corpus</code>, <code>dataset_lineage</code>.</p>
-<h2 id="pretrain-from-random-init-conceptml-003">Pretrain from random init (CONCEPT:ML-003)<a class="headerlink" href="#pretrain-from-random-init-conceptml-003" title="Permanent link">&para;</a></h2>
+<h2 id="pretrain-from-random-init-conceptds-ahetrainerconcept-2">Pretrain from random init (CONCEPT:DS-AHE.trainer.concept-2)<a class="headerlink" href="#pretrain-from-random-init-conceptds-ahetrainerconcept-2" title="Permanent link">&para;</a></h2>
 <p>For genuinely <em>new</em> models (≤~1.5B in a homelab; scale the spec up on cloud GPUs):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">data_science_mcp.training_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_pretrain_pipeline</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">data_science_mcp.trainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainConfig</span><span class="p">,</span> <span class="n">PretrainSpec</span>
@@ -1183,7 +1183,7 @@ CUDA toolchain) — not CI/CPU-installable.</p>
 <p>The model is built with <strong>random weights</strong> (<code>AutoConfig</code> → <code>from_config</code>, <em>not</em>
 <code>from_pretrained</code>); <code>tokenizer_trainer.py</code> trains a byte-level BPE tokenizer first.
 MCP tools: <code>train_tokenizer</code>, <code>pretrain_model</code> (plan-first like the fine-tuners).</p>
-<h2 id="agent-driven-training-conceptml-007">Agent-driven training (CONCEPT:ML-007)<a class="headerlink" href="#agent-driven-training-conceptml-007" title="Permanent link">&para;</a></h2>
+<h2 id="agent-driven-training-conceptau-ahetrainerconcept-2">Agent-driven training (CONCEPT:AU-AHE.trainer.concept-2)<a class="headerlink" href="#agent-driven-training-conceptau-ahetrainerconcept-2" title="Permanent link">&para;</a></h2>
 <p>The whole loop is exposed as an agent workflow. Four agent personas (prompt JSONs in
 <code>agent-utilities/agent_utilities/prompts/</code>): <code>data_curator</code>, <code>training_engineer</code>,
 <code>eval_judge</code>, <code>ml_orchestrator</code>. They are bound into the <code>model_training_team</code>
@@ -1194,7 +1194,7 @@ TeamConfig and driven by the <code>train_model</code> workflow skill
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  merge_adapters → final_eval → register_model
 </span></code></pre></div>
 <p>Run it via <code>graph_orchestrate(action="execute_workflow", name="train_model", task=…)</code>.</p>
-<h2 id="benchmark-evaluation-conceptml-006">Benchmark evaluation (CONCEPT:ML-006)<a class="headerlink" href="#benchmark-evaluation-conceptml-006" title="Permanent link">&para;</a></h2>
+<h2 id="benchmark-evaluation-conceptds-ahetrainerconcept-5">Benchmark evaluation (CONCEPT:DS-AHE.trainer.concept-5)<a class="headerlink" href="#benchmark-evaluation-conceptds-ahetrainerconcept-5" title="Permanent link">&para;</a></h2>
 <p>Alongside the AHE-3.1 reliability suite, <code>eval_hooks.evaluate_benchmarks(model_path,
 tasks)</code> scores a checkpoint on EleutherAI <code>lm-eval</code> tasks (<code>[eval]</code> extra; graceful
 no-op when absent).</p>

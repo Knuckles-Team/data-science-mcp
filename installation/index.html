@@ -992,7 +992,7 @@ them actually executes, so the package installs and imports without them.</p>
 </tr>
 <tr>
 <td><strong>Corpus curation</strong> (dedup/decontaminate/quality-filter/pack/lineage)</td>
-<td><code>curate_corpus</code>, <code>dedup_corpus</code>, <code>decontaminate_corpus</code>, <code>dataset_lineage</code> (CONCEPT:ML-002)</td>
+<td><code>curate_corpus</code>, <code>dedup_corpus</code>, <code>decontaminate_corpus</code>, <code>dataset_lineage</code> (CONCEPT:DS-AHE.trainer.data-engine)</td>
 <td><strong>core only</strong> (pure-Python; epistemic-graph HNSW accelerates near-dup search when present)</td>
 </tr>
 <tr>
@@ -1016,7 +1016,7 @@ them actually executes, so the package installs and imports without them.</p>
 <td><code>[training]</code> (QLoRA fits a 1.5B–8B base on one 24 GB card)</td>
 </tr>
 <tr>
-<td><strong>Pretrain from random init</strong> (CONCEPT:ML-003)</td>
+<td><strong>Pretrain from random init</strong> (CONCEPT:DS-AHE.trainer.concept-2)</td>
 <td><code>pretrain_model</code>, <code>train_tokenizer</code>, <code>run_pretrain_pipeline</code></td>
 <td><code>[training]</code> + a GPU (small models ≤~1.5B in a homelab)</td>
 </tr>
@@ -1042,7 +1042,7 @@ them actually executes, so the package installs and imports without them.</p>
 </tr>
 <tr>
 <td>Benchmark eval (hellaswag/arc/gsm8k…)</td>
-<td><code>evaluate_benchmarks</code> (CONCEPT:ML-006)</td>
+<td><code>evaluate_benchmarks</code> (CONCEPT:DS-AHE.trainer.concept-5)</td>
 <td><code>[eval]</code></td>
 </tr>
 <tr>

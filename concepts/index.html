@@ -788,7 +788,7 @@
 <blockquote>
 <p><strong>Prefixes</strong>: <code>CONCEPT:DSCI-*</code> (this project) · <code>CONCEPT:ML-*</code> (cross-repo LLM trainer)
 <strong>Version</strong>: 0.9.0
-<strong>Bridge</strong>: <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/concepts.md"><code>CONCEPT:ECO-4.0</code></a> (Unified Toolkit Ingestion)</p>
+<strong>Bridge</strong>: <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/concepts.md"><code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code></a> (Unified Toolkit Ingestion)</p>
 </blockquote>
 <hr />
 <h2 id="project-specific-concepts">Project-Specific Concepts<a class="headerlink" href="#project-specific-concepts" title="Permanent link">&para;</a></h2>
@@ -802,39 +802,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>CONCEPT:DSCI-001</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.data-management</code></td>
 <td>Data Management Operations</td>
 <td>MCP tool domain <code>data_management</code> — Action-routed dynamic tool registration</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-002</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.interpretability</code></td>
 <td>Interpretability Operations</td>
 <td>MCP tool domain <code>interpretability</code> — Action-routed dynamic tool registration</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-003</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.model-evolution</code></td>
 <td>Model Evolution Operations</td>
 <td>MCP tool domain <code>model_evolution</code> — Action-routed dynamic tool registration</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-004</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.model-training</code></td>
 <td>Model Training Operations</td>
-<td>MCP tool domain <code>model_training</code> — Action-routed dynamic tool registration; incl. the in-house training substrate (<code>training_data</code> corpus/reward engine + <code>trainers/</code> SFT/DPO/GRPO + <code>peft_manager</code>/<code>tokenizer_registry</code>/<code>rollout_buffer</code>, <code>CONCEPT:AHE-3.1</code>)</td>
+<td>MCP tool domain <code>model_training</code> — Action-routed dynamic tool registration; incl. the in-house training substrate (<code>training_data</code> corpus/reward engine + <code>trainers/</code> SFT/DPO/GRPO + <code>peft_manager</code>/<code>tokenizer_registry</code>/<code>rollout_buffer</code>, <code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code>)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-005</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.quant-statespace</code></td>
 <td>State-Space / Stat-Arb Operations</td>
-<td>MCP tool domain <code>quant_statespace</code> — Kalman filter/beta/volatility, ADF, OU calibration + thresholds, Markov transition (engine <code>client.finance.*</code>, KG-2.20h)</td>
+<td>MCP tool domain <code>quant_statespace</code> — Kalman filter/beta/volatility, ADF, OU calibration + thresholds, Markov transition (engine <code>client.finance.*</code>, EG-KG.domains.state-space-statistical-arbitrage)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-006</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.signal-combination</code></td>
 <td>Signal-Combination Operations</td>
-<td>MCP tool domain <code>quant_signals</code> — order-book imbalance, information ratio, effective independent N, alpha combination, convergence gate; plus <code>empirical_kelly</code> (quant_sizing) and <code>brier_score</code> (quant_validation) (engine <code>client.finance.*</code>, KG-2.20i)</td>
+<td>MCP tool domain <code>quant_signals</code> — order-book imbalance, information ratio, effective independent N, alpha combination, convergence gate; plus <code>empirical_kelly</code> (quant_sizing) and <code>brier_score</code> (quant_validation) (engine <code>client.finance.*</code>, EG-KG.domains.quant-finance)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:DSCI-007</code></td>
+<td><code>CONCEPT:DS-ECO.mcp.sabr-volatility</code></td>
 <td>SABR Volatility-Surface Operations</td>
-<td>MCP tool domain <code>quant_derivatives</code> — Hagan-2002 SABR <code>implied_vol</code> / <code>smile</code> / <code>calibrate</code> (fit α,ρ,ν with β fixed → {alpha,beta,rho,nu,rmse,converged}) delegating to engine <code>client.finance.sabr_*</code> (KG-2.20j)</td>
+<td>MCP tool domain <code>quant_derivatives</code> — Hagan-2002 SABR <code>implied_vol</code> / <code>smile</code> / <code>calibrate</code> (fit α,ρ,ν with β fixed → {alpha,beta,rho,nu,rmse,converged}) delegating to engine <code>client.finance.sabr_*</code> (AU-KG.domains.derivatives)</td>
 </tr>
 </tbody>
 </table>
@@ -842,8 +842,8 @@
 <p>The high-caliber LLM trainer — create, <strong>pretrain from random init</strong>, and fine-tune
 models, driven by AI agents. This is a deliberate <strong>cross-repo family</strong> (it spans
 <code>data-science-mcp</code> + <code>agent-utilities</code> + <code>universal-skills</code>), so it uses a repo-neutral
-<code>ML-*</code> prefix rather than <code>DSCI-*</code>. It expands <a href="#project-specific-concepts"><code>CONCEPT:DSCI-004</code></a>
-(Model Training Operations) and bridges <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md"><code>CONCEPT:AHE-3.1</code></a>
+<code>ML-*</code> prefix rather than <code>DSCI-*</code>. It expands <a href="#project-specific-concepts"><code>CONCEPT:DS-ECO.mcp.model-training</code></a>
+(Model Training Operations) and bridges <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md"><code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code></a>
 (the in-house training substrate). See <a href="../training/">Model Training</a>, <a href="../installation/">Installation</a>,
 and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <table>
@@ -856,67 +856,67 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>CONCEPT:ML-001</code></td>
+<td><code>CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer</code></td>
 <td>Trainer Hardening</td>
 <td>Shared <code>trainers/loop.py::run_loop</code> — precision (fp16 scaler / bf16 autocast), gradient accumulation, clipping, LR scheduling, checkpoint save+resume, metrics. SFT/DPO/GRPO/pretrain all route through it; <code>TrainConfig</code> defaults reproduce prior behaviour exactly</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-002</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.data-engine</code></td>
 <td>Corpus Curation Engine</td>
 <td><code>data_engine.py</code> (+ <code>mcp/mcp_data_engine.py</code>) — stream / exact+near dedup / decontaminate / quality-filter / pack / <code>DatasetVersion</code> lineage; epistemic-graph HNSW/LSH <code>find_similar_pairs</code> accelerates the all-pairs search (local-cosine fallback)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-003</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.concept-2</code></td>
 <td>Pretrain From Random Init</td>
 <td><code>tokenizer_trainer.py</code> (BPE) + <code>trainers/pretrain_trainer.py</code> (<code>PretrainSpec</code>, <code>AutoConfig</code>→<code>from_config</code>, packed next-token CE; kind=<code>pretrain</code>) + <code>run_pretrain_pipeline</code></td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-004</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.concept-3</code></td>
 <td>Experiment Tracking</td>
 <td><code>tracking.py::RunTracker</code> — MLflow / W&amp;B / none + best-effort epistemic-graph <code>TrainingRun</code> provenance mirror</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-005</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.concept-4</code></td>
 <td>Distributed Scale-Out</td>
 <td><code>trainers/accelerate_launch.py</code> + <code>launch/</code> — FSDP <strong>and</strong> DeepSpeed ZeRO-3 as first-class peers + <code>accelerate launch</code> config/command builder (homelab or cloud)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-006</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.concept-5</code></td>
 <td>Benchmark Evaluation</td>
 <td><code>trainers/eval_hooks.evaluate_benchmarks</code> — EleutherAI <code>lm-eval</code> scoring alongside the AHE-3.1 reliability suite</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-007</code></td>
+<td><code>CONCEPT:AU-AHE.trainer.concept-2</code></td>
 <td>Agent-Driven Training</td>
 <td>Personas <code>data_curator</code>/<code>training_engineer</code>/<code>eval_judge</code>/<code>ml_orchestrator</code> (agent-utilities) + the <code>ml/train_model</code> workflow + <code>model_training_team</code> (universal-skills)</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-008</code></td>
+<td><code>CONCEPT:DS-AHE.reward.one-sequence-level-score</code></td>
 <td>Reward Model</td>
 <td><code>trainers/reward_trainer.py</code> (Bradley-Terry pairwise loss <code>objectives.bradley_terry_loss</code>) on a scalar head (<code>trainers/value_head.py</code>); consumes the preference corpus; tool <code>train_reward</code>. The RLHF stage between SFT and PPO</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-009</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.per-token-value</code></td>
 <td>PPO (actor-critic)</td>
-<td><code>trainers/ppo_trainer.py</code> — rollout → reward (verifier or ML-008 reward model) → GAE (<code>objectives.gae</code>) + value head → clipped surrogate (<code>grpo_surrogate</code>) + value loss (<code>objectives.value_function_loss</code>) + KL-to-reference; tool <code>train_ppo</code>; <code>training_pipeline.run_rlhf_pipeline</code> chains SFT→reward→PPO</td>
+<td><code>trainers/ppo_trainer.py</code> — rollout → reward (verifier or DS-AHE.reward.one-sequence-level-score reward model) → GAE (<code>objectives.gae</code>) + value head → clipped surrogate (<code>grpo_surrogate</code>) + value loss (<code>objectives.value_function_loss</code>) + KL-to-reference; tool <code>train_ppo</code>; <code>training_pipeline.run_rlhf_pipeline</code> chains SFT→reward→PPO</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-010</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.data-transformation</code></td>
 <td>Flat-Token Pretrain Data</td>
 <td><code>data_engine.prepare_pretrain_data</code> / <code>read_token_blocks</code> — stream (<code>.jsonl</code>/<code>.jsonl.zst</code>/HF) → tokenize (EOS-sep) → contiguous HDF5/<code>.npy</code> token array, batched on the fly (no padding); tool <code>prepare_pretrain_data</code></td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-011</code></td>
+<td><code>CONCEPT:AU-AHE.trainer.join-inference</code></td>
 <td>Training-Job Dispatch</td>
 <td><code>training_job_runner.py</code> runs a trainer as a <code>JobRunner</code> on the agent-utilities GPU-slot scheduler (KG-2.65): checkpoint on <code>should_pause</code>, auto-resume on backfill; the <code>train_model</code> workflow submits to a GPU host or falls back to <code>accelerate launch</code></td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-012</code></td>
+<td><code>CONCEPT:DS-AHE.trainer.chat-format</code></td>
 <td>Chat + Reasoning Format</td>
 <td><code>chat_template.py</code> — learnable role markers + <code>&lt;think&gt;/&lt;answer&gt;</code> (ordinary tokens) + answer extractor; <code>eval_hooks.evaluate_gsm8k</code> / <code>gsm8k_reward</code> verifiable exact-match reward</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ML-013</code></td>
+<td><code>CONCEPT:DS-AHE.optimization.cache-agent-loop</code></td>
 <td>CacheRL Cached Rollouts + Hybrid Thinking</td>
 <td><code>cache_agent_loop.py</code> — three-tier fuzzy tool-call cache (<code>ThreeTierToolCache</code> exact→fuzzy→semantic) wrapped by <code>CacheAgentLoop</code> so multi-turn RL rollouts serve repeated tool calls from cache (live-execution cost ↓, <code>calls_saved</code>/<code>hit_rate</code> measure it) + <code>ThinkingTraceAugmenter</code> interleaving model "why-this-tool" rationale and per-segment provenance labels; reward half (token-mask + cache-tier-aware reward) in agent-utilities AHE-3.49. Distils arXiv:2606.14179</td>
 </tr>
@@ -933,49 +933,49 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>CONCEPT:ECO-4.0</code></td>
+<td><code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code></td>
 <td>Unified Toolkit Ingestion</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:ORCH-1.2</code></td>
+<td><code>CONCEPT:AU-ORCH.adapter.hot-cache-invalidation</code></td>
 <td>Confidence-Gated Router</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:OS-5.1</code></td>
+<td><code>CONCEPT:AU-OS.config.secrets-authentication</code></td>
 <td>Prompt Injection Defense</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:OS-5.2</code></td>
+<td><code>CONCEPT:AU-OS.state.cognitive-scheduler-preemption</code></td>
 <td>Cognitive Scheduler</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:OS-5.3</code></td>
+<td><code>CONCEPT:AU-OS.governance.reactive-multi-axis-budget</code></td>
 <td>Guardrail Engine</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:OS-5.4</code></td>
+<td><code>CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox</code></td>
 <td>Audit Logging</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:KG-2.0</code></td>
+<td><code>CONCEPT:AU-KG.query.object-graph-mapper</code></td>
 <td>Knowledge Graph Core</td>
 <td>agent-utilities</td>
 </tr>
 <tr>
-<td><code>CONCEPT:AHE-3.1</code></td>
+<td><code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code></td>
 <td>Training Substrate (reward decomposition / distillation)</td>
 <td>agent-utilities</td>
 </tr>
 </tbody>
 </table>
 <h2 id="synergy-with-agent-utilities">Synergy with agent-utilities<a class="headerlink" href="#synergy-with-agent-utilities" title="Permanent link">&para;</a></h2>
-<p>This project integrates with <code>agent-utilities</code> via <code>CONCEPT:ECO-4.0</code> (Unified Toolkit Ingestion). The <code>data_science_mcp</code> MCP server registers its tools with the agent-utilities FastMCP middleware, enabling automatic discovery, telemetry, and Knowledge Graph ingestion of all DSCI-* concepts.</p>
+<p>This project integrates with <code>agent-utilities</code> via <code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code> (Unified Toolkit Ingestion). The <code>data_science_mcp</code> MCP server registers its tools with the agent-utilities FastMCP middleware, enabling automatic discovery, telemetry, and Knowledge Graph ingestion of all DSCI-* concepts.</p>
 
 
 

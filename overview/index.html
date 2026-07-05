@@ -892,7 +892,7 @@
 Built on <a href="https://github.com/Knuckles-Team/agent-utilities"><code>agent-utilities</code></a> — the unified AGI Harness.</p>
 </blockquote>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AHE-3.8).</p>
+<p>Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-utilities IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview).</p>
 <h2 id="enterprise-readiness">Enterprise Readiness<a class="headerlink" href="#enterprise-readiness" title="Permanent link">&para;</a></h2>
 <p>All agents in the ecosystem inherit enterprise-grade infrastructure from <code>agent-utilities</code>:</p>
 <table>
@@ -922,37 +922,37 @@ Built on <a href="https://github.com/Knuckles-Team/agent-utilities"><code>agent-
 <tr>
 <td style="text-align: left;"><strong>Audit Logging</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Append-only compliance trail with 30+ action types (CONCEPT:OS-5.4)</td>
+<td style="text-align: left;">Append-only compliance trail with 30+ action types (CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Token Usage Analytics</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">4-bucket tracking with budget alerting (CONCEPT:OS-5.4)</td>
+<td style="text-align: left;">4-bucket tracking with budget alerting (CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Prompt Injection Defense</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">25+ pattern scanner + jailbreak taxonomy (CONCEPT:OS-5.1)</td>
+<td style="text-align: left;">25+ pattern scanner + jailbreak taxonomy (CONCEPT:AU-OS.config.secrets-authentication)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Guardrail Engine</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Input/output interception with block/redact/warn (CONCEPT:OS-5.3)</td>
+<td style="text-align: left;">Input/output interception with block/redact/warn (CONCEPT:AU-OS.governance.reactive-multi-axis-budget)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Action Execution Pipeline</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Token, cost, duration, and node transition limits Dry-run / commit / rollback phases (CONCEPT:ORCH-1.4)</td>
+<td style="text-align: left;">Token, cost, duration, and node transition limits Dry-run / commit / rollback phases (CONCEPT:AU-ORCH.adapter.kg-graph-materialization)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Resource Scheduling</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Priority queuing + preemption limits (CONCEPT:OS-5.2)</td>
+<td style="text-align: left;">Priority queuing + preemption limits (CONCEPT:AU-OS.state.cognitive-scheduler-preemption)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Session Concurrency</strong></td>
 <td style="text-align: left;">✅ Built-in</td>
-<td style="text-align: left;">Enqueue/reject/interrupt/rollback (CONCEPT:OS-5.3)</td>
+<td style="text-align: left;">Enqueue/reject/interrupt/rollback (CONCEPT:AU-OS.governance.reactive-multi-axis-budget)</td>
 </tr>
 </tbody>
 </table>
@@ -960,10 +960,10 @@ Built on <a href="https://github.com/Knuckles-Team/agent-utilities"><code>agent-
 <p>Beyond engine-backed classical ML, this project is the <strong>agent-driven LLM trainer</strong>
 for the ecosystem — it can <strong>create, pretrain from random init, and fine-tune</strong> models:
 robust SFT/DPO/GRPO with precision/accumulation/clipping/scheduling/checkpoint-resume
-and FSDP+DeepSpeed scale-out (<code>CONCEPT:ML-001/005</code>), a corpus curation engine
-(<code>CONCEPT:ML-002</code>), pretraining from scratch with a trained BPE tokenizer
-(<code>CONCEPT:ML-003</code>), MLflow + KG tracking (<code>CONCEPT:ML-004</code>), and an agent workflow that
-runs the whole loop (<code>CONCEPT:ML-007</code>). See <strong><a href="../installation/">Installation</a></strong> for the
+and FSDP+DeepSpeed scale-out (<code>CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer/005</code>), a corpus curation engine
+(<code>CONCEPT:DS-AHE.trainer.data-engine</code>), pretraining from scratch with a trained BPE tokenizer
+(<code>CONCEPT:DS-AHE.trainer.concept-2</code>), MLflow + KG tracking (<code>CONCEPT:DS-AHE.trainer.concept-3</code>), and an agent workflow that
+runs the whole loop (<code>CONCEPT:AU-AHE.trainer.concept-2</code>). See <strong><a href="../installation/">Installation</a></strong> for the
 capability→dependency matrix and <strong><a href="../training/">Model Training</a></strong> for the recipes.</p>
 <h2 id="concept-registry">Concept Registry<a class="headerlink" href="#concept-registry" title="Permanent link">&para;</a></h2>
 <p>This project implements or inherits the following ecosystem concepts (full
@@ -978,12 +978,12 @@ capability→dependency matrix and <strong><a href="../training/">Model Training
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">ML-001 … ML-007</td>
+<td style="text-align: left;">AU-AHE.trainer.high-caliber-llm-trainer … AU-AHE.trainer.concept-2</td>
 <td style="text-align: left;"><strong>LLM trainer</strong> — hardening, curation, pretrain, tracking, scale-out, eval, agent workflow</td>
 <td style="text-align: left;">this project (cross-repo)</td>
 </tr>
 <tr>
-<td style="text-align: left;">DSCI-004</td>
+<td style="text-align: left;">DS-ECO.mcp.model-training</td>
 <td style="text-align: left;">Model Training Operations (in-house training substrate)</td>
 <td style="text-align: left;">this project</td>
 </tr>
@@ -993,12 +993,12 @@ capability→dependency matrix and <strong><a href="../training/">Model Training
 <td style="text-align: left;"><code>agent-utilities</code> (bridge)</td>
 </tr>
 <tr>
-<td style="text-align: left;">AHE-3.8</td>
+<td style="text-align: left;">AU-AHE.harness.self-improvement-overview</td>
 <td style="text-align: left;"><strong>Agent-Interpretable Model Evolver</strong></td>
 <td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
 </tr>
 <tr>
-<td style="text-align: left;">AHE-3.16</td>
+<td style="text-align: left;">AU-AHE.harness.width-diverse-best-k</td>
 <td style="text-align: left;"><strong>LLM-Graded Interpretability Tests</strong></td>
 <td style="text-align: left;"><code>agent-utilities</code> (inherited)</td>
 </tr>
