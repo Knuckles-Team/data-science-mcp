@@ -14,6 +14,9 @@ Tool tags:
     - quant: quant_market_making, quant_microstructure, quant_sizing,
       quant_validation, quant_forensic, quant_statespace, quant_signals,
       quant_derivatives (epistemic-graph finance kernels)
+    - deep-delegate: deep_train_predict — the AU-KG mining plan's Phase-6
+      delegation target (mlp_classify, autoencoder_anomaly/embed, lstm_forecast,
+      histgbm_classify — torch/[training]-extra, CONCEPT:AU-KG.mining.dsm-forecast-delegation)
 """
 
 from fastmcp import Context, FastMCP
@@ -57,6 +60,9 @@ from data_science_mcp.mcp.mcp_kernel_specialize import (  # noqa: E402
 )
 from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
     register_trainer_tools,
+)
+from data_science_mcp.mcp.mcp_deep_delegate import (  # noqa: E402
+    register_deep_delegate_tools,
 )
 
 # mcp_data_engine is imported lazily inside get_mcp_instance (see below) rather than
@@ -588,6 +594,7 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         ("model-training", "MODEL_TRAININGTOOL", register_model_training_tools),
         ("training-data", "MODEL_TRAININGTOOL", register_training_data_tools),
         ("trainer", "MODEL_TRAININGTOOL", register_trainer_tools),
+        ("deep-delegate", "MODEL_TRAININGTOOL", register_deep_delegate_tools),
         ("kernel-specialize", "MODEL_TRAININGTOOL", register_kernel_specialize_tools),
         ("model-evolution", "MODEL_EVOLUTIONTOOL", register_model_evolution_tools),
         ("interpretability", "INTERPRETABILITYTOOL", register_interpretability_tools),
