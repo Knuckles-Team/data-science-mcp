@@ -1,5 +1,6 @@
 ---
 name: data-science-llm-finetuning
+skill_type: skill
 description: >-
   LLM gradient fine-tuning and corpus pipeline on the data-science-mcp compute server —
   curate a corpus (dedup/decontaminate/quality), build an SFT/DPO/GRPO dataset from

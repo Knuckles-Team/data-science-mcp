@@ -1,5 +1,6 @@
 ---
 name: data-science-model-reliability
+skill_type: skill
 description: >-
   Model interpretability and reliability grading on the data-science-mcp compute server —
   generate a structured suite of behavioural probes for a fitted model (feature

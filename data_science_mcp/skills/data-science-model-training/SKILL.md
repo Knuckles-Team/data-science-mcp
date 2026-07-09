@@ -1,5 +1,6 @@
 ---
 name: data-science-model-training
+skill_type: skill
 description: >-
   Classical (tabular) ML lifecycle on the data-science-mcp compute server — load a
   dataset, fit a model, cross-validate, predict, evaluate, then rank and evolve model
