@@ -104,9 +104,9 @@ class MLEngine:
             return cls._rust_client_cache
 
         client = None
-        socket_path = os.environ.get("EPISTEMIC_GRAPH_SOCKET") or os.environ.get(
-            "GRAPH_SERVICE_SOCKET"
-        )
+        primary_socket = os.environ.get("EPISTEMIC_GRAPH_SOCKET")
+        legacy_socket = os.environ.get("GRAPH_SERVICE_SOCKET")
+        socket_path = primary_socket or legacy_socket
         tcp_addr = os.environ.get("EPISTEMIC_GRAPH_TCP")
         try:
             from epistemic_graph.client import SyncEpistemicGraphClient

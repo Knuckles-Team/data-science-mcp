@@ -73,6 +73,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `dataset_lineage` | `DATA_ENGINETOOL` | Record a ``DatasetVersion`` provenance node (CONCEPT:DS-AHE.trainer.data-engine). |
 | `decontaminate_corpus` | `DATA_ENGINETOOL` | Drop training records that leak held-out eval examples (CONCEPT:DS-AHE.trainer.data-engine). |
 | `dedup_corpus` | `DATA_ENGINETOOL` | Remove exact + near-duplicate records (CONCEPT:DS-AHE.trainer.data-engine). |
+| `deep_train_predict` | `MODEL_TRAININGTOOL` | Fit + run one delegated deep/heavy model and return predictions/model as JSON. |
 | `describe_dataset` | `DATA_MANAGEMENTTOOL` | Get descriptive statistics for a loaded dataset. |
 | `ds_specialize_kernel` | `MODEL_TRAININGTOOL` | Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AU-AHE.harness.sai-controller). |
 | `evaluate_model` | `MODEL_TRAININGTOOL` | Evaluate a fitted model on a dataset split. |
@@ -91,9 +92,9 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `quant_market_making` | `QUANTTOOL` | Market-making / HFT quoting kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
 | `quant_microstructure` | `QUANTTOOL` | Order-flow / toxicity / self-excitation kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
 | `quant_signals` | `QUANTTOOL` | Signal-combination / breadth kernels (CONCEPT:EG-KG.domains.quant-finance). |
-| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
+| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i). |
 | `quant_statespace` | `QUANTTOOL` | State-space / statistical-arbitrage kernels (CONCEPT:EG-KG.domains.state-space-statistical-arbitrage). |
-| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
+| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i). |
 | `rank_models` | `MODEL_EVOLUTIONTOOL` | Rank all registered fitted models by their test R2 score. |
 | `run_interpretability_suite` | `INTERPRETABILITYTOOL` | Run and grade the complete 6-category interpretability audit suite for a model. |
 | `split_dataset` | `DATA_MANAGEMENTTOOL` | Split a loaded dataset into train, test, and validation sets. |
@@ -123,7 +124,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 </details>
 
-_37 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
+_38 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
 <!-- MCP-TOOLS-TABLE:END -->
 
 Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/mcp.md](docs/mcp.md).
@@ -178,9 +179,11 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
         "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
         "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
         "DATA_SCIENCE_MCP_VERIFY": "True",
+        "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
         "EPISTEMIC_GRAPH_SOCKET": "",
         "EPISTEMIC_GRAPH_TCP": "",
+        "GRAPH_SERVICE_SOCKET": "",
         "INFERENCE_API_KEY": "EMPTY",
         "INFERENCE_BACKEND": "vllm",
         "INFERENCE_BASE_URL": "",
@@ -224,9 +227,11 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
         "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
         "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
         "DATA_SCIENCE_MCP_VERIFY": "True",
+        "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
         "EPISTEMIC_GRAPH_SOCKET": "",
         "EPISTEMIC_GRAPH_TCP": "",
+        "GRAPH_SERVICE_SOCKET": "",
         "INFERENCE_API_KEY": "EMPTY",
         "INFERENCE_BACKEND": "vllm",
         "INFERENCE_BASE_URL": "",
@@ -271,9 +276,11 @@ docker run -d \
   -e DATA_SCIENCE_MCP_TOKEN=your_token_here \
   -e DATA_SCIENCE_MCP_URL=http://localhost:8080 \
   -e DATA_SCIENCE_MCP_VERIFY=True \
+  -e DEEP_DELEGATETOOL=True \
   -e DSM_NEAR_PAIRS_LOCAL_MAX=20000 \
   -e EPISTEMIC_GRAPH_SOCKET="" \
   -e EPISTEMIC_GRAPH_TCP="" \
+  -e GRAPH_SERVICE_SOCKET="" \
   -e INFERENCE_API_KEY=EMPTY \
   -e INFERENCE_BACKEND=vllm \
   -e INFERENCE_BASE_URL="" \
@@ -348,6 +355,7 @@ consumed from a **remote deployment**. The
 | `TRAINERTOOL` | `True` | Sub-surfaces of model-training; the code gates these via MODEL_TRAININGTOOL. |
 | `TRAINING_DATATOOL` | `True` |  |
 | `KERNEL_SPECIALIZETOOL` | `True` |  |
+| `DEEP_DELEGATETOOL` | `True` |  |
 
 #### Inherited agent-utilities variables (apply to every connector)
 
@@ -368,7 +376,7 @@ consumed from a **remote deployment**. The
 | `MODEL_ID` | `gpt-4o` | Model id for the agent |
 | `ENABLE_WEB_UI` | `True` | Serve the AG-UI web interface |
 
-_32 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
+_33 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
 <!-- ENV-VARS-TABLE:END -->
 
 
