@@ -246,6 +246,60 @@ async def test_mcp_data_management_tools(require_engine, require_sklearn):
     assert "train_size" in res_split
 
 
+def test_tool_surface_client_matches_client_cls():
+    """Regression guard for the describe_dataset tool<->client mismatch.
+
+    ``register_tool_surface`` in ``mcp_server.py`` introspects ``client_cls``
+    (``MLEngine``) to build the verbose 1:1 tool surface, but dispatches every
+    call through ``getattr(get_client(), method_name)``. If ``get_client()``
+    ever returns something other than an ``MLEngine`` instance again, every
+    public ``MLEngine`` method surfaced as a tool (``describe_dataset``,
+    ``compute_stats``, ...) would fail with
+    ``'<Type>' object has no attribute '<method>'`` even though the method is
+    real -- exactly the bug this test guards against.
+    """
+    from data_science_mcp.auth import get_client
+    from data_science_mcp.ml_engine import MLEngine
+
+    client = get_client()
+    assert isinstance(client, MLEngine)
+
+    public_methods = [
+        name
+        for name in dir(MLEngine)
+        if not name.startswith("_") and callable(getattr(MLEngine, name, None))
+    ]
+    assert "describe_dataset" in public_methods  # sanity: surface isn't empty
+    missing = [m for m in public_methods if not hasattr(client, m)]
+    assert not missing, (
+        f"get_client() is missing MLEngine methods surfaced as verbose MCP "
+        f"tools: {missing}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_verbose_describe_dataset_tool_dispatches(
+    monkeypatch, require_engine, require_sklearn
+):
+    """End-to-end regression test for the reported bug: calling the verbose,
+    auto-derived ``data_science_describe_dataset`` tool (as a delegated task
+    would via the fleet multiplexer's ``load_tools``) must dispatch to a real
+    ``MLEngine.describe_dataset`` -- not raise
+    ``'Client' object has no attribute 'describe_dataset'``.
+    """
+    monkeypatch.setenv("MCP_TOOL_MODE", "verbose")
+    engine = MLEngine()
+    engine.load_dataset("iris", "")
+
+    mcp, _, _, _ = get_mcp_instance()
+    result = await mcp.call_tool(
+        "data_science_describe_dataset", {"params_json": json.dumps({"name": "iris"})}
+    )
+    payload = result.structured_content
+    assert payload["name"] == "iris"
+    assert "feature_stats" in payload
+
+
 @pytest.mark.asyncio
 async def test_mcp_model_training_tools(require_engine, require_sklearn):
     """Verify FastMCP fit, predict, evaluate, and cross-validate tools."""

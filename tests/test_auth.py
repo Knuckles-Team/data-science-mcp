@@ -1,67 +1,42 @@
 """
-Tests for checking authentication functions in auth.py.
+Tests for checking the tool-surface client accessor in auth.py.
+
+data-science-mcp has no external REST API of its own: ``register_tool_surface``
+in ``mcp_server.py`` is wired with ``client_cls=MLEngine, get_client=get_client``
+(see ``AGENTS.md`` — all compute delegates to the Rust epistemic-graph engine via
+``MLEngine``). ``get_client()`` MUST therefore resolve to an ``MLEngine`` instance
+so the verbose 1:1 tool surface (introspected from ``MLEngine``) dispatches to a
+client that actually has those methods. A prior generic REST-client placeholder
+here caused every verbose tool call (e.g. ``data_science_describe_dataset``) to
+fail with ``'Client' object has no attribute '<method>'``.
 """
 
-import os
-import pytest
-from unittest.mock import patch
-
-from agent_utilities.core.exceptions import AuthError
 import data_science_mcp.auth as auth
+from data_science_mcp.ml_engine import MLEngine
 
 
-@pytest.fixture(autouse=True)
-def clean_auth_singleton():
-    """Ensure data_science_mcp.auth._client is clean before/after tests."""
-    auth._client = None
-    yield
-    auth._client = None
+def test_get_client_returns_ml_engine():
+    """get_client() must return an MLEngine instance, not an unrelated client."""
+    client = auth.get_client()
+    assert isinstance(client, MLEngine)
 
 
-def test_get_client_default():
-    """Verify that get_client builds a singleton with default environment vars."""
+def test_get_client_is_singleton():
+    """Repeated calls resolve to the same MLEngine singleton (shared dataset/model state)."""
     client1 = auth.get_client()
-    assert client1 is not None
-    assert client1.base_url == "http://localhost:8080"
-
-    # Check singleton property
     client2 = auth.get_client()
     assert client1 is client2
+    assert client1 is MLEngine()
 
 
-def test_get_client_custom_env():
-    """Verify get_client handles custom URL, TOKEN, and VERIFY variables."""
-    custom_env = {
-        "DATA_SCIENCE_MCP_URL": "https://custom-mcp-server:9000",
-        "DATA_SCIENCE_MCP_TOKEN": "my-secret-token",
-        "DATA_SCIENCE_MCP_VERIFY": "false",
-    }
-    with patch.dict(os.environ, custom_env):
-        client = auth.get_client()
-        assert client.base_url == "https://custom-mcp-server:9000"
-        assert client.session.headers["Authorization"] == "Bearer my-secret-token"
-        assert client.session.verify is False
+def test_get_client_matches_tool_surface_client_cls():
+    """get_client()'s type must match register_tool_surface's client_cls=MLEngine.
 
-    # Test verify true alternatives
-    auth._client = None
-    with patch.dict(os.environ, {"DATA_SCIENCE_MCP_VERIFY": "yes"}):
-        client_yes = auth.get_client()
-        assert client_yes.session.verify is True
-
-    auth._client = None
-    with patch.dict(os.environ, {"DATA_SCIENCE_MCP_VERIFY": "1"}):
-        client_1 = auth.get_client()
-        assert client_1.session.verify is True
-
-
-def test_get_client_auth_error():
-    """Verify RuntimeError is raised when AuthError/UnauthorizedError occurs."""
-    with patch("requests.Session") as mock_session_cls:
-        # Make Session creation raise AuthError
-        mock_session_cls.side_effect = AuthError("Mocked invalid auth token")
-
-        with pytest.raises(RuntimeError) as exc_info:
-            auth.get_client()
-
-        assert "AUTHENTICATION ERROR" in str(exc_info.value)
-        assert "Mocked invalid auth token" in str(exc_info.value)
+    This is the exact contract whose violation caused the describe_dataset bug:
+    the verbose surface is introspected from client_cls but dispatched through
+    get_client() — the two must agree on every public method name.
+    """
+    client = auth.get_client()
+    assert type(client) is MLEngine
+    assert hasattr(client, "describe_dataset")
+    assert callable(client.describe_dataset)

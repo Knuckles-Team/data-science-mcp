@@ -62,7 +62,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 <!-- MCP-TOOLS-TABLE:START -->
 
-#### Condensed action-routed tools (default — `MCP_TOOL_MODE=condensed`)
+#### Condensed action-routed tools (`MCP_TOOL_MODE=condensed`)
 
 | MCP Tool | Toggle Env Var | Description |
 |----------|----------------|-------------|
@@ -112,19 +112,19 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 | MCP Tool | Toggle Env Var | Description |
 |----------|----------------|-------------|
-| `data_science_cross_validate` | `ML_ENGINETOOL` | Run k-fold cross-validation via the engine. |
-| `data_science_describe_dataset` | `ML_ENGINETOOL` | Get descriptive statistics for a loaded dataset. |
-| `data_science_evaluate` | `ML_ENGINETOOL` | Evaluate a fitted model. |
-| `data_science_fit` | `ML_ENGINETOOL` | Fit a model on a dataset via the epistemic-graph engine. |
-| `data_science_interpretability_reference` | `ML_ENGINETOOL` | Compute reference answers for the interpretability suite without any |
-| `data_science_load_dataset` | `ML_ENGINETOOL` | Load a dataset by name or file path. |
-| `data_science_predict` | `ML_ENGINETOOL` | Generate predictions from a fitted model. |
-| `data_science_ranked_models` | `ML_ENGINETOOL` | Rank fitted models by stored test R² (backend-agnostic, no recompute). |
-| `data_science_split_dataset` | `ML_ENGINETOOL` | Split a dataset into train/test/validation sizes. |
+| `data_science_cross_validate` | `GRANULARTOOL` | Run k-fold cross-validation via the engine. |
+| `data_science_describe_dataset` | `GRANULARTOOL` | Get descriptive statistics for a loaded dataset. |
+| `data_science_evaluate` | `GRANULARTOOL` | Evaluate a fitted model. |
+| `data_science_fit` | `GRANULARTOOL` | Fit a model on a dataset via the epistemic-graph engine. |
+| `data_science_interpretability_reference` | `GRANULARTOOL` | Compute reference answers for the interpretability suite without any |
+| `data_science_load_dataset` | `GRANULARTOOL` | Load a dataset by name or file path. |
+| `data_science_predict` | `GRANULARTOOL` | Generate predictions from a fitted model. |
+| `data_science_ranked_models` | `GRANULARTOOL` | Rank fitted models by stored test R² (backend-agnostic, no recompute). |
+| `data_science_split_dataset` | `GRANULARTOOL` | Split a dataset into train/test/validation sizes. |
 
 </details>
 
-_38 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
+_38 action-routed tool(s) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (**`intent` default** — the six verb-tools, granular set loaded on demand · `condensed` action-routed · `verbose` 1:1 · `both`). Auto-generated — do not edit._
 <!-- MCP-TOOLS-TABLE:END -->
 
 Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/mcp.md](docs/mcp.md).
@@ -173,12 +173,9 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
         "data-science-mcp"
       ],
       "env": {
-        "MCP_TOOL_MODE": "condensed",
+        "MCP_TOOL_MODE": "intent",
         "DATA_ENGINETOOL": "True",
         "DATA_MANAGEMENTTOOL": "True",
-        "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
-        "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
-        "DATA_SCIENCE_MCP_VERIFY": "True",
         "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
         "EPISTEMIC_GRAPH_SOCKET": "",
@@ -221,12 +218,9 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
         "TRANSPORT": "streamable-http",
         "HOST": "0.0.0.0",
         "PORT": "8000",
-        "MCP_TOOL_MODE": "condensed",
+        "MCP_TOOL_MODE": "intent",
         "DATA_ENGINETOOL": "True",
         "DATA_MANAGEMENTTOOL": "True",
-        "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
-        "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
-        "DATA_SCIENCE_MCP_VERIFY": "True",
         "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
         "EPISTEMIC_GRAPH_SOCKET": "",
@@ -270,12 +264,9 @@ docker run -d \
   -e TRANSPORT=streamable-http \
   -e HOST=0.0.0.0 \
   -e PORT=8000 \
-  -e MCP_TOOL_MODE=condensed \
+  -e MCP_TOOL_MODE=intent \
   -e DATA_ENGINETOOL=True \
   -e DATA_MANAGEMENTTOOL=True \
-  -e DATA_SCIENCE_MCP_TOKEN=your_token_here \
-  -e DATA_SCIENCE_MCP_URL=http://localhost:8080 \
-  -e DATA_SCIENCE_MCP_VERIFY=True \
   -e DEEP_DELEGATETOOL=True \
   -e DSM_NEAR_PAIRS_LOCAL_MAX=20000 \
   -e EPISTEMIC_GRAPH_SOCKET="" \
@@ -334,10 +325,6 @@ consumed from a **remote deployment**. The
 | `EUNOMIA_TYPE` | `none` | options: none, embedded, remote |
 | `EUNOMIA_POLICY_FILE` | `mcp_policies.json` |  |
 | `EUNOMIA_REMOTE_URL` | `http://eunomia-server:8000` |  |
-| `DATA_SCIENCE_MCP_URL` | `http://localhost:8080` |  |
-| `DATA_SCIENCE_MCP_TOKEN` | `your_token_here` |  |
-| `DATA_SCIENCE_MCP_SSL_VERIFY` | — | TLS verification for the upstream client. Set to a CA bundle path or False to disable. |
-| `DATA_SCIENCE_MCP_VERIFY` | `True` | Legacy alias for DATA_SCIENCE_MCP_SSL_VERIFY (truthy enables verification). |
 | `INFERENCE_BACKEND` | `vllm` | options: vllm, sglang |
 | `INFERENCE_BASE_URL` | — | Base URL of the running inference server, e.g. http://host:30000 |
 | `INFERENCE_MODEL` | — | Served model id exposed by the inference server. |
@@ -366,9 +353,11 @@ consumed from a **remote deployment**. The
 | `MCP_DISABLED_TOOLS` | — | Comma-separated tool deny-list |
 | `MCP_ENABLED_TAGS` | — | Comma-separated tag allow-list |
 | `MCP_DISABLED_TAGS` | — | Comma-separated tag deny-list |
-| `MCP_CLIENT_AUTH` | — | Outbound MCP auth (`oidc-client-credentials` for fleet calls) |
+| `MCP_CLIENT_AUTH` | — | Outbound MCP child auth: `oidc-client-credentials` | `basic` | `none` |
 | `OIDC_CLIENT_ID` | — | OIDC client id (service-account auth) |
 | `OIDC_CLIENT_SECRET` | — | OIDC client secret (service-account auth) |
+| `MCP_BASIC_AUTH_USERNAME` | — | HTTP Basic username (`MCP_CLIENT_AUTH=basic`) |
+| `MCP_BASIC_AUTH_PASSWORD` | — | HTTP Basic password (`MCP_CLIENT_AUTH=basic`) |
 | `DEBUG` | `False` | Verbose logging |
 | `PYTHONUNBUFFERED` | `1` | Unbuffered stdout (recommended in containers) |
 | `MCP_URL` | `http://localhost:8000/mcp` | URL of the MCP server the agent connects to |
@@ -376,7 +365,7 @@ consumed from a **remote deployment**. The
 | `MODEL_ID` | `gpt-4o` | Model id for the agent |
 | `ENABLE_WEB_UI` | `True` | Serve the AG-UI web interface |
 
-_33 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
+_29 package + 16 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
 <!-- ENV-VARS-TABLE:END -->
 
 

@@ -1,41 +1,24 @@
 #!/usr/bin/python
 # coding: utf-8
+"""Client accessor for the MCP tool surface.
 
-import requests
-import urllib3
+data-science-mcp has no external REST API of its own — per ``AGENTS.md``, all ML
+compute is delegated to the Rust ``epistemic-graph`` engine via
+:class:`data_science_mcp.ml_engine.MLEngine` (a process-local singleton; see
+``MLEngine._rust_client``/``.datascience`` namespace). ``mcp_server.py`` wires
+``register_tool_surface(..., client_cls=MLEngine, get_client=get_client, ...)`` to
+auto-derive the verbose 1:1 tool surface (``data_science_<method>``) from
+``MLEngine``'s public methods, then dispatches each call as
+``getattr(get_client(), method)(**kwargs)``. ``get_client`` therefore MUST return
+an ``MLEngine`` instance so the introspected surface (``client_cls``) matches the
+live dispatch target — an earlier generic REST-client placeholder here caused
+every verbose tool (e.g. ``data_science_describe_dataset``) to fail with
+``'Client' object has no attribute '<method>'``.
+"""
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-from agent_utilities.core.config import setting
-from agent_utilities.core.exceptions import AuthError, UnauthorizedError
-
-_client = None
+from data_science_mcp.ml_engine import MLEngine
 
 
-def get_client():
-    """Get or create a singleton API client instance."""
-    global _client
-    if _client is None:
-        base_url = setting("DATA_SCIENCE_MCP_URL", "http://localhost:8080")
-        token = setting("DATA_SCIENCE_MCP_TOKEN", "")
-        verify = bool(
-            setting("DATA_SCIENCE_MCP_SSL_VERIFY", None)
-            or setting("DATA_SCIENCE_MCP_VERIFY", True)
-        )
-
-        try:
-            if _client is None:
-                session = requests.Session()
-                session.headers.update({"Authorization": f"Bearer {token}"})
-                session.verify = verify
-                _client = type(
-                    "Client", (), {"session": session, "base_url": base_url}
-                )()
-        except (AuthError, UnauthorizedError) as e:
-            raise RuntimeError(
-                f"AUTHENTICATION ERROR: The credentials provided are not valid for '{base_url}'. "
-                f"Please check your DATA_SCIENCE_MCP_TOKEN and DATA_SCIENCE_MCP_URL environment variables. "
-                f"Error details: {str(e)}"
-            ) from e
-
-    return _client
+def get_client() -> MLEngine:
+    """Return the shared :class:`MLEngine` singleton (the tool surface's client)."""
+    return MLEngine()
