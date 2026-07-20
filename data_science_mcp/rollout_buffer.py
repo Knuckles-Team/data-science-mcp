@@ -8,9 +8,8 @@ then group-normalised into advantages. This module is that staging area:
   per-token logprobs → reward`` groups, score them with any reward callable, and
   export GRPO training groups (delegating advantage normalisation to
   :func:`data_science_mcp.training_data.build_grpo_groups`, the shared reward spine).
-* :data:`VLLMRolloutClient` — back-compat alias of
-  :class:`data_science_mcp.inference.VLLMBackend`. Rollout generation is served by
-  an **already-running** OpenAI-compatible server; swap engines (vLLM ↔ SGLang) by
+Rollout generation is served by an **already-running** OpenAI-compatible server;
+swap engines (vLLM ↔ SGLang) by
   passing a different :class:`~data_science_mcp.inference.InferenceBackend` to
   :meth:`RolloutBuffer.generate` (or via ``INFERENCE_BACKEND``).
 
@@ -25,7 +24,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from data_science_mcp.inference import VLLMBackend
 from data_science_mcp.training_data import build_grpo_groups
 
 
@@ -126,11 +124,4 @@ class RolloutBuffer:
                 logprobs=[o.get("logprobs", []) for o in outs],
             )
 
-
-# Back-compat alias: the vLLM rollout client is now the general vLLM inference
-# backend. Existing callers (`VLLMRolloutClient(base_url, model)`) are unchanged;
-# the HTTP/constrained-decoding logic lives in `data_science_mcp.inference`.
-VLLMRolloutClient = VLLMBackend
-
-
-__all__ = ["Rollout", "RolloutBuffer", "VLLMRolloutClient"]
+__all__ = ["Rollout", "RolloutBuffer"]

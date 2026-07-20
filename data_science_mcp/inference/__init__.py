@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import os
 
+from agent_utilities.core.transport_security import ResolvedTLSProfile
+
 from data_science_mcp.inference.base import InferenceBackend
 from data_science_mcp.inference.openai_compatible import OpenAICompatibleBackend
 from data_science_mcp.inference.sglang_backend import SGLangBackend
@@ -38,6 +40,7 @@ def create_inference_backend(
     model: str | None = None,
     api_key: str | None = None,
     timeout: float = 120.0,
+    tls_profile: ResolvedTLSProfile | None = None,
 ) -> InferenceBackend:
     """Create the configured inference backend.
 
@@ -56,8 +59,8 @@ def create_inference_backend(
         A configured :class:`InferenceBackend`.
     """
     provider = (
-        provider or os.environ.get("INFERENCE_BACKEND") or "vllm"
-    ).lower().strip()
+        (provider or os.environ.get("INFERENCE_BACKEND") or "vllm").lower().strip()
+    )
     backend_cls = _BACKENDS.get(provider)
     if backend_cls is None:
         raise ValueError(
@@ -69,7 +72,7 @@ def create_inference_backend(
     if not resolved_base_url:
         raise ValueError(
             "No inference server URL configured; pass base_url= or set "
-            "INFERENCE_BASE_URL (e.g. http://localhost:8000)"
+            "INFERENCE_BASE_URL"
         )
     resolved_model = model or os.environ.get("INFERENCE_MODEL") or ""
     resolved_api_key = api_key or os.environ.get("INFERENCE_API_KEY") or "EMPTY"
@@ -79,6 +82,7 @@ def create_inference_backend(
         resolved_model,
         api_key=resolved_api_key,
         timeout=timeout,
+        tls_profile=tls_profile,
     )
 
 

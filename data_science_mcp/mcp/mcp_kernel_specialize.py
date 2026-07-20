@@ -35,10 +35,15 @@ def register_kernel_specialize_tools(mcp: FastMCP) -> None:
             description="Kernel task: 'fused-softmax' | 'layernorm' | 'matmul'.",
         ),
         rounds: int = Field(
-            default=3, description="Factory rounds (scaffold-search iterations)."
+            default=3,
+            ge=1,
+            le=20,
+            description="Factory rounds (scaffold-search iterations).",
         ),
         target_tau: float = Field(
             default=1.0,
+            ge=0.0,
+            le=50.0,
             description="Reward target (speedup) defining 'specialized enough'.",
         ),
     ) -> dict[str, Any]:
@@ -54,6 +59,7 @@ def register_kernel_specialize_tools(mcp: FastMCP) -> None:
             inference_backend_configured,
         )
         from data_science_mcp.kernels import KERNEL_TASKS, get_kernel_task
+        from data_science_mcp.kernels.kernel_verifier import kernel_sandbox_configured
         from data_science_mcp.kernels.specialize import run_kernel_specialization
 
         if task_name not in KERNEL_TASKS:
@@ -70,6 +76,17 @@ def register_kernel_specialize_tools(mcp: FastMCP) -> None:
                 "entrypoint": kt.entrypoint,
                 "spec": kt.spec,
                 "requires": "set INFERENCE_BASE_URL (a vLLM/SGLang server) to author candidate kernels",
+            }
+        if not kernel_sandbox_configured():
+            return {
+                "status": "plan",
+                "task": task_name,
+                "entrypoint": kt.entrypoint,
+                "spec": kt.spec,
+                "requires": (
+                    "configure DATA_SCIENCE_KERNEL_SANDBOX_COMMAND or "
+                    "DATA_SCIENCE_KERNEL_SANDBOX_IMAGE"
+                ),
             }
 
         backend = create_inference_backend()

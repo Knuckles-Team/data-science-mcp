@@ -465,6 +465,7 @@ sync:
   updated_field: dataset
   pagination: null
   doc_type: datascience_model
+  tool_schema_sha256: bb3327e89d7f07a87ecb36a4ac7fe7212e5975b2b0edcaa5cf5b3101d71ddd83
   raw:
     server: data-science-mcp
     tool: rank_models
@@ -477,16 +478,19 @@ sync:
     doc_type: datascience_model
 provenance:
   generated_by: scripts/generate_connector_manifests.py
-  generated_at: '2026-07-09T00:00:00Z'
+  generated_at: '2026-07-18T00:00:00Z'
   source_artifacts:
   - data_science_mcp/connectors/mcp_source_presets.json
+  - data_science_mcp/connectors/tool_schema_fingerprints.json
   - data_science_mcp/ontology/datascience.ttl
   integrity:
     algorithm: urdna2015-sha256
     hash: e7a43f814beb0ddb3a9def0f6b4f8ac475b6c81616cea2771c83dc08c88581f6
     triple_count: 173
   signer: ontology-manifest-generator
-  signature: 010d4286b861e8bc1b4ce50ca3da23873d451ee48826c3ac6e7c475a9cc5fc79
+  signature_algorithm: ed25519
+  signing_public_key: q0Cp7bmQMqJhbofGKKw8xXC6KbFzukBDDke0UYVi8y4
+  signature: gVspuMIqQeGax_VHcGfuSB9QSyncoOkrsB_O_HgEGzcy71jnWc8ZDAPvy2JenGyuq75JKwkuZUQ9tKOIhvTCCA
 policy:
   pii_fields: {}
   tenant_boundary: null

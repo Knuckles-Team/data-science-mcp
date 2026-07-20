@@ -9,6 +9,9 @@ and the experiment tracker — all on CPU with the toy model from ``test_trainer
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -16,6 +19,7 @@ torch = pytest.importorskip("torch")
 from data_science_mcp import training_data as td  # noqa: E402
 from data_science_mcp.tracking import RunTracker  # noqa: E402
 from data_science_mcp.trainers import TrainConfig, get_trainer  # noqa: E402
+from data_science_mcp.trainers import loop as trainer_loop  # noqa: E402
 from data_science_mcp.trainers.loop import run_loop  # noqa: E402
 from test_trainers import _toy  # noqa: E402  (reuse the toy model/tokenizer)
 
@@ -141,6 +145,37 @@ def test_sft_checkpoint_save_and_resume(tmp_path):
     cfg2 = TrainConfig(lr=0.05, epochs=1, batch_size=1, resume_from=last)
     report2 = get_trainer("sft", cfg2).train(data, model=model2, tokenizer=tok2)
     assert report2["resumed_from_step"] == 4
+
+
+def test_resume_loads_checkpoints_without_pickle_code_execution(tmp_path, monkeypatch):
+    for name in ("model_state.pt", "optimizer.pt", "scheduler.pt"):
+        (tmp_path / name).write_bytes(b"opaque-checkpoint")
+    (tmp_path / "training_state.json").write_text(
+        json.dumps({"step": 7}), encoding="utf-8"
+    )
+
+    load_calls = []
+
+    class FakeTorch:
+        @staticmethod
+        def load(path, **kwargs):
+            load_calls.append((path, kwargs))
+            return {}
+
+    class StateTarget:
+        def load_state_dict(self, _state):
+            return None
+
+    monkeypatch.setattr(trainer_loop, "_torch", lambda: FakeTorch())
+    config = SimpleNamespace(resume_from=str(tmp_path))
+
+    step = trainer_loop.maybe_resume(
+        StateTarget(), StateTarget(), StateTarget(), config
+    )
+
+    assert step == 7
+    assert len(load_calls) == 3
+    assert all(call[1]["weights_only"] is True for call in load_calls)
 
 
 def test_save_total_limit_keeps_newest(tmp_path):

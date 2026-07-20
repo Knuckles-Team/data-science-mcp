@@ -525,7 +525,7 @@ async def test_mcp_context_logging(require_engine, require_sklearn):
     # Load dataset tool with context
     load_tool = next(t for t in tools if t.name == "load_dataset")
     await load_tool.fn(name="iris", ctx=ctx)
-    assert any("Loading dataset" in m for m in ctx.logged)
+    assert any("Loading configured dataset" in m for m in ctx.logged)
 
     # Describe dataset tool with context
     describe_tool = next(t for t in tools if t.name == "describe_dataset")
@@ -537,7 +537,7 @@ async def test_mcp_context_logging(require_engine, require_sklearn):
     await split_tool.fn(
         name="iris", test_size=0.2, validation_size=0.0, random_seed=42, ctx=ctx
     )
-    assert any("Splitting dataset" in m for m in ctx.logged)
+    assert any("Splitting configured dataset" in m for m in ctx.logged)
 
     # Fit model tool with context
     fit_tool = next(t for t in tools if t.name == "fit_model")

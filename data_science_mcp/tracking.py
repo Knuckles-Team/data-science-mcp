@@ -83,7 +83,7 @@ class RunTracker:
                 if self.params:
                     mlflow.log_params(_flat(self.params))
             except Exception as e:  # pragma: no cover - external service
-                logger.warning("mlflow tracking disabled: %s", e)
+                logger.warning("Operation failed: error_type=%s", type(e).__name__)
                 self._mlflow = None
         elif self.backend == "wandb":
             try:
@@ -92,7 +92,7 @@ class RunTracker:
                 self._wandb = wandb
                 wandb.init(name=self.run_name, config=_flat(self.params))
             except Exception as e:  # pragma: no cover - external service
-                logger.warning("wandb tracking disabled: %s", e)
+                logger.warning("Operation failed: error_type=%s", type(e).__name__)
                 self._wandb = None
         return self
 
@@ -194,15 +194,15 @@ def _kg_mirror(payload: dict[str, Any]) -> None:
     """
     try:  # pragma: no cover - requires a live KG facade/engine
         from agent_utilities.knowledge_graph.facade import (  # noqa: PLC0415
-            KnowledgeGraphFacade,
+            KnowledgeGraph,
         )
 
-        kg = KnowledgeGraphFacade()
+        kg = KnowledgeGraph()
         writer = getattr(kg, "write", None) or getattr(kg, "add_node", None)
         if writer is not None:
             writer(payload)
     except Exception as e:  # pragma: no cover - best-effort
-        logger.debug("KG run mirror skipped: %s", e)
+        logger.debug("Operation failed: error_type=%s", type(e).__name__)
 
 
 __all__ = ["RunTracker"]

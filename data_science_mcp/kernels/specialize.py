@@ -38,13 +38,18 @@ def build_kernel_task(
     human_baseline: float | None = None,
     scaffolds: Sequence[str] | None = None,
     timeout_s: float = 30.0,
+    sandbox_command: Sequence[str] | None = None,
 ) -> SpecializationTask:
     """Build a :class:`SpecializationTask` backed by the kernel verifier."""
     kt = get_kernel_task(task_name)
     return SpecializationTask(
         task_id=f"kernel:{kt.name}",
         prompt_corpus=list(scaffolds) if scaffolds else [kt.spec],
-        verifier=KernelVerifier(kt, timeout_s=timeout_s),
+        verifier=KernelVerifier(
+            kt,
+            timeout_s=timeout_s,
+            sandbox_command=sandbox_command,
+        ),
         target_tau=target_tau,
         human_baseline=human_baseline,
         metadata={"entrypoint": kt.entrypoint, "domain": "compute-kernel"},
@@ -61,10 +66,15 @@ def run_kernel_specialization(
     target_tau: float = 1.0,
     tolerance: float = 0.0,
     timeout_s: float = 30.0,
+    sandbox_command: Sequence[str] | None = None,
 ) -> FactoryResult:
     """Specialize a kernel end-to-end and return the factory result + adaptation curve."""
     task = build_kernel_task(
-        task_name, target_tau=target_tau, scaffolds=scaffolds, timeout_s=timeout_s
+        task_name,
+        target_tau=target_tau,
+        scaffolds=scaffolds,
+        timeout_s=timeout_s,
+        sandbox_command=sandbox_command,
     )
     controller = SaiFactoryController(
         task,

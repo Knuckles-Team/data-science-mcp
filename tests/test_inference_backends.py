@@ -24,10 +24,7 @@ from data_science_mcp.inference import (
 # Import the consumers at module load (before any fake-httpx fixture is active)
 # so their heavy import chains resolve against the real environment, not the
 # stubbed ``httpx`` a test installs.
-from data_science_mcp.rollout_buffer import (  # noqa: E402
-    RolloutBuffer,
-    VLLMRolloutClient,
-)
+from data_science_mcp.rollout_buffer import RolloutBuffer  # noqa: E402
 from data_science_mcp.training_pipeline import (  # noqa: E402
     _resolve_eval_generate_fn,
 )
@@ -66,9 +63,15 @@ class _FakeHTTPX:
         self.calls = []
         self._payload = payload
 
-    def post(self, url, *, headers=None, json=None, timeout=None):
+    def post(self, url, *, headers=None, json=None, timeout=None, **transport):
         self.calls.append(
-            {"url": url, "headers": headers, "json": json, "timeout": timeout}
+            {
+                "url": url,
+                "headers": headers,
+                "json": json,
+                "timeout": timeout,
+                "transport": transport,
+            }
         )
         return _FakeResponse(self._payload)
 
@@ -123,7 +126,9 @@ def test_factory_api_key_default_and_override(monkeypatch):
     be = create_inference_backend("vllm", base_url="http://x:8000")
     assert be.api_key == "EMPTY"
     monkeypatch.setenv("INFERENCE_API_KEY", "secret")
-    assert create_inference_backend("vllm", base_url="http://x:8000").api_key == "secret"
+    assert (
+        create_inference_backend("vllm", base_url="http://x:8000").api_key == "secret"
+    )
 
 
 def test_inference_backend_configured(monkeypatch):
@@ -208,7 +213,7 @@ def test_as_generate_fn_returns_first_text(fake_httpx):
 
 
 # --------------------------------------------------------------------------- #
-# RolloutBuffer contract parity + back-compat alias                            #
+# RolloutBuffer contract                                                       #
 # --------------------------------------------------------------------------- #
 def test_rollout_buffer_drains_a_backend(fake_httpx):
     buf = RolloutBuffer()
@@ -217,9 +222,8 @@ def test_rollout_buffer_drains_a_backend(fake_httpx):
     assert set(buf.prompts) == {"q1", "q2"}
 
 
-def test_vllm_rollout_client_is_backend_alias(fake_httpx):
-    assert VLLMRolloutClient is VLLMBackend
-    client = VLLMRolloutClient("http://x:8000", "m")
+def test_vllm_backend_generates_rollouts(fake_httpx):
+    client = VLLMBackend("http://x:8000", "m")
     assert isinstance(client, InferenceBackend)
     assert client.generate("p", n=1)[0]["text"] == "hello"
 
@@ -237,9 +241,7 @@ def test_resolve_eval_generate_fn_echoes_without_server():
     assert fn("q") == "q"  # no INFERENCE_BASE_URL -> echo fallback
 
 
-def test_resolve_eval_generate_fn_uses_backend_when_configured(
-    monkeypatch, fake_httpx
-):
+def test_resolve_eval_generate_fn_uses_backend_when_configured(monkeypatch, fake_httpx):
     monkeypatch.setenv("INFERENCE_BACKEND", "sglang")
     monkeypatch.setenv("INFERENCE_BASE_URL", "http://x:30000")
     monkeypatch.setenv("INFERENCE_MODEL", "m")

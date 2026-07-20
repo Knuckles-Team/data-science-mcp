@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import json
+import sys
+
 import pytest
 
 pytest.importorskip(
@@ -69,6 +72,18 @@ async def test_run_with_mocked_backend(monkeypatch):
 
     monkeypatch.setattr(inf, "inference_backend_configured", lambda: True)
     monkeypatch.setattr(inf, "create_inference_backend", lambda *a, **k: _Backend())
+    monkeypatch.setenv(
+        "DATA_SCIENCE_KERNEL_SANDBOX_COMMAND",
+        json.dumps(
+            [
+                sys.executable,
+                "-m",
+                "data_science_mcp.kernels._runner",
+                "{candidate}",
+                "{task}",
+            ]
+        ),
+    )
 
     out = await _tool()(task_name="fused-softmax", rounds=1, target_tau=0.01)
     assert out["status"] == "ok"

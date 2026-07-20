@@ -9,7 +9,7 @@ the clipped policy-gradient surrogate
 advantages, plus an optional KL-to-reference penalty
 (:func:`objectives.approx_kl`). Target papers: **ATLAS** (b6-04) and **SDAR**
 (b7-03); the heavy rollout generation is served by vLLM via
-:class:`~data_science_mcp.rollout_buffer.VLLMRolloutClient`.
+:class:`~data_science_mcp.inference.VLLMBackend`.
 
 Sequence-level advantages: each sampled completion gets one advantage, applied to
 its summed response log-prob. ``old_logprob`` defaults to the detached current

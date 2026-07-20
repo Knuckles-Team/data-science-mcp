@@ -8,6 +8,7 @@ present and is behaviourally equivalent to the local fallback tested here.
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 from data_science_mcp import data_engine as de
@@ -78,6 +79,22 @@ def test_dataset_provenance_payload_and_fingerprint_stable():
     assert p1["n_records"] == 2
     assert p1["ops"] == ["dedup"]
     assert p1["fingerprint"] and p1["fingerprint"] == p2["fingerprint"]
+    assert len(p1["fingerprint"]) == hashlib.sha256().digest_size * 2
+    expected = hashlib.sha256()
+    for record in recs:
+        expected.update(hashlib.sha256(record["text"].encode()).hexdigest().encode())
+    assert p1["fingerprint"] == expected.hexdigest()
+
+
+def test_content_and_token_hashing_use_sha256_width():
+    normalized = b"alpha beta"
+    assert de._content_hash("Alpha beta") == hashlib.sha256(normalized).hexdigest()
+
+    dimension = 1024
+    vector = de.feature_vector("alpha", dim=dimension)
+    expected_index = int.from_bytes(hashlib.sha256(b"alpha").digest(), "big") % dimension
+    assert vector[expected_index] == 1.0
+    assert int((vector != 0).sum()) == 1
 
 
 def test_stream_corpus_from_list_and_jsonl(tmp_path):

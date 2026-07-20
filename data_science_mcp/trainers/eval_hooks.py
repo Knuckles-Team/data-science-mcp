@@ -19,9 +19,10 @@ Concept: eval-hooks
 
 from __future__ import annotations
 
+import re
+import tempfile
+from pathlib import Path
 from typing import Any, Callable
-
-from agent_utilities.harness.reliability_scorers import build_reliability_suite
 
 GenerateFn = Callable[[str], str]
 
@@ -43,6 +44,12 @@ def evaluate_checkpoint(
     Returns:
         ``{cases, overall_score, pass_rate, results:[...]}``.
     """
+    # Keep benchmark-only and launcher imports independent of the optional native
+    # numeric kernel. Reliability scoring loads the full harness only when used.
+    from agent_utilities.harness.reliability_scorers import (  # noqa: PLC0415
+        build_reliability_suite,
+    )
+
     harness = build_reliability_suite(scorers)
     results: list[dict[str, Any]] = []
     for case in cases:
@@ -88,33 +95,85 @@ def evaluate_benchmarks(
     limit: int | None = None,
     batch_size: int | str = "auto",
     device: str | None = None,
+    revision: str | None = None,
 ) -> dict[str, Any]:
-    """Score a checkpoint on standard benchmarks via ``lm-eval`` (CONCEPT:DS-AHE.trainer.concept-5).
+    """Score a checkpoint on standard benchmarks via LightEval.
 
     A complement to the AHE-3.1 reliability suite: where that measures grounding /
     safety regressions, this runs community benchmarks (e.g. ``hellaswag``,
-    ``arc_easy``, ``gsm8k``) through EleutherAI's ``lm-evaluation-harness``. The
-    harness is an optional GPU-host dep (``data-science-mcp[eval]``), imported
-    lazily so this module stays light.
+    ``arc_easy``, ``gsm8k``) through Hugging Face LightEval. The harness is an
+    optional GPU-host dependency (``data-science-mcp[eval]``), imported lazily so
+    this module stays light. Remote model IDs must name an immutable commit; local
+    checkpoint paths need no revision. Remote code loading and result publishing
+    remain disabled.
 
-    Returns ``{tasks, results:{task: metrics}}`` or ``{error}`` when ``lm-eval`` is
-    absent.
+    Returns ``{tasks, results:{task: metrics}}`` or a bounded ``{error}`` when the
+    optional evaluator is absent or the input is unsafe.
     """
     try:
-        from lm_eval import simple_evaluate  # noqa: PLC0415
+        from lighteval.logging.evaluation_tracker import (  # noqa: PLC0415
+            EvaluationTracker,
+        )
+        from lighteval.models.transformers.transformers_model import (  # noqa: PLC0415
+            TransformersModelConfig,
+        )
+        from lighteval.pipeline import (  # noqa: PLC0415
+            ParallelismManager,
+            Pipeline,
+            PipelineParameters,
+        )
     except ImportError:  # pragma: no cover - without the extra
-        return {"error": "lm-eval not installed — install data-science-mcp[eval]"}
-    model_args = f"pretrained={model_path}"
-    if device:  # pragma: no cover - GPU host
-        model_args += f",device={device}"
-    out = simple_evaluate(  # pragma: no cover - heavy GPU eval
-        model="hf",
-        model_args=model_args,
-        tasks=tasks,
-        limit=limit,
-        batch_size=batch_size,
-    )
-    return {"tasks": tasks, "results": out.get("results", {})}
+        return {"error": "LightEval not installed — install data-science-mcp[eval]"}
+
+    if not tasks or any(not isinstance(task, str) or not task.strip() for task in tasks):
+        return {"error": "at least one non-empty benchmark task is required"}
+    if limit is not None and limit < 1:
+        return {"error": "limit must be positive"}
+
+    local_checkpoint = Path(model_path).expanduser().is_dir()
+    if not local_checkpoint and not (
+        revision and re.fullmatch(r"[0-9a-fA-F]{40,64}", revision)
+    ):
+        return {
+            "error": "remote model evaluation requires a 40-64 character immutable commit revision"
+        }
+
+    configured_batch = None if batch_size == "auto" else batch_size
+    if not (configured_batch is None or isinstance(configured_batch, int)):
+        return {"error": "batch_size must be a positive integer or 'auto'"}
+    if isinstance(configured_batch, int) and configured_batch < 1:
+        return {"error": "batch_size must be positive"}
+
+    # LightEval keeps logs/details in the supplied directory. A private temporary
+    # directory prevents model prompts or outputs from surviving the evaluation.
+    with tempfile.TemporaryDirectory(prefix="agent-eval-") as output_dir:
+        tracker = EvaluationTracker(
+            output_dir=output_dir,
+            save_details=False,
+            push_to_hub=False,
+            push_to_tensorboard=False,
+            use_wandb=False,
+        )
+        parameters = PipelineParameters(
+            launcher_type=ParallelismManager.NONE,
+            max_samples=limit,
+        )
+        model = TransformersModelConfig(
+            model_name=str(Path(model_path).expanduser()) if local_checkpoint else model_path,
+            revision=revision or "main",  # ignored by Transformers for local paths
+            batch_size=configured_batch,
+            device=device or "cuda",
+            trust_remote_code=False,
+        )
+        pipeline = Pipeline(  # pragma: no cover - heavyweight evaluator
+            tasks=",".join(task.strip() for task in tasks),
+            pipeline_parameters=parameters,
+            evaluation_tracker=tracker,
+            model_config=model,
+        )
+        pipeline.evaluate()
+        output = pipeline.get_results() or {}
+    return {"tasks": tasks, "results": output.get("results", {})}
 
 
 def gsm8k_reward(prompt: str, completion: str, gold: Any) -> float:

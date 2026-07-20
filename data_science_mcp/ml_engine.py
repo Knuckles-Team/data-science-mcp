@@ -94,8 +94,8 @@ class MLEngine:
     def _rust_client(cls) -> Any:
         """Return a cached SyncEpistemicGraphClient, or None if unreachable.
 
-        Connects when an endpoint is configured via ``EPISTEMIC_GRAPH_SOCKET`` /
-        ``GRAPH_SERVICE_SOCKET`` (UDS) or ``EPISTEMIC_GRAPH_TCP`` (host:port), and
+        Connects when an endpoint is configured via ``EPISTEMIC_GRAPH_SOCKET``
+        (UDS) or ``EPISTEMIC_GRAPH_TCP`` (host:port), and
         otherwise tries the client's own default socket. The result (including a
         failed probe) is cached so we never re-probe a dead endpoint per call.
         Compute methods surface a clear error when this returns None.
@@ -104,9 +104,7 @@ class MLEngine:
             return cls._rust_client_cache
 
         client = None
-        socket_path = os.environ.get("EPISTEMIC_GRAPH_SOCKET") or os.environ.get(
-            "GRAPH_SERVICE_SOCKET"
-        )
+        socket_path = os.environ.get("EPISTEMIC_GRAPH_SOCKET")
         tcp_addr = os.environ.get("EPISTEMIC_GRAPH_TCP")
         try:
             from epistemic_graph.client import SyncEpistemicGraphClient
@@ -119,7 +117,7 @@ class MLEngine:
                 client = SyncEpistemicGraphClient.connect()
             logger.info("epistemic-graph engine connected; Rust compute enabled")
         except Exception as exc:  # noqa: BLE001 — surfaced by compute methods
-            logger.warning("epistemic-graph engine unavailable: %s", exc)
+            logger.warning("Operation failed: error_type=%s", type(exc).__name__)
             client = None
         cls._rust_client_cache = client
         return client
@@ -229,6 +227,8 @@ class MLEngine:
         self,
         name: str,
         target_column: str = "",
+        *,
+        source_path: str | None = None,
     ) -> dict[str, Any]:
         """Load a dataset by name or file path.
 
@@ -237,6 +237,8 @@ class MLEngine:
                 'breast_cancer', 'digits') — requires the optional ``[datasets]``
                 extra (scikit-learn) — or a ``.csv`` file path.
             target_column: Target column name (for CSV files).
+            source_path: Pre-authorized CSV path. MCP callers use this to keep
+                the public dataset name separate from the confined filesystem path.
 
         Returns:
             Dict with dataset summary: shape, features, target, description.
@@ -252,6 +254,7 @@ class MLEngine:
                 "breast_cancer": "load_breast_cancer",
                 "digits": "load_digits",
             }
+            csv_path = source_path or name
 
             if name.lower() in sklearn_datasets:
                 try:
@@ -281,7 +284,9 @@ class MLEngine:
                     else "target",
                     "description": getattr(bunch, "DESCR", "")[:200],
                 }
-            elif name.endswith(".csv"):
+            elif source_path is not None and not csv_path.lower().endswith(".csv"):
+                return {"error": "Only CSV dataset files are supported"}
+            elif csv_path.lower().endswith(".csv"):
                 # Fast path: polars when available; otherwise stdlib csv + numpy,
                 # so numeric CSV loading still works without the polars wheel
                 # (which core-dumps on CPUs lacking its SIMD baseline).
@@ -290,13 +295,13 @@ class MLEngine:
                 try:
                     import polars as pl
 
-                    df = pl.read_csv(name)
+                    df = pl.read_csv(csv_path)
                     columns = list(df.columns)
                     matrix = df.to_numpy()
                 except ImportError:
                     import csv as _csv
 
-                    with open(name, newline="") as fh:
+                    with open(csv_path, newline="") as fh:
                         reader = _csv.reader(fh)
                         columns = next(reader)
                         rows = [[float(v) for v in row] for row in reader if row]
@@ -317,11 +322,11 @@ class MLEngine:
                     "y": y,
                     "feature_names": feature_names,
                     "target_name": target_column,
-                    "description": f"CSV dataset: {name}",
+                    "description": f"CSV dataset: {os.path.basename(csv_path)}",
                 }
             else:
                 return {
-                    "error": f"Unknown dataset: {name}. Use a sample name or .csv path."
+                    "error": "Unknown dataset. Use a sample name or an authorized CSV path."
                 }
 
             self._datasets[name] = data
@@ -336,10 +341,10 @@ class MLEngine:
                 "description": data.get("description", ""),
             }
 
-        except ImportError as exc:
-            return {"error": f"Missing dependency: {exc}."}
-        except Exception as exc:
-            return {"error": str(exc)}
+        except ImportError:
+            return {"error": "Operation failed"}
+        except Exception:
+            return {"error": "Operation failed"}
 
     def fit(
         self,
@@ -459,7 +464,7 @@ class MLEngine:
                 "backend": "rust",
             }
         except Exception as exc:  # noqa: BLE001
-            logger.error("Rust OLS fit failed: %s", exc)
+            logger.error("Rust OLS fit failed: error_type=%s", type(exc).__name__)
             return None
 
     def _fit_rust_estimator(
@@ -529,7 +534,9 @@ class MLEngine:
                 "backend": "rust_estimator",
             }
         except Exception as exc:  # noqa: BLE001
-            logger.error("Rust estimator fit failed: %s", exc)
+            logger.error(
+                "Rust estimator fit failed: error_type=%s", type(exc).__name__
+            )
             return None
 
     def predict(
@@ -722,7 +729,10 @@ class MLEngine:
                 model_class, dataset_name, n_folds, rmse_scores, "rust"
             )
         except Exception as exc:  # noqa: BLE001
-            logger.error("Rust OLS cross-validate failed: %s", exc)
+            logger.error(
+                "Rust OLS cross-validation failed: error_type=%s",
+                type(exc).__name__,
+            )
             return None
 
     def _cross_validate_rust_estimator(
@@ -768,7 +778,10 @@ class MLEngine:
                 model_class, dataset_name, n_folds, rmse_scores, "rust_estimator"
             )
         except Exception as exc:  # noqa: BLE001
-            logger.error("Rust estimator cross-validate failed: %s", exc)
+            logger.error(
+                "Rust estimator cross-validation failed: error_type=%s",
+                type(exc).__name__,
+            )
             return None
 
     @staticmethod
@@ -870,7 +883,7 @@ class MLEngine:
                 "backend": "rust",
             }
         except Exception as exc:  # noqa: BLE001 — degrade to numpy
-            logger.warning("Rust describe failed, falling back to numpy: %s", exc)
+            logger.warning("Operation failed: error_type=%s", type(exc).__name__)
             return None
 
     def split_dataset(
@@ -942,7 +955,7 @@ class MLEngine:
             result["backend"] = "rust"
             return result
         except Exception as exc:  # noqa: BLE001 — degrade to numpy
-            logger.warning("Rust split failed, falling back to numpy: %s", exc)
+            logger.warning("Operation failed: error_type=%s", type(exc).__name__)
             return None
 
     @staticmethod

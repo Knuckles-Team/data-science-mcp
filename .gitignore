@@ -188,6 +188,5 @@ knowledge_graph.db*
 failed_tests.txt
 trace.txt
 
-# uv (no uv-lock hook in this repo — lockfile is an incidental artifact)
-uv.lock
+# uv resolver state is release evidence and must remain committed.
 .venv/

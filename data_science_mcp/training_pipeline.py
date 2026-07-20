@@ -22,11 +22,28 @@ Concept: training-pipeline
 
 from __future__ import annotations
 
+import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from agent_utilities.core.transport_security import ResolvedTLSProfile
+
 from data_science_mcp import training_data as td
 from data_science_mcp.trainers import TrainConfig, get_trainer
+
+logger = logging.getLogger(__name__)
+
+# Feature gate for the dynamic-LoRA hot-load (below): set to "0"/"false"/"no"/"off"
+# to disable; on by default so a freshly-trained adapter is servable with zero
+# manual ``--lora-modules`` restart whenever a serving ``base_url`` is configured.
+_HOTLOAD_ENV = "DATA_SCIENCE_MCP_LORA_HOTLOAD"
+# vLLM's dynamic-LoRA contract (``POST /v1/load_lora_adapter`` with
+# ``{"lora_name", "lora_path"}``); SGLang mirrors the same OpenAI-compatible
+# endpoint + payload where its build supports runtime LoRA loading, so one path
+# covers both engines (see ``inference/openai_compatible.py``'s ``default_adapter``
+# seam, which is how a hot-loaded adapter is then *selected* per-request).
+_HOTLOAD_ENDPOINT = "/v1/load_lora_adapter"
 
 
 def _resolve_eval_generate_fn(
@@ -64,6 +81,95 @@ class DeploymentTarget:
     api_key_env: str | None = None
 
 
+def _hotload_enabled() -> bool:
+    """Whether the dynamic-LoRA hot-load is enabled (default on; env opt-out)."""
+    return os.getenv(_HOTLOAD_ENV, "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
+def hot_load_adapter(
+    target: DeploymentTarget,
+    *,
+    adapter_name: str,
+    adapter_path: str,
+    tls_profile: ResolvedTLSProfile | None = None,
+) -> dict[str, Any]:
+    """Best-effort dynamic-LoRA hot-load onto the serving vLLM/SGLang endpoint.
+
+    POSTs ``{lora_name, lora_path}`` to ``target.base_url``'s dynamic-LoRA
+    endpoint (``POST /v1/load_lora_adapter`` — vLLM's contract; SGLang mirrors
+    it) so a just-trained checkpoint becomes servable immediately with **no
+    manual** ``--lora-modules``/server restart: the deploy seam registers the
+    role binding (:func:`register_checkpoint`) while this call makes the
+    *weights themselves* reachable on the already-running server.
+
+    Reuses the existing serving-endpoint config (``target.base_url`` /
+    ``target.provider`` — the SAME :class:`DeploymentTarget` the role-bind deploy
+    seam already carries); no new config surface. Feature-gated
+    (``DATA_SCIENCE_MCP_LORA_HOTLOAD=0`` disables) and always **best-effort**:
+    a disabled gate, missing ``base_url``/``adapter_path``, missing ``httpx``, or
+    an unreachable/erroring server all degrade to a logged, structured
+    ``{"status": "skipped"|"error", ...}`` — this NEVER raises, so it can never
+    fail the training run.
+    """
+    if not _hotload_enabled():
+        return {"status": "skipped", "detail": "hot-load disabled via env"}
+    if not target.base_url:
+        return {"status": "skipped", "detail": "no serving base_url configured"}
+    if not adapter_path:
+        return {"status": "skipped", "detail": "no adapter_path to load"}
+    try:
+        import httpx  # noqa: PLC0415
+    except ImportError:
+        return {"status": "skipped", "detail": "httpx not installed"}
+
+    # ``base_url`` conventions vary by consumer: the OpenAI-SDK-style value this
+    # SAME DeploymentTarget carries into ModelDefinition often already ends in
+    # ``/v1`` (e.g. ``http://host:8000/v1``), while the raw server root does not
+    # (``http://host:8000``). Normalize to the server root before appending the
+    # dynamic-LoRA endpoint so both conventions resolve to the SAME, correct URL.
+    base_url = target.base_url.rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[: -len("/v1")]
+    payload = {"lora_name": adapter_name, "lora_path": adapter_path}
+    from agent_utilities.core.transport_security import (  # noqa: PLC0415
+        resolve_configured_tls_profile,
+    )
+
+    profile = tls_profile or resolve_configured_tls_profile("model")
+    try:
+        resp = httpx.post(
+            f"{base_url}{_HOTLOAD_ENDPOINT}",
+            json=payload,
+            timeout=30.0,
+            **profile.httpx_kwargs(),
+        )
+        resp.raise_for_status()
+        return {
+            "status": "loaded",
+            "provider": target.provider,
+            "adapter_name": adapter_name,
+        }
+    except Exception as e:  # noqa: BLE001 — best-effort, never abort the run
+        logger.warning(
+            "[lora-hotload] dynamic LoRA load failed (provider=%s, error_type=%s)",
+            target.provider,
+            type(e).__name__,
+        )
+        return {
+            "status": "error",
+            "provider": target.provider,
+            "detail": "Operation failed",
+        }
+    finally:
+        if tls_profile is None:
+            profile.cleanup()
+
+
 def register_checkpoint(
     registry: Any,
     *,
@@ -97,6 +203,28 @@ def register_checkpoint(
     registry.models.append(definition)
     registry.role_routing[target.role] = RoleSpec(tier=target.tier, tags=[bind_tag])  # type: ignore[arg-type]
     return definition
+
+
+def _deploy_checkpoint(
+    registry: Any, deploy: DeploymentTarget, cid: str, adapter_path: str
+) -> dict[str, Any]:
+    """Deploy seam shared by all three pipelines: role-bind + best-effort hot-load.
+
+    Registers the checkpoint (:func:`register_checkpoint` — the existing
+    role-resolution deploy seam) and then attempts the dynamic-LoRA hot-load
+    (:func:`hot_load_adapter`) onto the same ``deploy`` serving endpoint using
+    whatever local checkpoint path the run produced. The hot-load is
+    best-effort — its ``status`` (``loaded``/``skipped``/``error``) rides along
+    in the returned ``deployment`` report and never aborts the run.
+    """
+    definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
+    hotload = hot_load_adapter(deploy, adapter_name=cid, adapter_path=adapter_path)
+    return {
+        "checkpoint_id": cid,
+        "role": deploy.role,
+        "model_id": definition.model_id,
+        "hotload": hotload,
+    }
 
 
 def run_sft_pipeline(
@@ -157,19 +285,15 @@ def run_sft_pipeline(
     if config.output_dir and model is not None and hasattr(model, "save_pretrained"):
         try:
             model.save_pretrained(config.output_dir)
-            report["checkpoint"] = {"path": config.output_dir, "id": cid}
-        except Exception as e:  # pragma: no cover - defensive
-            report["checkpoint"] = {"error": str(e), "id": cid}
+            report["checkpoint"] = {"saved": True, "id": cid}
+        except Exception:  # pragma: no cover - defensive
+            report["checkpoint"] = {"error": "Operation failed", "id": cid}
 
-    # 6) Deploy seam — register + bind a role (goes live with no hot-path edit)
+    # 6) Deploy seam — register + bind a role (goes live with no hot-path edit),
+    #    then best-effort hot-load the adapter onto the serving vLLM/SGLang.
     if registry is not None and deploy is not None:
-        definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
-        report["deployment"] = {
-            "checkpoint_id": cid,
-            "role": deploy.role,
-            "model_id": definition.model_id,
-            "resolved": registry.pick_for_role(deploy.role).model_dump(),
-        }
+        adapter_path = str(config.output_dir or "")
+        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
 
     return report
 
@@ -245,13 +369,8 @@ def run_pretrain_pipeline(
         checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
     )
     if registry is not None and deploy is not None:
-        definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
-        report["deployment"] = {
-            "checkpoint_id": cid,
-            "role": deploy.role,
-            "model_id": definition.model_id,
-            "resolved": registry.pick_for_role(deploy.role).model_dump(),
-        }
+        adapter_path = str(config.output_dir or "")
+        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
 
     return report
 
@@ -336,13 +455,8 @@ def run_rlhf_pipeline(
     # 5) Deploy seam — identical to the SFT/pretrain pipelines.
     cid = checkpoint_id or f"ppo-{(config.base_model or 'model').replace('/', '-')}"
     if registry is not None and deploy is not None:
-        definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
-        report["deployment"] = {
-            "checkpoint_id": cid,
-            "role": deploy.role,
-            "model_id": definition.model_id,
-            "resolved": registry.pick_for_role(deploy.role).model_dump(),
-        }
+        adapter_path = str(config.output_dir or "")
+        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
 
     return report
 
@@ -350,6 +464,7 @@ def run_rlhf_pipeline(
 __all__ = [
     "DeploymentTarget",
     "register_checkpoint",
+    "hot_load_adapter",
     "run_sft_pipeline",
     "run_pretrain_pipeline",
     "run_rlhf_pipeline",

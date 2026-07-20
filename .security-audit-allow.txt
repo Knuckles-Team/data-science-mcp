@@ -1,0 +1,3 @@
+# Exact, temporary dependency-risk acceptances.
+# Format: ADVISORY-ID package expires=YYYY-MM-DD # justification (12+ characters)
+# No active acceptances: the provider runtime no longer resolves the DSPy cache chain.

@@ -20,7 +20,7 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 1.1.0*
+*Version: 1.2.0*
 
 > **Documentation** — Installation, deployment, usage across the MCP, Python API, and
 > CLI interfaces, and the in-house model-training substrate are maintained in the
@@ -73,6 +73,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `dataset_lineage` | `DATA_ENGINETOOL` | Record a ``DatasetVersion`` provenance node (CONCEPT:DS-AHE.trainer.data-engine). |
 | `decontaminate_corpus` | `DATA_ENGINETOOL` | Drop training records that leak held-out eval examples (CONCEPT:DS-AHE.trainer.data-engine). |
 | `dedup_corpus` | `DATA_ENGINETOOL` | Remove exact + near-duplicate records (CONCEPT:DS-AHE.trainer.data-engine). |
+| `deep_train_predict` | `MODEL_TRAININGTOOL` | Fit + run one delegated deep/heavy model and return predictions/model as JSON. |
 | `describe_dataset` | `DATA_MANAGEMENTTOOL` | Get descriptive statistics for a loaded dataset. |
 | `ds_specialize_kernel` | `MODEL_TRAININGTOOL` | Run a SAI-factory specialization cycle on a compute kernel (CONCEPT:AU-AHE.harness.sai-controller). |
 | `evaluate_model` | `MODEL_TRAININGTOOL` | Evaluate a fitted model on a dataset split. |
@@ -91,9 +92,9 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `quant_market_making` | `QUANTTOOL` | Market-making / HFT quoting kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
 | `quant_microstructure` | `QUANTTOOL` | Order-flow / toxicity / self-excitation kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest). |
 | `quant_signals` | `QUANTTOOL` | Signal-combination / breadth kernels (CONCEPT:EG-KG.domains.quant-finance). |
-| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
+| `quant_sizing` | `QUANTTOOL` | Position-sizing kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i). |
 | `quant_statespace` | `QUANTTOOL` | State-space / statistical-arbitrage kernels (CONCEPT:EG-KG.domains.state-space-statistical-arbitrage). |
-| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / EG-KG.domains.quant-finance). |
+| `quant_validation` | `QUANTTOOL` | Backtest-validation / calibration kernels (CONCEPT:EG-KG.domains.market-microstructure-sizing-backtest / KG-2.20i). |
 | `rank_models` | `MODEL_EVOLUTIONTOOL` | Rank all registered fitted models by their test R2 score. |
 | `run_interpretability_suite` | `INTERPRETABILITYTOOL` | Run and grade the complete 6-category interpretability audit suite for a model. |
 | `split_dataset` | `DATA_MANAGEMENTTOOL` | Split a loaded dataset into train, test, and validation sets. |
@@ -123,10 +124,10 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 </details>
 
-_37 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
+_38 action-routed tool(s) (default) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (`condensed` default · `verbose` 1:1 · `both`). Auto-generated — do not edit._
 <!-- MCP-TOOLS-TABLE:END -->
 
-Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/mcp.md](docs/mcp.md).
+Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/usage.md](docs/usage.md).
 
 ### Dynamic Tool Selection & Visibility
 
@@ -153,11 +154,10 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
 
 <!-- MCP-CONFIG-EXAMPLES:START -->
 
-> **Install the slim `[mcp]` extra.** All examples install `data-science-mcp[mcp]` — the
-> MCP-server extra that pulls only the FastMCP / FastAPI tooling (`agent-utilities[mcp]`).
-> It deliberately **excludes** the heavy agent runtime (`pydantic-ai`, the epistemic-graph
-> engine, `dspy`, `llama-index`), so `uvx` / container installs are far smaller. Use the
-> full `[agent]` extra only when you need the integrated Pydantic AI agent.
+> **Install the connector-focused `[mcp]` extra.** Examples use `data-science-mcp[mcp]` to add
+> FastMCP / FastAPI through `agent-utilities[mcp]`; the required Agent Utilities core
+> still carries `epistemic-graph[full]`. The `[agent-runtime]` extra additionally
+> enables model orchestration.
 
 #### stdio Transport (local IDEs — Cursor, Claude Desktop, VS Code)
 
@@ -172,19 +172,15 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
         "data-science-mcp"
       ],
       "env": {
-        "MCP_TOOL_MODE": "condensed",
+        "MCP_TOOL_MODE": "intent",
         "DATA_ENGINETOOL": "True",
         "DATA_MANAGEMENTTOOL": "True",
-        "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
-        "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
-        "DATA_SCIENCE_MCP_VERIFY": "True",
+        "DATA_SCIENCE_KERNEL_CONTAINER_RUNTIME": "docker",
+        "DATA_SCIENCE_KERNEL_SANDBOX_IMAGE": "registry.example/image@sha256:<digest>",
+        "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
-        "EPISTEMIC_GRAPH_SOCKET": "",
-        "EPISTEMIC_GRAPH_TCP": "",
         "INFERENCE_API_KEY": "EMPTY",
         "INFERENCE_BACKEND": "vllm",
-        "INFERENCE_BASE_URL": "",
-        "INFERENCE_MODEL": "",
         "INTERPRETABILITYTOOL": "True",
         "KERNEL_SPECIALIZETOOL": "True",
         "MODEL_EVOLUTIONTOOL": "True",
@@ -197,6 +193,10 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
   }
 }
 ```
+
+Runtime references require an alias-aware launcher such as GraphOS. Other
+launchers must omit those entries and inject the resolved values through their
+own runtime secret boundary.
 
 #### Streamable-HTTP Transport (networked / production)
 
@@ -216,21 +216,17 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
       ],
       "env": {
         "TRANSPORT": "streamable-http",
-        "HOST": "0.0.0.0",
+        "HOST": "127.0.0.1",
         "PORT": "8000",
-        "MCP_TOOL_MODE": "condensed",
+        "MCP_TOOL_MODE": "intent",
         "DATA_ENGINETOOL": "True",
         "DATA_MANAGEMENTTOOL": "True",
-        "DATA_SCIENCE_MCP_TOKEN": "your_token_here",
-        "DATA_SCIENCE_MCP_URL": "http://localhost:8080",
-        "DATA_SCIENCE_MCP_VERIFY": "True",
+        "DATA_SCIENCE_KERNEL_CONTAINER_RUNTIME": "docker",
+        "DATA_SCIENCE_KERNEL_SANDBOX_IMAGE": "registry.example/image@sha256:<digest>",
+        "DEEP_DELEGATETOOL": "True",
         "DSM_NEAR_PAIRS_LOCAL_MAX": "20000",
-        "EPISTEMIC_GRAPH_SOCKET": "",
-        "EPISTEMIC_GRAPH_TCP": "",
         "INFERENCE_API_KEY": "EMPTY",
         "INFERENCE_BACKEND": "vllm",
-        "INFERENCE_BASE_URL": "",
-        "INFERENCE_MODEL": "",
         "INTERPRETABILITYTOOL": "True",
         "KERNEL_SPECIALIZETOOL": "True",
         "MODEL_EVOLUTIONTOOL": "True",
@@ -256,28 +252,26 @@ Alternatively, connect to a pre-deployed Streamable-HTTP instance by `url`:
 }
 ```
 
-Deploying the Streamable-HTTP server via Docker:
+Run a reviewed container image as a least-privilege stdio child (no
+listener or published port):
 
 ```bash
-docker run -d \
-  --name data-science-mcp-mcp \
-  -p 8000:8000 \
-  -e TRANSPORT=streamable-http \
-  -e HOST=0.0.0.0 \
-  -e PORT=8000 \
-  -e MCP_TOOL_MODE=condensed \
+docker run -i --rm \
+  --read-only \
+  --cap-drop=ALL \
+  --security-opt=no-new-privileges \
+  --pids-limit=256 \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
+  -e TRANSPORT=stdio \
+  -e MCP_TOOL_MODE=intent \
   -e DATA_ENGINETOOL=True \
   -e DATA_MANAGEMENTTOOL=True \
-  -e DATA_SCIENCE_MCP_TOKEN=your_token_here \
-  -e DATA_SCIENCE_MCP_URL=http://localhost:8080 \
-  -e DATA_SCIENCE_MCP_VERIFY=True \
+  -e DATA_SCIENCE_KERNEL_CONTAINER_RUNTIME=docker \
+  -e DATA_SCIENCE_KERNEL_SANDBOX_IMAGE="registry.example/image@sha256:<digest>" \
+  -e DEEP_DELEGATETOOL=True \
   -e DSM_NEAR_PAIRS_LOCAL_MAX=20000 \
-  -e EPISTEMIC_GRAPH_SOCKET="" \
-  -e EPISTEMIC_GRAPH_TCP="" \
   -e INFERENCE_API_KEY=EMPTY \
   -e INFERENCE_BACKEND=vllm \
-  -e INFERENCE_BASE_URL="" \
-  -e INFERENCE_MODEL="" \
   -e INTERPRETABILITYTOOL=True \
   -e KERNEL_SPECIALIZETOOL=True \
   -e MODEL_EVOLUTIONTOOL=True \
@@ -285,8 +279,13 @@ docker run -d \
   -e QUANTTOOL=True \
   -e TRAINERTOOL=True \
   -e TRAINING_DATATOOL=True \
-  knucklessg1/data-science-mcp:mcp
+  registry.example.invalid/data-science-mcp@sha256:<digest> data-science-mcp
 ```
+
+For containerized network HTTP, supply an authenticated TLS ingress (or
+direct server TLS), exact `MCP_ALLOWED_HOSTS`, and an exact trusted-proxy
+CIDR policy through the operator-owned deployment profile. The generator
+does not emit an unauthenticated non-loopback listener.
 
 _Auto-generated from the code-read env surface (`MCP_TOOL_MODE` + package vars) — do not edit._
 <!-- MCP-CONFIG-EXAMPLES:END -->
@@ -294,16 +293,16 @@ _Auto-generated from the code-read env surface (`MCP_TOOL_MODE` + package vars) 
 <!-- BEGIN GENERATED: additional-deployment-options -->
 ### Additional Deployment Options
 
-`data-science-mcp` can also run as a **local container** (Docker / Podman / `uv`) or be
-consumed from a **remote deployment**. The
-[Deployment guide](https://knuckles-team.github.io/data-science-mcp/deployment/) has full, copy-paste
-`mcp_config.json` for all four transports — **stdio**, **streamable-http**,
-**local container / uv**, and **remote URL**:
+`data-science-mcp` can run as a local stdio process or container, or behind a remote
+network boundary. The
+[Deployment guide](https://knuckles-team.github.io/data-science-mcp/deployment/) carries
+the detailed transport contract.
 
-- **Local container / uv** — launch the server from `mcp_config.json` via `uvx`,
-  `docker run`, or `podman run`, or point at a local streamable-http container by `url`.
-- **Remote URL** — connect to a server deployed behind Caddy at
-  `http://data-science-mcp.arpa/mcp` using the `"url"` key.
+- **Local container** — launch a reviewed immutable image as a least-privilege
+  stdio child with no listener or published port.
+- **Remote URL** — connect through an operator-supplied authenticated HTTPS
+  ingress. Keep its URL, outbound identity references, trust profile, and exact
+  `MCP_ALLOWED_HOSTS` in `AgentConfig`.
 <!-- END GENERATED: additional-deployment-options -->
 
 ---
@@ -327,16 +326,15 @@ consumed from a **remote deployment**. The
 | `EUNOMIA_TYPE` | `none` | options: none, embedded, remote |
 | `EUNOMIA_POLICY_FILE` | `mcp_policies.json` |  |
 | `EUNOMIA_REMOTE_URL` | `http://eunomia-server:8000` |  |
-| `DATA_SCIENCE_MCP_URL` | `http://localhost:8080` |  |
-| `DATA_SCIENCE_MCP_TOKEN` | `your_token_here` |  |
-| `DATA_SCIENCE_MCP_SSL_VERIFY` | — | TLS verification for the upstream client. Set to a CA bundle path or False to disable. |
-| `DATA_SCIENCE_MCP_VERIFY` | `True` | Legacy alias for DATA_SCIENCE_MCP_SSL_VERIFY (truthy enables verification). |
+| `DATA_SCIENCE_MCP_URL` | Required |  |
+| `DATA_SCIENCE_MCP_TOKEN` | — |  |
+| `TLS_PROFILE` | — | Named `AgentConfig` transport-security profile; certificate and hostname verification remain mandatory. |
+| `TLS_PROFILES_REF` | — | Runtime secret reference for the TLS profile catalog. |
 | `INFERENCE_BACKEND` | `vllm` | options: vllm, sglang |
 | `INFERENCE_BASE_URL` | — | Base URL of the running inference server, e.g. http://host:30000 |
 | `INFERENCE_MODEL` | — | Served model id exposed by the inference server. |
 | `INFERENCE_API_KEY` | `EMPTY` | Bearer token for the inference server (default "EMPTY" for local servers). |
 | `EPISTEMIC_GRAPH_SOCKET` | — | Unix domain socket path to the epistemic-graph engine. |
-| `GRAPH_SERVICE_SOCKET` | — | Alternate UDS env var honored by the engine client. |
 | `EPISTEMIC_GRAPH_TCP` | — | TCP host:port for the epistemic-graph engine (takes precedence over the socket). |
 | `DSM_NEAR_PAIRS_LOCAL_MAX` | `20000` | Cap on local O(n^2) near-pair fallback before requiring the Rust path (0 disables the cap). |
 | `MODEL_TRAININGTOOL` | `True` |  |
@@ -348,6 +346,7 @@ consumed from a **remote deployment**. The
 | `TRAINERTOOL` | `True` | Sub-surfaces of model-training; the code gates these via MODEL_TRAININGTOOL. |
 | `TRAINING_DATATOOL` | `True` |  |
 | `KERNEL_SPECIALIZETOOL` | `True` |  |
+| `DEEP_DELEGATETOOL` | `True` |  |
 
 #### Inherited agent-utilities variables (apply to every connector)
 
@@ -368,7 +367,7 @@ consumed from a **remote deployment**. The
 | `MODEL_ID` | `gpt-4o` | Model id for the agent |
 | `ENABLE_WEB_UI` | `True` | Serve the AG-UI web interface |
 
-_32 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
+_33 package + 14 inherited variable(s). Auto-generated from `.env.example` + the shared agent-utilities set — do not edit._
 <!-- ENV-VARS-TABLE:END -->
 
 
@@ -389,7 +388,7 @@ Every variable the server reads, grouped by purpose.
 ### Connection
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATA_SCIENCE_MCP_URL` | Base service URL | `http://localhost:8080` |
+| `DATA_SCIENCE_MCP_URL` | Base service URL | Required |
 | `DATA_SCIENCE_MCP_TOKEN` | API token | — |
 
 ### Training / inference backend (full `[training]` extra)
@@ -455,7 +454,7 @@ version: '3.8'
 
 services:
   data-science-mcp-mcp:
-    image: knucklessg1/data-science-mcp:mcp
+    image: example/data-science-mcp:mcp
     container_name: data-science-mcp-mcp
     hostname: data-science-mcp-mcp
     restart: always
@@ -481,7 +480,7 @@ services:
         max-file: "3"
 
   data-science-mcp-agent:
-    image: knucklessg1/data-science-mcp:latest
+    image: example/data-science-mcp@sha256:<digest>
     container_name: data-science-mcp-agent
     hostname: data-science-mcp-agent
     restart: always
@@ -515,7 +514,7 @@ services:
 
 ```
 
-Detailed graph node architecture explanations, custom skill configurations, and agentic trace guides are available in [docs/agent.md](docs/agent.md).
+Detailed graph node architecture explanations, custom skill configurations, and agentic trace guides are available in [docs/deployment.md](docs/deployment.md).
 
 ---
 
@@ -543,20 +542,20 @@ Pick the extra that matches what you want to run:
 
 | Extra | Installs | Use when |
 |-------|----------|----------|
-| `data-science-mcp[mcp]` | Slim MCP server only (`agent-utilities[mcp]` — FastMCP/FastAPI) + the core epistemic-graph engine | You only run the **MCP server** (smallest install / image) |
-| `data-science-mcp[agent]` | Full agent runtime (`agent-utilities[agent,logfire]` — Pydantic AI) | You run the **integrated agent** |
+| `data-science-mcp[mcp]` | Connector-focused MCP server (`agent-utilities[mcp]` — FastMCP/FastAPI + `epistemic-graph[full]`) | You only run the **MCP server** (smallest install / image) |
+| `data-science-mcp[agent]` | Agent runtime (`agent-utilities[agent-runtime,logfire]` — model orchestration + `epistemic-graph[full]`) | You run the **integrated agent** |
 | `data-science-mcp[all]` | Everything (`mcp` + `agent` + `scikit-learn` sample-dataset loaders) | Development / both surfaces |
 
 Heavy ML extras are opt-in and imported lazily — add them only when needed:
 `[training]` (torch/PEFT gradient trainers), `[training-scale]` (DeepSpeed/FlashAttention,
 GPU-host only), `[training-fast]` (Liger Triton kernels), `[datasets]` (scikit-learn sample
-loaders), `[eval]` (lm-eval), `[tracking]` (MLflow). See **[docs/training.md](docs/training.md)**.
+loaders), `[eval]` (LightEval), `[tracking]` (MLflow). See **[docs/training.md](docs/training.md)**.
 
 ```bash
-# MCP server only (recommended for tool hosting — slim deps)
+# Connector-focused MCP server (includes the shared graph engine)
 uv pip install "data-science-mcp[mcp]"
 
-# Full agent runtime (Pydantic AI)
+# Agent runtime (adds model orchestration to the shared graph engine)
 uv pip install "data-science-mcp[agent]"
 
 # Everything (development)
@@ -569,26 +568,25 @@ One multi-stage `docker/Dockerfile` builds two right-sized images, selected by `
 
 | Image tag | Build target | Contents | Entrypoint |
 |-----------|--------------|----------|------------|
-| `knucklessg1/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **slim**, no `pydantic-ai`/`dspy`/`llama-index`/`tree-sitter` | `data-science-mcp` |
-| `knucklessg1/data-science-mcp:latest` | `--target agent` (default) | `data-science-mcp[agent]` — **full** agent runtime | `data-science-agent` |
+| `example/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **connector-focused**, includes `epistemic-graph[full]`; no model-orchestration stack | `data-science-mcp` |
+| `example/data-science-mcp@sha256:<digest>` | `--target agent` (default) | `data-science-mcp[agent]` — **agent runtime**, model orchestration + `epistemic-graph[full]` | `data-science-agent` |
 
 ```bash
-docker build --target mcp   -t knucklessg1/data-science-mcp:mcp    docker/   # slim MCP server
-docker build --target agent -t knucklessg1/data-science-mcp:latest docker/   # full agent
+docker build --target mcp   -t example/data-science-mcp:mcp    docker/   # connector-focused MCP server
+docker build --target agent -t example/data-science-mcp:agent-local docker/   # agent runtime
 ```
 
-`docker/mcp.compose.yml` runs the slim `:mcp` server; `docker/agent.compose.yml` runs the
-agent (`:latest`) with a co-located `:mcp` sidecar.
+`docker/mcp.compose.yml` runs the connector-focused `:mcp` server; `docker/agent.compose.yml` runs the
+agent (`immutable agent digest`) with a co-located `:mcp` sidecar.
 
 ### Knowledge-graph database (`epistemic-graph`)
 
-`data-science-mcp` depends directly on the **epistemic-graph** compute engine
-(`epistemic-graph[datascience]`) — its model-training / evaluation / evolution compute runs in
-that Rust engine, so the engine is a core dependency in **every** extra (including `[mcp]`). For
-production — or to share one knowledge graph across multiple agents — run **epistemic-graph as
-its own database container** and point the server at it instead of embedding it. Deployment
-recipes (single-node + Raft HA), connection config, and the full database architecture (with
-diagrams) are documented in the
+`data-science-mcp` uses the mandatory `epistemic-graph[full]` compute capabilities on top of
+the `epistemic-graph[full]` runtime carried by every Agent Utilities install.
+The connector-focused `[mcp]` surface uses that engine without enabling model
+orchestration; `[agent]` adds the orchestration stack. Local deployments can use the
+bundled engine. For production or shared state, configure a dedicated epistemic-graph
+service. See the
 [epistemic-graph deployment guide](https://knuckles-team.github.io/epistemic-graph/deployment/).
 
 ---
@@ -612,10 +610,10 @@ is the recommended reference for installation, deployment, and day-to-day operat
 
 ## Repository Owners
 
-<img width="100%" height="180em" src="https://github-readme-stats.vercel.app/api?username=Knucklessg1&show_icons=true&hide_border=true&&count_private=true&include_all_commits=true" />
+<img width="100%" height="180em" src="https://github-readme-stats.vercel.app/api?username=example&show_icons=true&hide_border=true&&count_private=true&include_all_commits=true" />
 
-![GitHub followers](https://img.shields.io/github/followers/Knucklessg1)
-![GitHub User's stars](https://img.shields.io/github/stars/Knucklessg1)
+![GitHub followers](https://img.shields.io/github/followers/example)
+![GitHub User's stars](https://img.shields.io/github/stars/example)
 
 ---
 
@@ -628,23 +626,40 @@ Contributions are welcome! Please ensure code quality by executing local checks 
 - Execute test suites using `pytest`
 
 
-<!-- BEGIN agent-os-genesis-deploy (generated; do not edit between markers) -->
+<!-- BEGIN agent-utilities-deployment (generated; do not edit between markers) -->
 
-## Deploy with `agent-os-genesis`
+## Deploy with `agent-utilities-deployment`
 
-This package can be provisioned for you — skill-guided — by the **`agent-os-genesis`**
-universal skill (its *single-package deploy mode*): it picks your install method, seeds
-secrets to OpenBao/Vault (or `.env`), trusts your enterprise CA, registers the MCP
-server, and verifies it — the same machinery that stands up the whole Agent OS, narrowed
-to just this package. Ask your agent to **"deploy `data-science-mcp` with agent-os-genesis"**.
+Provision this package with the consolidated **`agent-utilities-deployment`**
+workflow. It selects an installed-package, editable-source, or immutable-container
+path; records only runtime secret and TLS-profile references in `AgentConfig`; and
+runs doctor, registration, policy, observability, and rollback gates. Ask your agent
+to **"deploy `data-science-mcp` with agent-utilities-deployment"**.
 
 | Install mode | Command |
 |------|---------|
-| Bare-metal, prod (PyPI) | `uvx data-science-mcp` · or `uv tool install data-science-mcp` |
-| Bare-metal, dev (editable) | `uv pip install -e ".[all]"` · or `pip install -e ".[all]"` |
-| Container, prod | deploy `knucklessg1/data-science-mcp:latest` via docker-compose / swarm / podman / podman-compose / kubernetes |
-| Container, dev (editable) | deploy `docker/compose.dev.yml` (source-mounted at `/src`; edits live on restart) |
+| Installed package | `uv tool install "data-science-mcp[mcp]"`, then run `data-science-mcp` |
+| Editable source | `uv pip install -e ".[agent]"`, then run `data-science-mcp` |
+| Immutable container | deploy `registry.example.invalid/data-science-mcp@sha256:<digest>` through the operator-selected orchestrator |
 
-Secrets are read-existing + seeded via `vault_sync` — you are only prompted for what's missing.
+The repository embeds no deployment profile, credential value, certificate path, or
+environment-specific endpoint. Supply those at runtime through `AgentConfig` and the
+configured secret provider.
 
-<!-- END agent-os-genesis-deploy -->
+<!-- END agent-utilities-deployment -->
+
+<!-- GOVERNED-CAPABILITY:START -->
+## Governed capability contract
+
+This package ships a compact canonical skill surface with specialist procedures
+kept as referenced workflows. The current MCP tools, skill metadata,
+`connector_manifest.yml`, ontology, mappings, shapes, fixtures, migrations,
+tool-schema fingerprints, and certification metadata form one versioned
+capability contract. Validate them together; do not rely on stale tool names or
+historical per-task skill wrappers.
+
+Runtime endpoints, credentials, certificate trust, tenant identity, retention,
+and observability policy are deployment inputs and are never packaged values.
+See [Configuration, trust, and privacy](docs/configuration.md) before enabling a
+network transport, connector ingestion, GraphOS delegation, or trace export.
+<!-- GOVERNED-CAPABILITY:END -->

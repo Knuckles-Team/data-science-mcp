@@ -1,0 +1,8 @@
+{
+  "algorithm": "agent-utilities:mcp-tool-schema-compat:v1",
+  "connector": "data-science-mcp",
+  "schema_version": "1",
+  "tools": {
+    "rank_models": "bb3327e89d7f07a87ecb36a4ac7fe7212e5975b2b0edcaa5cf5b3101d71ddd83"
+  }
+}

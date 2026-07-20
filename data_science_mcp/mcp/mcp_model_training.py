@@ -36,7 +36,7 @@ def register_model_training_tools(mcp: FastMCP) -> None:
         try:
             hparams = json.loads(hyperparameters_json)
         except Exception as e:
-            return {"error": f"Invalid hyperparameters_json: {e}"}
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         return engine.fit(
@@ -62,14 +62,14 @@ def register_model_training_tools(mcp: FastMCP) -> None:
         try:
             inputs = json.loads(inputs_json)
         except Exception as e:
-            return {"error": f"Invalid inputs_json: {e}"}
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         try:
             preds = engine.predict(model_id, inputs)
             return {"model_id": model_id, "predictions": preds}
         except Exception as e:
-            return {"error": str(e)}
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"model-training"})
     async def evaluate_model(
@@ -112,7 +112,7 @@ def register_model_training_tools(mcp: FastMCP) -> None:
         try:
             hparams = json.loads(hyperparameters_json)
         except Exception as e:
-            return {"error": f"Invalid hyperparameters_json: {e}"}
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         return engine.cross_validate(model_class, dataset_name, n_folds, hparams)

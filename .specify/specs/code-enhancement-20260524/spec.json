@@ -173,12 +173,12 @@
     },
     {
       "id": "FR-028",
-      "description": "Undocumented env vars: AUTH_TYPE, DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_VERIFY, EUNOMIA_POLICY_FILE, EUNOMIA_TYPE, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_PUBLIC_KEY, OTEL_EXPORTER_OTLP_SECRET_KEY",
+      "description": "Undocumented env vars: AUTH_TYPE, TLS_PROFILES_REF, TLS_PROFILE, EUNOMIA_POLICY_FILE, EUNOMIA_TYPE, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_PUBLIC_KEY, OTEL_EXPORTER_OTLP_SECRET_KEY",
       "testable": true
     },
     {
       "id": "FR-029",
-      "description": "2 Python env vars not in .env.example: DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_VERIFY",
+      "description": "2 Python env vars not in .env.example: TLS_PROFILES_REF, TLS_PROFILE",
       "testable": true
     },
     {

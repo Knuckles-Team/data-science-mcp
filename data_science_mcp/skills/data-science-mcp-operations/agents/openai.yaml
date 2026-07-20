@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Science MCP Operations"
+  short_description: "Help with Data Science MCP Operations tasks"
+  default_prompt: "Use $data-science-mcp-operations to complete a governed provider workflow."

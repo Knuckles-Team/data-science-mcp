@@ -132,7 +132,7 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
         try:
             answers = json.loads(answers_json)
         except Exception as e:
-            return {"error": f"Invalid answers_json: {e}"}
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         if model_id not in engine._models:

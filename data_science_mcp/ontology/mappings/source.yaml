@@ -1,0 +1,20 @@
+schema_version: '1'
+connector: data-science-mcp
+ontology_source: datascience
+sync:
+- preset: datascience-model-registry
+  server: data-science-mcp
+  tool: rank_models
+  action: list
+  records_path: ranked_models
+  id_field: model_id
+  title_field: model_str
+  text_field: model_str
+  updated_field: dataset
+  doc_type: datascience_model
+  tool_schema_sha256: bb3327e89d7f07a87ecb36a4ac7fe7212e5975b2b0edcaa5cf5b3101d71ddd83
+governance:
+  default_acl: quarantine
+  identity: opaque-reference
+  tenant: required-at-materialization
+  provenance: required-at-materialization
