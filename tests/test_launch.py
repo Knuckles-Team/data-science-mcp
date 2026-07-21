@@ -2,10 +2,13 @@
 """Tests for the distributed launcher + benchmark eval (CONCEPT:DS-AHE.trainer.concept-4/006).
 
 Config builders and the ``accelerate launch`` argv are pure/CPU-testable; the
-actual multi-GPU run and lm-eval scoring happen on a GPU host.
+actual multi-GPU run and LightEval scoring happen on a GPU host.
 """
 
 from __future__ import annotations
+
+import sys
+from types import ModuleType, SimpleNamespace
 
 from data_science_mcp.launch import (
     build_launch_command,
@@ -71,9 +74,91 @@ def test_build_launch_command_rejects_bad_backend():
         build_launch_command("m", distributed="horovod")
 
 
-def test_evaluate_benchmarks_without_lm_eval_is_graceful():
+def test_evaluate_benchmarks_without_lighteval_is_graceful():
     from data_science_mcp.trainers.eval_hooks import evaluate_benchmarks
 
     out = evaluate_benchmarks("some/model", ["hellaswag"])
-    # lm-eval is not installed in CI → graceful error, never a crash.
+    # LightEval is not installed in CI → graceful error, never a crash.
     assert "error" in out or "results" in out
+
+
+def test_evaluate_benchmarks_uses_hardened_lighteval_contract(monkeypatch):
+    """Keep the optional LightEval 0.13 boundary CPU-only and fail-safe."""
+    calls: dict[str, object] = {}
+
+    class EvaluationTracker:
+        def __init__(self, **kwargs):
+            calls["tracker"] = kwargs
+
+    class TransformersModelConfig:
+        def __init__(self, **kwargs):
+            calls["model"] = kwargs
+
+    class PipelineParameters:
+        def __init__(self, **kwargs):
+            calls["parameters"] = kwargs
+
+    class Pipeline:
+        def __init__(self, **kwargs):
+            calls["pipeline"] = kwargs
+
+        def evaluate(self):
+            calls["evaluated"] = True
+
+        def get_results(self):
+            return {"results": {"hellaswag": {"acc": 0.5}}}
+
+    modules = {
+        "lighteval": ModuleType("lighteval"),
+        "lighteval.logging": ModuleType("lighteval.logging"),
+        "lighteval.logging.evaluation_tracker": ModuleType(
+            "lighteval.logging.evaluation_tracker"
+        ),
+        "lighteval.models": ModuleType("lighteval.models"),
+        "lighteval.models.transformers": ModuleType("lighteval.models.transformers"),
+        "lighteval.models.transformers.transformers_model": ModuleType(
+            "lighteval.models.transformers.transformers_model"
+        ),
+        "lighteval.pipeline": ModuleType("lighteval.pipeline"),
+    }
+    modules["lighteval.logging.evaluation_tracker"].EvaluationTracker = (
+        EvaluationTracker
+    )
+    modules[
+        "lighteval.models.transformers.transformers_model"
+    ].TransformersModelConfig = TransformersModelConfig
+    modules["lighteval.pipeline"].ParallelismManager = SimpleNamespace(NONE="none")
+    modules["lighteval.pipeline"].Pipeline = Pipeline
+    modules["lighteval.pipeline"].PipelineParameters = PipelineParameters
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    from data_science_mcp.trainers.eval_hooks import evaluate_benchmarks
+
+    out = evaluate_benchmarks(
+        "organization/model",
+        ["hellaswag"],
+        limit=2,
+        batch_size=1,
+        device="cpu",
+        revision="a" * 40,
+    )
+
+    assert out["results"]["hellaswag"]["acc"] == 0.5
+    assert calls["evaluated"] is True
+    assert calls["tracker"] == {
+        "output_dir": calls["tracker"]["output_dir"],
+        "save_details": False,
+        "push_to_hub": False,
+        "push_to_tensorboard": False,
+        "use_wandb": False,
+    }
+    assert calls["model"] == {
+        "model_name": "organization/model",
+        "revision": "a" * 40,
+        "batch_size": 1,
+        "device": "cpu",
+        "trust_remote_code": False,
+    }
+    assert calls["parameters"] == {"launcher_type": "none", "max_samples": 2}
+    assert calls["pipeline"]["tasks"] == "hellaswag"

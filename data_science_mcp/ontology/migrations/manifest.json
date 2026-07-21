@@ -1,0 +1,6 @@
+{
+  "connector": "data-science-mcp",
+  "current_ontology_source": "datascience",
+  "migrations": [],
+  "schema_version": "1"
+}

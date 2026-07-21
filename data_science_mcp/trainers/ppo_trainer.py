@@ -83,7 +83,11 @@ class PpoTrainer(TrainerBase):
                 attach_scalar_head,
             )
 
-            value_model = attach_scalar_head(self.config.base_model, self.config.lora)
+            value_model = attach_scalar_head(
+                self.config.base_model,
+                self.config.lora,
+                revision=self.config.model_revision,
+            )
         value_model.to(device)
         value_model.train()
 

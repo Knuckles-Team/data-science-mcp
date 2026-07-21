@@ -8,7 +8,9 @@ import types
 
 import pytest
 
-pytest.importorskip("agent_utilities.models.model_registry", reason="dev agent-utilities")
+pytest.importorskip(
+    "agent_utilities.models.model_registry", reason="dev agent-utilities"
+)
 
 from agent_utilities.models.model_registry import ModelRegistry  # noqa: E402
 
@@ -75,7 +77,7 @@ def test_backend_adapter_precedence_sets_served_model():
         def json(self):
             return {"choices": [{"text": "ok", "logprobs": {"token_logprobs": []}}]}
 
-    def _post(url, *, headers, json, timeout):
+    def _post(url, *, headers, json, timeout, **transport):
         captured["model"] = json["model"]
         return _Resp()
 
@@ -97,7 +99,9 @@ def test_backend_adapter_precedence_sets_served_model():
 def test_weight_arm_via_serving_feeds_the_factory():
     """The factory weight arm trains+serves an adapter and hands back a generator."""
     from agent_utilities.harness.sai_task import SpecializationTask, VerifierResult
-    from agent_utilities.knowledge_graph.research.sai_factory import SaiFactoryController
+    from agent_utilities.knowledge_graph.research.sai_factory import (
+        SaiFactoryController,
+    )
 
     class _CountVerifier:
         def verify(self, candidate: str) -> VerifierResult:
@@ -112,14 +116,18 @@ def test_weight_arm_via_serving_feeds_the_factory():
     )
     registry = ModelRegistry(models=[])
     lib = AdapterLibrary(registry=registry)
-    backend = _FakeBackend({"sft-1": "good good good"})  # the trained specialist is strong
+    backend = _FakeBackend(
+        {"sft-1": "good good good"}
+    )  # the trained specialist is strong
 
     def weight_arm(_task, _harvested):
         lib.register(_task.task_id, "sft-1", "qwen2.5-1.5b")
         return ("sft-1", served_generator(backend, "sft-1"))
 
     base_gen = lambda scaffold: "good"  # base model: weak (reward 1/3)  # noqa: E731
-    controller = SaiFactoryController(task, base_gen, scaffolds=["weak"], weight_arm=weight_arm)
+    controller = SaiFactoryController(
+        task, base_gen, scaffolds=["weak"], weight_arm=weight_arm
+    )
     result = controller.run(rounds=1)
     assert result.specialist.adapter_id == "sft-1"
     assert result.specialist.reward == pytest.approx(1.0)

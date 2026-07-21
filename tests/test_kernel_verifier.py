@@ -9,6 +9,8 @@ PYTHONPATH — the installed wheel predates it.
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 pytest.importorskip("agent_utilities.harness.sai_task", reason="needs dev agent-utilities")
@@ -56,7 +58,17 @@ _BROKEN = "def fused_softmax(x): this is not valid python ::::"
 
 
 def _verifier() -> KernelVerifier:
-    return KernelVerifier(get_kernel_task("fused-softmax"), timeout_s=30.0)
+    return KernelVerifier(
+        get_kernel_task("fused-softmax"),
+        timeout_s=30.0,
+        sandbox_command=[
+            sys.executable,
+            "-m",
+            "data_science_mcp.kernels._runner",
+            "{candidate}",
+            "{task}",
+        ],
+    )
 
 
 def test_kernel_verifier_satisfies_verifier_protocol():
@@ -93,7 +105,18 @@ def test_non_compiling_candidate_fails_closed():
 
 
 def test_reward_cap_is_respected():
-    v = KernelVerifier(get_kernel_task("fused-softmax"), timeout_s=30.0, speedup_cap=2.0)
+    v = KernelVerifier(
+        get_kernel_task("fused-softmax"),
+        timeout_s=30.0,
+        speedup_cap=2.0,
+        sandbox_command=[
+            sys.executable,
+            "-m",
+            "data_science_mcp.kernels._runner",
+            "{candidate}",
+            "{task}",
+        ],
+    )
     res = v.verify(_CORRECT)
     if res.passed:
         assert res.reward <= 2.0

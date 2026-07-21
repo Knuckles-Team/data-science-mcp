@@ -90,10 +90,12 @@ class PeftManager:
         spec: LoraSpec | None = None,
         *,
         device_map: str | None = "auto",
+        revision: str | None = None,
     ) -> None:
         self.base_model = base_model
         self.spec = spec or LoraSpec()
         self.device_map = device_map
+        self.revision = revision
         self.model: Any = None
 
     def load_base(self) -> Any:
@@ -105,13 +107,21 @@ class PeftManager:
                 "transformers is required to load a base model; install "
                 "`data-science-mcp[training]`"
             ) from e
+        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+
+        revision = require_pinned_revision(self.base_model, self.revision)
         kwargs: dict[str, Any] = {}
         bnb = self.spec.bnb_config()
         if bnb is not None:
             kwargs["quantization_config"] = bnb
         if self.device_map is not None:
             kwargs["device_map"] = self.device_map
-        self.model = AutoModelForCausalLM.from_pretrained(self.base_model, **kwargs)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.base_model,
+            revision=revision,
+            trust_remote_code=False,
+            **kwargs,
+        )
         return self.model
 
     def attach(self, model: Any | None = None) -> Any:

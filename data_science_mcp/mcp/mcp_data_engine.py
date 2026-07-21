@@ -10,9 +10,24 @@ All tools take/return JSON strings (parallel to :mod:`mcp_trainers`).
 """
 
 import json
+import re
+from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
+
+_TOKENIZER_REPOSITORY_RE = re.compile(
+    r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)?"
+)
+_CORPUS_SUFFIXES = (".jsonl", ".jsonl.zst", ".txt")
+_TOKEN_OUTPUT_SUFFIXES = (".h5", ".hdf5", ".npy")
+_MAX_CORPUS_SPEC_CHARS = 8 * 1024 * 1024
+_MAX_OPTIONS_CHARS = 64 * 1024
+_MAX_PRETRAIN_DOCS = 100_000
+_MAX_DOC_CHARS = 1_000_000
+_MAX_TOTAL_TOKENS = 50_000_000
+_MAX_FLUSH_TOKENS = 1_000_000
+_ALLOWED_TOKEN_DTYPES = frozenset({"int32", "int64", "uint16", "uint32"})
 
 
 def register_data_engine_tools(mcp: FastMCP) -> None:
@@ -133,7 +148,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 execute: bool}``.
 
         Returns:
-            JSON ``{plan, executed, out_path?, n_docs?, n_tokens?}`` (or ``{error}``).
+            JSON ``{plan, executed, out_path?, n_docs?, n_tokens?}`` (or ``{type(error).__name__}``).
         """
 
         def _go() -> dict[str, Any]:
@@ -141,13 +156,20 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 prepare_pretrain_data as _prep,
             )
 
+            if len(corpus_spec_json) > _MAX_CORPUS_SPEC_CHARS:
+                raise ValueError("corpus specification exceeds its size limit")
+            if len(options_json) > _MAX_OPTIONS_CHARS:
+                raise ValueError("pretraining options exceed their size limit")
             spec = json.loads(corpus_spec_json)
             opts = json.loads(options_json or "{}")
+            if not isinstance(opts, dict):
+                raise ValueError("pretraining options must be a JSON object")
             tok_ref = opts.get("tokenizer")
             plan = {
                 "out_path": out_path,
                 "format": "hdf5" if out_path.endswith((".h5", ".hdf5")) else "npy",
                 "tokenizer": tok_ref,
+                "revision": opts.get("revision"),
                 "append_eos": opts.get("append_eos", True),
                 "limit": opts.get("limit"),
             }
@@ -155,20 +177,124 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 return {"plan": plan, "executed": False, "note": "set execute=true to run"}
             if not tok_ref:
                 return {"plan": plan, "executed": False, "error": "options.tokenizer (HF name or local dir) is required to execute"}
+            limit = opts.get("limit")
+            flush_every = opts.get("flush_every", _MAX_FLUSH_TOKENS)
+            dtype = opts.get("dtype", "int32")
+            if (
+                isinstance(limit, bool)
+                or not isinstance(limit, int)
+                or not 1 <= limit <= _MAX_PRETRAIN_DOCS
+            ):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": f"options.limit must be between 1 and {_MAX_PRETRAIN_DOCS}",
+                }
+            if (
+                isinstance(flush_every, bool)
+                or not isinstance(flush_every, int)
+                or not 1 <= flush_every <= _MAX_FLUSH_TOKENS
+                or dtype not in _ALLOWED_TOKEN_DTYPES
+            ):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "invalid dtype or flush_every boundary",
+                }
+            from data_science_mcp.path_policy import data_root, resolve_data_path
+
+            safe_out = resolve_data_path(out_path)
+            if not safe_out.name.lower().endswith(_TOKEN_OUTPUT_SUFFIXES):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "out_path must end with .npy, .h5, or .hdf5",
+                }
+            safe_out.parent.mkdir(parents=True, exist_ok=True)
+
+            if isinstance(spec, str):
+                safe_spec = resolve_data_path(spec, must_exist=True)
+                if not safe_spec.name.lower().endswith(_CORPUS_SUFFIXES):
+                    return {
+                        "plan": plan,
+                        "executed": False,
+                        "error": "local corpus must be .txt, .jsonl, or .jsonl.zst",
+                    }
+                spec = str(safe_spec)
+            elif isinstance(spec, dict) and "hf" in spec:
+                dataset_id = spec.get("hf")
+                if (
+                    not isinstance(dataset_id, str)
+                    or not _TOKENIZER_REPOSITORY_RE.fullmatch(dataset_id)
+                    or any(key not in {"hf", "config", "split"} for key in spec)
+                    or any(
+                        value is not None
+                        and (not isinstance(value, str) or len(value) > 256)
+                        for key, value in spec.items()
+                        if key in {"config", "split"}
+                    )
+                ):
+                    return {
+                        "plan": plan,
+                        "executed": False,
+                        "error": "invalid Hugging Face dataset reference",
+                    }
+            elif not isinstance(spec, list):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "corpus spec must be an inline list, dataset ID, or confined path",
+                }
+
+            if not isinstance(tok_ref, str):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "options.tokenizer must be a repository ID or local path",
+                }
+            token_path = Path(tok_ref).expanduser()
+            local_tokenizer = (
+                token_path.is_absolute()
+                or tok_ref.startswith((".", "~"))
+                or (data_root() / token_path).exists()
+            )
+            if local_tokenizer:
+                tok_ref = str(resolve_data_path(tok_ref, must_exist=True))
+            elif not _TOKENIZER_REPOSITORY_RE.fullmatch(tok_ref):
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "invalid tokenizer repository ID",
+                }
             try:
                 from transformers import AutoTokenizer  # noqa: PLC0415
             except ImportError:
                 return {"plan": plan, "executed": False, "error": "transformers required — install data-science-mcp[training]"}
-            tok = AutoTokenizer.from_pretrained(tok_ref)
+            from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+
+            revision = require_pinned_revision(
+                tok_ref,
+                opts.get("revision"),
+                local_files_only=local_tokenizer,
+            )
+            tok = AutoTokenizer.from_pretrained(
+                tok_ref,
+                revision=revision,
+                trust_remote_code=False,
+                local_files_only=local_tokenizer,
+            )
             report = _prep(
                 spec,
                 tok,
-                out_path,
+                str(safe_out),
+                max_doc_chars=_MAX_DOC_CHARS,
+                max_tokens=_MAX_TOTAL_TOKENS,
                 **_pick(
                     opts,
                     {"text_key", "append_eos", "eos_id", "limit", "dtype", "flush_every"},
                 ),
             )
+            report["out_path"] = out_path
             return {"plan": plan, "executed": True, **report}
 
         return _json(_go)
@@ -225,9 +351,9 @@ def _json(fn) -> str:
     try:
         return json.dumps(fn())
     except json.JSONDecodeError as e:
-        return json.dumps({"error": f"invalid json: {e}"})
-    except Exception as e:  # pragma: no cover - defensive
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+    except Exception:  # pragma: no cover - defensive
+        return json.dumps({"error": "Operation failed"})
 
 
 __all__ = ["register_data_engine_tools"]

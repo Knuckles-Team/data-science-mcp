@@ -40,8 +40,8 @@
 - **FR-025**: 10 tests have >5 assertions — consider splitting (single responsibility)
 - **FR-026**: 1 tests exceed 100 lines — likely doing too much per test
 - **FR-027**: Partial env var documentation: 53% coverage
-- **FR-028**: Undocumented env vars: AUTH_TYPE, DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_VERIFY, EUNOMIA_POLICY_FILE, EUNOMIA_TYPE, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_PUBLIC_KEY, OTEL_EXPORTER_OTLP_SECRET_KEY
-- **FR-029**: 2 Python env vars not in .env.example: DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_VERIFY
+- **FR-028**: Undocumented env vars: AUTH_TYPE, TLS_PROFILES_REF, TLS_PROFILE, EUNOMIA_POLICY_FILE, EUNOMIA_TYPE, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_PUBLIC_KEY, OTEL_EXPORTER_OTLP_SECRET_KEY
+- **FR-029**: 2 Python env vars not in .env.example: TLS_PROFILES_REF, TLS_PROFILE
 - **FR-030**: Analysis error: No module named 'agent_utilities.knowledge_graph'
 
 ## Success Criteria

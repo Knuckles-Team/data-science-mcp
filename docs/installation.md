@@ -9,7 +9,7 @@ and no GPU**.
 
 - **Python 3.11–3.13** (`requires-python = ">=3.11,<3.14"`).
 - The Rust **`epistemic-graph`** compute engine (installed as a dependency via
-  `epistemic-graph[datascience]`). All classical ML compute runs in the engine over
+  `epistemic-graph[full]`). All classical ML compute runs in the engine over
   its MessagePack/UDS protocol — there is no scikit-learn compute path.
 
 ## Install
@@ -41,15 +41,15 @@ pip install -e ".[training]"
 
 | Extra | Brings in | Weight |
 |---|---|---|
-| _(core)_ | `agent-utilities[mcp]`, `epistemic-graph[datascience]`, `polars`, `numpy` | light, no GPU |
+| _(core)_ | `agent-utilities[mcp]`, `epistemic-graph[full]`, `polars`, `numpy` | full CPU engine, no GPU toolchain |
 | `datasets` | `scikit-learn` | light — sample-dataset loaders only (iris/diabetes/…), **not** compute |
 | `training` | `torch`, `transformers`, `peft`, `bitsandbytes`, `accelerate`, `datasets` (HF), `tokenizers`, `httpx` | heavy, GPU-oriented (CPU-installable) |
 | `training-scale` | `deepspeed`, `flash-attn` | **GPU host only** — needs the CUDA toolchain (`nvcc`); **not** CI/CPU-installable |
 | `training-fast` | `liger-kernel` | fused Triton kernels (supported GPU archs) |
-| `eval` | `lm-eval` | EleutherAI benchmark harness |
+| `eval` | `lighteval` | Hardened multi-backend benchmark harness |
 | `tracking` | `mlflow` | experiment-tracking dashboard (self-hostable). `wandb` is supported by `RunTracker` but install it yourself |
-| `agent` | `agent-utilities[agent,logfire]` | the bundled Pydantic-AI A2A agent runtime |
-| `all` | `agent-utilities[mcp,agent,logfire]`, `epistemic-graph[datascience]`, `scikit-learn` | everything **except** the GPU training extras |
+| `agent` | `agent-utilities[agent-runtime,logfire]` | the bundled Pydantic-AI A2A agent runtime |
+| `all` | `agent-utilities[mcp,agent-runtime,logfire]`, `epistemic-graph[full]`, `scikit-learn` | everything **except** the GPU training extras |
 
 All heavy deps are **lazily imported** — they load only when a capability that needs
 them actually executes, so the package installs and imports without them.
@@ -77,11 +77,11 @@ them actually executes, so the package installs and imports without them.
 
 ## Prebuilt Docker image
 
-A multi-stage, slim image is published on every release (entrypoint `data-science-mcp`):
+A multi-stage runtime image is published on every release (entrypoint `data-science-mcp`):
 
 ```bash
-docker pull knucklessg1/data-science-mcp:latest
-docker run --rm -i knucklessg1/data-science-mcp:latest   # stdio transport (default)
+docker pull example/data-science-mcp@sha256:<digest>
+docker run --rm -i example/data-science-mcp@sha256:<digest>   # stdio transport (default)
 ```
 
 For an HTTP server with a published port, see [Deployment](deployment.md).

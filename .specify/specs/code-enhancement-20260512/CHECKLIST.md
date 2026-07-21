@@ -26,7 +26,7 @@
 - [ ] **FR-023**: CHANGELOG.md is missing — create one following Keep a Changelog format
 - [ ] **FR-024**: CHANGELOG.md is missing
 - [ ] **FR-025**: Only 14% of env vars documented in README.md
-- [ ] **FR-026**: Undocumented env vars: ALLOWED_CLIENT_REDIRECT_URIS, AUTH_TYPE, DATA_MANAGEMENTTOOL, DATA_SCIENCE_MCP_VERIFY, DEFAULT_AGENT_NAME, ENABLE_OTEL, EUNOMIA_POLICY_FILE, EUNOMIA_REMOTE_URL, EUNOMIA_TYPE, INTERPRETABILITYTOOL
+- [ ] **FR-026**: Undocumented env vars: ALLOWED_CLIENT_REDIRECT_URIS, AUTH_TYPE, DATA_MANAGEMENTTOOL, TLS_PROFILE, DEFAULT_AGENT_NAME, ENABLE_OTEL, EUNOMIA_POLICY_FILE, EUNOMIA_REMOTE_URL, EUNOMIA_TYPE, INTERPRETABILITYTOOL
 - [ ] **FR-027**: No .env.example file — create one for developer onboarding
 
 ## User Stories / Acceptance Criteria

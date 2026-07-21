@@ -34,13 +34,23 @@ class RewardTrainer(TrainerBase):
         if model is not None and tokenizer is not None:
             return model, tokenizer
         from transformers import AutoTokenizer  # noqa: PLC0415
+        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
 
         from data_science_mcp.trainers.value_head import (  # noqa: PLC0415
             attach_scalar_head,
         )
 
-        rm = attach_scalar_head(self.config.base_model, self.config.lora)
-        tok = tokenizer or AutoTokenizer.from_pretrained(self.config.base_model)
+        revision = require_pinned_revision(
+            self.config.base_model, self.config.model_revision
+        )
+        rm = attach_scalar_head(
+            self.config.base_model, self.config.lora, revision=revision
+        )
+        tok = tokenizer or AutoTokenizer.from_pretrained(
+            self.config.base_model,
+            revision=revision,
+            trust_remote_code=False,
+        )
         if getattr(tok, "pad_token", None) is None:
             tok.pad_token = tok.eos_token
         return rm, tok

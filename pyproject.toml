@@ -17,18 +17,18 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "agent-utilities[mcp]>=1.0.0",
-    "epistemic-graph[datascience]>=2.0.0",
+    "agent-utilities[mcp]>=1.27.1,<2.0.0",
+    "epistemic-graph[full]>=2.0.0",
     "polars>=1.0.0",
     "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
 mcp = [
-    "agent-utilities[mcp]>=1.0.0"]
+    "agent-utilities[mcp]>=1.27.1,<2.0.0"]
 
 agent = [
-    "agent-utilities[agent,logfire]>=1.0.0"]
+    "agent-utilities[agent-runtime,logfire]>=1.27.1,<2.0.0"]
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
 # Rust engine). It is optional and only powers the built-in sample-dataset
@@ -68,16 +68,19 @@ training-fast = [
     "liger-kernel>=0.3.0"]
 
 # Standardized benchmark scoring alongside the AHE-3.1 reliability suite.
+# LightEval replaces lm-eval: the latter still requires sqlitedict, whose
+# pickle-backed cache has no safe release. LightEval provides the same standard
+# task families without admitting an unsafe deserializer into the runtime.
 eval = [
-    "lm-eval>=0.4.0"]
+    "lighteval>=0.13.0,<0.14.0"]
 
 # Experiment tracking. MLflow (self-hostable; the homelab default) and/or W&B.
 tracking = [
     "mlflow>=2.14.0"]
 
 all = [
-    "agent-utilities[mcp,agent,logfire]>=1.0.0",
-    "epistemic-graph[datascience]>=2.0.0",
+    "agent-utilities[mcp,agent-runtime,logfire]>=1.27.1,<2.0.0",
+    "epistemic-graph[full]>=2.0.0",
     "scikit-learn>=1.5.0"]
 
 [project.scripts]
@@ -107,3 +110,9 @@ data_science_mcp = [ "mcp_config.json", "skills/**", "prompts/**", "ontology/**"
 
 [tool.vulture]
 ignore_names = ["request", "config"]
+
+[tool.uv]
+# LightEval 0.13 unnecessarily pins the vulnerable NLTK 3.9.1 release. NLTK
+# 3.10 retains the public tokenizer/corpus APIs LightEval uses and clears the
+# affected archive/resource-loading implementations.
+override-dependencies = ["nltk>=3.10.0"]

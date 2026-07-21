@@ -15,6 +15,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from agent_utilities.core.transport_security import (
+    ResolvedTLSProfile,
+    resolve_configured_tls_profile,
+)
+
 from data_science_mcp.inference.base import InferenceBackend
 
 
@@ -36,11 +41,13 @@ class OpenAICompatibleBackend(InferenceBackend):
         api_key: str = "EMPTY",
         timeout: float = 120.0,
         default_adapter: str | None = None,
+        tls_profile: ResolvedTLSProfile | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key
         self.timeout = timeout
+        self.tls_profile = tls_profile or resolve_configured_tls_profile("model")
         # LoRA hot-swap serving: when set (or passed per-call), the served model
         # name is the adapter id. vLLM started with ``--enable-lora --lora-modules
         # <name>=<path>`` (or sent a runtime ``/v1/load_lora_adapter``) serves each
@@ -109,6 +116,7 @@ class OpenAICompatibleBackend(InferenceBackend):
             headers={"Authorization": f"Bearer {self.api_key}"},
             json=payload,
             timeout=self.timeout,
+            **self.tls_profile.httpx_kwargs(),
         )
         resp.raise_for_status()
         data = resp.json()
@@ -119,6 +127,10 @@ class OpenAICompatibleBackend(InferenceBackend):
             }
             for ch in data.get("choices", [])
         ]
+
+    def close(self) -> None:
+        """Release runtime-only TLS material owned by this backend."""
+        self.tls_profile.cleanup()
 
 
 __all__ = ["OpenAICompatibleBackend"]

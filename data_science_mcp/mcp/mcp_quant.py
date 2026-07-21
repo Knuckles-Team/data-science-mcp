@@ -33,7 +33,7 @@ def _loads(name: str, raw: str) -> Any:
     try:
         return json.loads(raw)
     except Exception as exc:  # noqa: BLE001 — surfaced as an {"error": ...} dict
-        raise ValueError(f"Invalid {name}: {exc}") from exc
+        raise ValueError(f"Invalid {name}: {type(exc).__name__}") from exc
 
 
 def register_quant_tools(mcp: FastMCP) -> None:
@@ -120,8 +120,8 @@ def register_quant_tools(mcp: FastMCP) -> None:
             if action == "breakeven_alpha":
                 return {"breakeven_alpha": fin.breakeven_alpha(delta, p, v_h, v_l)}
             return {"error": f"Unknown action: {action}"}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_microstructure(
@@ -263,10 +263,10 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     )
                 }
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_sizing(
@@ -351,10 +351,10 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     )
                 }
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_validation(
@@ -466,10 +466,10 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     )
                 }
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_statespace(
@@ -623,10 +623,10 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     )
                 }
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_signals(
@@ -737,10 +737,10 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     window,
                 )
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_forensic(
@@ -773,12 +773,12 @@ def register_quant_tools(mcp: FastMCP) -> None:
         try:
             this_year = _loads("this_year_json", this_year_json)
             prior_year = _loads("prior_year_json", prior_year_json)
-        except ValueError as exc:
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
         try:
             return fin.forensic_report(this_year, prior_year)
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
     async def quant_derivatives(
@@ -852,7 +852,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
                     beta,
                 )
             return {"error": f"Unknown action: {action}"}
-        except ValueError as exc:
-            return {"error": str(exc)}
-        except Exception as exc:  # noqa: BLE001
-            return {"error": str(exc)}
+        except ValueError:
+            return {"error": "Operation failed"}
+        except Exception:  # noqa: BLE001
+            return {"error": "Operation failed"}

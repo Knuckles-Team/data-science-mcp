@@ -19,20 +19,17 @@ Tool tags:
       histgbm_classify — torch/[training]-extra, CONCEPT:AU-KG.mining.dsm-forecast-delegation)
 """
 
-from fastmcp import Context, FastMCP
-from pydantic import Field
 import json
 import logging
 import sys
 from typing import Any
 
-
-from agent_utilities.mcp_utilities import (
-    create_mcp_server,
-    load_config,
-    register_tool_surface,
-)
 from agent_utilities.base_utilities import get_logger
+from agent_utilities.core.config import load_config
+from agent_utilities.mcp.server_factory import create_mcp_server
+from agent_utilities.mcp.verbose_tools import register_tool_surface
+from fastmcp import Context, FastMCP
+from pydantic import Field
 
 __version__ = "1.2.0"
 
@@ -51,18 +48,18 @@ _graded_responses = {}  # In-memory store for interpretability tests and grades
 # Imported after the module-level stores above so the sibling tool modules in
 # data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
 # without a circular import.
-from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
-from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
-    register_training_data_tools,
+from data_science_mcp.mcp.mcp_deep_delegate import (  # noqa: E402
+    register_deep_delegate_tools,
 )
 from data_science_mcp.mcp.mcp_kernel_specialize import (  # noqa: E402
     register_kernel_specialize_tools,
 )
+from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
 from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
     register_trainer_tools,
 )
-from data_science_mcp.mcp.mcp_deep_delegate import (  # noqa: E402
-    register_deep_delegate_tools,
+from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
+    register_training_data_tools,
 )
 
 # mcp_data_engine is imported lazily inside get_mcp_instance (see below) rather than
@@ -95,8 +92,8 @@ def register_model_training_tools(mcp: FastMCP) -> None:
             )
         try:
             hparams = json.loads(hyperparameters_json)
-        except Exception as e:
-            return {"error": f"Invalid hyperparameters_json: {e}"}
+        except Exception:
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         return engine.fit(
@@ -121,15 +118,15 @@ def register_model_training_tools(mcp: FastMCP) -> None:
             await ctx.info(f"Generating predictions with model {model_id}...")
         try:
             inputs = json.loads(inputs_json)
-        except Exception as e:
-            return {"error": f"Invalid inputs_json: {e}"}
+        except Exception:
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         try:
             preds = engine.predict(model_id, inputs)
             return {"model_id": model_id, "predictions": preds}
-        except Exception as e:
-            return {"error": str(e)}
+        except Exception:
+            return {"error": "Operation failed"}
 
     @mcp.tool(tags={"model-training"})
     async def evaluate_model(
@@ -171,8 +168,8 @@ def register_model_training_tools(mcp: FastMCP) -> None:
             )
         try:
             hparams = json.loads(hyperparameters_json)
-        except Exception as e:
-            return {"error": f"Invalid hyperparameters_json: {e}"}
+        except Exception:
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         return engine.cross_validate(model_class, dataset_name, n_folds, hparams)
@@ -391,8 +388,8 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
             )
         try:
             answers = json.loads(answers_json)
-        except Exception as e:
-            return {"error": f"Invalid answers_json: {e}"}
+        except Exception:
+            return {"error": "Operation failed"}
 
         engine = MLEngine()
         if model_id not in engine._models:
@@ -461,7 +458,10 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"data-management"})
     async def load_dataset(
         name: str = Field(
-            description="Dataset name ('california', 'diabetes', 'iris', 'wine', 'breast_cancer') or path to .csv file"
+            description=(
+                "Built-in dataset name or CSV path confined to "
+                "DATA_SCIENCE_DATA_ROOT"
+            )
         ),
         target_column: str = Field(
             default="", description="Name of the target column (for CSV files)"
@@ -472,9 +472,15 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     ) -> dict:
         """Load and parse a dataset by name or CSV file path."""
         if ctx:
-            await ctx.info(f"Loading dataset {name}...")
+            await ctx.info("Loading configured dataset...")
+        try:
+            from data_science_mcp.path_policy import authorized_dataset_source
+
+            source_path = authorized_dataset_source(name)
+        except ValueError:
+            return {"error": "CSV path is outside the configured data root"}
         engine = MLEngine()
-        return engine.load_dataset(name, target_column)
+        return engine.load_dataset(name, target_column, source_path=source_path)
 
     @mcp.tool(tags={"data-management"})
     async def describe_dataset(
@@ -485,7 +491,7 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     ) -> dict:
         """Get descriptive statistics for a loaded dataset."""
         if ctx:
-            await ctx.info(f"Describing statistics for dataset {name}...")
+            await ctx.info("Describing statistics for configured dataset...")
         engine = MLEngine()
         return engine.describe_dataset(name)
 
@@ -507,7 +513,7 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     ) -> dict:
         """Split a loaded dataset into train, test, and validation sets."""
         if ctx:
-            await ctx.info(f"Splitting dataset {name} with test_size={test_size}...")
+            await ctx.info("Splitting configured dataset...")
         engine = MLEngine()
         return engine.split_dataset(name, test_size, validation_size, random_seed)
 

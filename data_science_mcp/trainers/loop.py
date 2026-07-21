@@ -132,19 +132,25 @@ def maybe_resume(model: Any, optimizer: Any, scheduler: Any, config: Any) -> int
     msf = os.path.join(path, "model_state.pt")
     if os.path.isfile(msf):
         try:
-            model.load_state_dict(torch.load(msf, map_location="cpu"))
+            model.load_state_dict(
+                torch.load(msf, map_location="cpu", weights_only=True)
+            )
         except Exception:  # pragma: no cover - shape drift
             pass
     osf = os.path.join(path, "optimizer.pt")
     if optimizer is not None and os.path.isfile(osf):
         try:
-            optimizer.load_state_dict(torch.load(osf, map_location="cpu"))
+            optimizer.load_state_dict(
+                torch.load(osf, map_location="cpu", weights_only=True)
+            )
         except Exception:  # pragma: no cover
             pass
     ssf = os.path.join(path, "scheduler.pt")
     if scheduler is not None and os.path.isfile(ssf):
         try:
-            scheduler.load_state_dict(torch.load(ssf, map_location="cpu"))
+            scheduler.load_state_dict(
+                torch.load(ssf, map_location="cpu", weights_only=True)
+            )
         except Exception:  # pragma: no cover
             pass
     tsf = os.path.join(path, "training_state.json")

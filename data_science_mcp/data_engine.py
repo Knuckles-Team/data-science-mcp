@@ -105,11 +105,16 @@ def _stream_hf(spec: dict[str, Any], default_split: str) -> Iterator[dict[str, A
             "huggingface `datasets` is required for hf corpus specs; install "
             "`data-science-mcp[training]`"
         ) from e
+    from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+
+    revision = require_pinned_revision(spec["hf"], spec.get("revision"))
     ds = load_dataset(
         spec["hf"],
         spec.get("config"),
+        revision=revision,
         split=spec.get("split", default_split),
         streaming=True,
+        trust_remote_code=False,
     )
     for row in ds:
         yield dict(row)
@@ -123,14 +128,14 @@ def _normalize_text(text: str) -> str:
 
 
 def _content_hash(text: str) -> str:
-    return hashlib.sha1(_normalize_text(text).encode("utf-8")).hexdigest()
+    return hashlib.sha256(_normalize_text(text).encode("utf-8")).hexdigest()
 
 
 def feature_vector(text: str, dim: int = 256) -> np.ndarray:
     """Deterministic hashing bag-of-tokens vector (L2-normalized) — no model needed."""
     vec = np.zeros(dim, dtype=np.float32)
     for tok in _TOKEN_RE.findall((text or "").lower()):
-        h = int(hashlib.md5(tok.encode("utf-8")).hexdigest(), 16)
+        h = int.from_bytes(hashlib.sha256(tok.encode("utf-8")).digest(), "big")
         vec[h % dim] += 1.0
     norm = float(np.linalg.norm(vec))
     return vec / norm if norm > 0 else vec
@@ -186,7 +191,7 @@ def _near_pairs_engine(
                 out.append((idx[a], idx[b], float(p.get("similarity", threshold))))
         return out
     except Exception as e:  # pragma: no cover - best-effort
-        logger.debug("engine find_similar_pairs unavailable: %s", e)
+        logger.debug("Operation failed: error_type=%s", type(e).__name__)
         return None
 
 
@@ -377,6 +382,8 @@ def prepare_pretrain_data(
     limit: int | None = None,
     dtype: str = "int32",
     flush_every: int = 1_000_000,
+    max_doc_chars: int | None = None,
+    max_tokens: int | None = None,
 ) -> dict[str, Any]:
     """Tokenize a streamed corpus into a flat 1-D token array on disk (CONCEPT:DS-AHE.trainer.data-transformation).
 
@@ -428,11 +435,16 @@ def prepare_pretrain_data(
             buf = []
 
         for rec in stream_corpus(spec, text_key=text_key):
-            ids = encode(str(rec.get(text_key, "")))
+            text = str(rec.get(text_key, ""))
+            if max_doc_chars is not None and len(text) > max_doc_chars:
+                raise ValueError("corpus document exceeds its size limit")
+            ids = encode(text)
             if append_eos and eos_id is not None:
                 ids.append(int(eos_id))
             if not ids:
                 continue
+            if max_tokens is not None and n_tokens + len(ids) > max_tokens:
+                raise ValueError("token output exceeds its size limit")
             buf.append(np.asarray(ids, dtype=dtype))
             n_docs += 1
             n_tokens += len(ids)
@@ -512,7 +524,7 @@ def dataset_provenance(
     count = n_records if n_records is not None else (len(records) if records else 0)
     fp = ""
     if records is not None:
-        h = hashlib.sha1()
+        h = hashlib.sha256()
         for r in records:
             h.update(_content_hash(str(r.get("text", r))).encode("utf-8"))
         fp = h.hexdigest()
@@ -534,15 +546,15 @@ def dataset_provenance(
 def _kg_write(payload: dict[str, Any]) -> None:
     try:  # pragma: no cover - requires a live KG facade/engine
         from agent_utilities.knowledge_graph.facade import (  # noqa: PLC0415
-            KnowledgeGraphFacade,
+            KnowledgeGraph,
         )
 
-        kg = KnowledgeGraphFacade()
+        kg = KnowledgeGraph()
         writer = getattr(kg, "write", None) or getattr(kg, "add_node", None)
         if writer is not None:
             writer(payload)
     except Exception as e:  # pragma: no cover - best-effort
-        logger.debug("KG dataset provenance skipped: %s", e)
+        logger.debug("Operation failed: error_type=%s", type(e).__name__)
 
 
 __all__ = [

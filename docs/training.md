@@ -38,8 +38,8 @@ bitsandbytes / httpx). Modules under `data_science_mcp/`:
 - **`peft_manager.py`** — `LoraSpec`/`PeftManager` (LoRA/QLoRA, lazy peft) + pure-numpy
   `ties_merge` (MeMo multi-adapter merge, CPU).
 - **`tokenizer_registry.py`** — special/functional-token injection + embedding resize.
-- **`rollout_buffer.py`** — prompt→generation→logprob→reward staging with
-  `VLLMRolloutClient` (generations served by the running vLLM) + GRPO export.
+- **`rollout_buffer.py`** — prompt→generation→logprob→reward staging with an
+  injected `InferenceBackend` + GRPO export.
 - **`trainers/eval_hooks.py`** — score a checkpoint with the **AHE-3.1 reliability
   suite** (`agent_utilities.harness.reliability_scorers`).
 
@@ -145,7 +145,7 @@ for per-paper GB10 requirements.
 The substrate above is hardened into a full LLM trainer: robust fine-tuning at
 scale, a corpus curation engine, **pretraining a model from random init**, and an
 **agent-driven** workflow that runs the whole loop. See the SDD spec at
-[`.specify/specs/llm-model-trainer/`](../../../.specify/specs/llm-model-trainer/).
+the versioned design references distributed with the corresponding release.
 
 ## Robustness & throughput knobs (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer)
 
@@ -242,7 +242,7 @@ Run it via `graph_orchestrate(action="execute_workflow", name="train_model", tas
 ## Benchmark evaluation (CONCEPT:DS-AHE.trainer.concept-5)
 
 Alongside the AHE-3.1 reliability suite, `eval_hooks.evaluate_benchmarks(model_path,
-tasks)` scores a checkpoint on EleutherAI `lm-eval` tasks (`[eval]` extra; graceful
+tasks)` scores a checkpoint on Hugging Face LightEval tasks (`[eval]` extra; graceful
 no-op when absent).
 
 ## Compute reality

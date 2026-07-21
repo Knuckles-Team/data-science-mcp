@@ -8,6 +8,8 @@ records an adaptation curve. Needs the dev ``agent_utilities`` on PYTHONPATH.
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 pytest.importorskip("agent_utilities.knowledge_graph.research.sai_factory", reason="dev AU")
@@ -50,8 +52,19 @@ def _gen(mapping):
     return gen
 
 
+_SANDBOX_COMMAND = [
+    sys.executable,
+    "-m",
+    "data_science_mcp.kernels._runner",
+    "{candidate}",
+    "{task}",
+]
+
+
 def test_build_kernel_task_uses_kernel_verifier():
-    task = build_kernel_task("fused-softmax", target_tau=0.5)
+    task = build_kernel_task(
+        "fused-softmax", target_tau=0.5, sandbox_command=_SANDBOX_COMMAND
+    )
     assert task.task_id == "kernel:fused-softmax"
     # the verifier scores a correct candidate as passing
     res = task.score(_FAST)
@@ -67,6 +80,7 @@ def test_specialization_prefers_faster_correct_kernel():
         scaffolds=["naive", "vectorized"],
         rounds=1,
         target_tau=0.01,
+        sandbox_command=_SANDBOX_COMMAND,
     )
     # the vectorized scaffold yields the higher speedup → it wins
     assert result.specialist.scaffold == "vectorized"
@@ -82,6 +96,7 @@ def test_specialization_ignores_wrong_candidate():
         scaffolds=["wrong", "right"],
         rounds=1,
         target_tau=0.01,
+        sandbox_command=_SANDBOX_COMMAND,
     )
     assert result.specialist.scaffold == "right"  # wrong earns reward 0
     metrics = result.metrics()

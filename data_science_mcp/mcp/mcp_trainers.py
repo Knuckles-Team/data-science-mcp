@@ -34,6 +34,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
         cfg_keys = {
             "base_model",
+            "model_revision",
             "output_dir",
             "epochs",
             "lr",
@@ -105,7 +106,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             options_json: JSON ``TrainConfig`` fields + ``{"execute": bool}``.
 
         Returns:
-            JSON ``{kind, plan, executed, report?}`` (or ``{error}``).
+            JSON ``{kind, plan, executed, report?}`` (or ``{type(error).__name__}``).
         """
         return _dispatch("sft", dataset_json, options_json, _run)
 
@@ -205,9 +206,9 @@ def register_trainer_tools(mcp: FastMCP) -> None:
                 }
             )
         except json.JSONDecodeError as e:
-            return json.dumps({"error": f"invalid json: {e}"})
-        except Exception as e:  # pragma: no cover - defensive
-            return json.dumps({"error": str(e)})
+            return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+        except Exception:  # pragma: no cover - defensive
+            return json.dumps({"error": "Operation failed"})
 
     @mcp.tool(tags={"model-training"})
     def pretrain_model(dataset_json: str = "[]", options_json: str = "{}") -> str:
@@ -222,7 +223,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
                 ``max_position_embeddings``, ``model_type``) + ``{"execute": bool}``.
 
         Returns:
-            JSON ``{kind:"pretrain", plan, executed, report?}`` (or ``{error}``).
+            JSON ``{kind:"pretrain", plan, executed, report?}`` (or ``{type(error).__name__}``).
         """
         return _dispatch("pretrain", dataset_json, options_json, _run_pretrain)
 
@@ -237,7 +238,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
                 ``lowercase``) + ``output_dir`` + ``{"execute": bool}``.
 
         Returns:
-            JSON ``{plan, executed, output_dir?, vocab_size?}`` (or ``{error}``).
+            JSON ``{plan, executed, output_dir?, vocab_size?}`` (or ``{type(error).__name__}``).
         """
         try:
             from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
@@ -283,9 +284,9 @@ def register_trainer_tools(mcp: FastMCP) -> None:
                 }
             )
         except json.JSONDecodeError as e:
-            return json.dumps({"error": f"invalid json: {e}"})
-        except Exception as e:  # pragma: no cover - defensive
-            return json.dumps({"error": str(e)})
+            return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+        except Exception:  # pragma: no cover - defensive
+            return json.dumps({"error": "Operation failed"})
 
 
 def _run_pretrain(kind: str, dataset: list, options: dict) -> dict[str, Any]:
@@ -298,6 +299,7 @@ def _run_pretrain(kind: str, dataset: list, options: dict) -> dict[str, Any]:
 
     cfg_keys = {
         "base_model",
+        "model_revision",
         "output_dir",
         "epochs",
         "lr",
@@ -368,6 +370,6 @@ def _dispatch(kind: str, dataset_json: str, options_json: str, runner) -> str:
             return json.dumps({"error": "dataset_json must be a JSON list"})
         return json.dumps(runner(kind, dataset, options))
     except json.JSONDecodeError as e:
-        return json.dumps({"error": f"invalid json: {e}"})
-    except Exception as e:  # pragma: no cover - defensive
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+    except Exception:  # pragma: no cover - defensive
+        return json.dumps({"error": "Operation failed"})

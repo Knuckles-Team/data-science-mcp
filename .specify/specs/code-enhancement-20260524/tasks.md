@@ -57,9 +57,9 @@ Skipped informational: 5
   - Priority: P3-Low | Effort: Medium
 - [ ] [P] **T027** [Environment Variables] Partial env var documentation: 53% coverage
   - Priority: P3-Low | Effort: Medium
-- [ ] [P] **T028** [Environment Variables] Undocumented env vars: AUTH_TYPE, DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE_MCP_
+- [ ] [P] **T028** [Environment Variables] Undocumented env vars: AUTH_TYPE, TLS_PROFILES_REF, DATA_SCIENCE_MCP_
   - Priority: P3-Low | Effort: Medium
-- [ ] [P] **T029** [Environment Variables] 2 Python env vars not in .env.example: DATA_SCIENCE_MCP_SSL_VERIFY, DATA_SCIENCE
+- [ ] [P] **T029** [Environment Variables] 2 Python env vars not in .env.example: TLS_PROFILES_REF, DATA_SCIENCE
   - Priority: P3-Low | Effort: Medium
 - [ ] [P] **T030** [analyze_xdg_kg] Analysis error: No module named 'agent_utilities.knowledge_graph'
   - Priority: P1-High | Effort: Medium

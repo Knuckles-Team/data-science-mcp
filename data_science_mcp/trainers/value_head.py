@@ -80,7 +80,12 @@ def build_scalar_head_model(backbone: Any, hidden_size: int) -> Any:
     return _scalar_head_cls()(backbone, hidden_size)
 
 
-def attach_scalar_head(base_model: str, lora: Any | None = None) -> Any:
+def attach_scalar_head(
+    base_model: str,
+    lora: Any | None = None,
+    *,
+    revision: str | None = None,
+) -> Any:
     """Load the HF base (via :class:`PeftManager`) and wrap it with a scalar head.
 
     Used by the reward-model trainer (CONCEPT:DS-AHE.reward.one-sequence-level-score) and as the default PPO value
@@ -88,7 +93,7 @@ def attach_scalar_head(base_model: str, lora: Any | None = None) -> Any:
     """
     from data_science_mcp.peft_manager import PeftManager  # noqa: PLC0415
 
-    pm = PeftManager(base_model, lora)
+    pm = PeftManager(base_model, lora, revision=revision)
     backbone = pm.attach() if lora is not None else pm.load_base()
     hidden = getattr(getattr(backbone, "config", None), "hidden_size", None)
     if hidden is None:  # pragma: no cover - defensive (all HF configs carry it)

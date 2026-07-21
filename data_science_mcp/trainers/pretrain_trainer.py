@@ -102,8 +102,16 @@ class PretrainTrainer(TrainerBase):
         if model is not None and tokenizer is not None:
             return model, tokenizer
         from transformers import AutoTokenizer  # noqa: PLC0415
+        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
 
-        tok = tokenizer or AutoTokenizer.from_pretrained(self.config.base_model)
+        revision = require_pinned_revision(
+            self.config.base_model, self.config.model_revision
+        )
+        tok = tokenizer or AutoTokenizer.from_pretrained(
+            self.config.base_model,
+            revision=revision,
+            trust_remote_code=False,
+        )
         if getattr(tok, "pad_token", None) is None:
             tok.pad_token = tok.eos_token
         # Keep the spec's vocab in sync with the tokenizer that will feed it.

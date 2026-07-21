@@ -46,8 +46,10 @@ class _FakeHTTPX:
         self.calls: list[dict] = []
         self._status_ok = status_ok
 
-    def post(self, url, *, json=None, timeout=None):
-        self.calls.append({"url": url, "json": json, "timeout": timeout})
+    def post(self, url, *, json=None, timeout=None, **transport):
+        self.calls.append(
+            {"url": url, "json": json, "timeout": timeout, "transport": transport}
+        )
         return _FakeResponse(self._status_ok)
 
 
@@ -127,6 +129,7 @@ def test_hotload_posts_correct_payload_to_vllm(fake_httpx):
     assert result["provider"] == "vllm"
     assert result["adapter_name"] == "ckpt-42"
     assert result["adapter_path"] == "/models/lora/ckpt-42"
+    assert result["base_url"] == "http://vllm:8000"
 
     assert len(fake_httpx.calls) == 1
     call = fake_httpx.calls[0]
@@ -181,7 +184,7 @@ def test_hotload_degrades_when_server_rejects(monkeypatch):
         target, adapter_name="ckpt-1", adapter_path="/lora/ckpt-1"
     )
     assert result["status"] == "error"
-    assert "boom" in result["detail"]
+    assert result["detail"] == "Operation failed"
     assert result["provider"] == "vllm"
 
 
@@ -212,7 +215,7 @@ def test_hotload_degrades_on_connection_error(monkeypatch):
         target, adapter_name="ckpt-1", adapter_path="/lora/ckpt-1"
     )
     assert result["status"] == "error"
-    assert "unreachable" in result["detail"]
+    assert result["detail"] == "Operation failed"
 
 
 # --------------------------------------------------------------------------- #

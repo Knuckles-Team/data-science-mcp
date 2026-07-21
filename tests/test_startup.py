@@ -2,13 +2,13 @@
 Tests for checking module initialization, lazy loading, and startup server scripts.
 """
 
-import sys
-import pytest
-from unittest.mock import patch, MagicMock
 import runpy
+import sys
+from unittest.mock import MagicMock, patch
 
 # Import data_science_mcp to verify its lazy imports
 import data_science_mcp
+import pytest
 
 
 def test_lazy_loading_and_getattr():
@@ -156,7 +156,7 @@ def test_init_file_branches():
     assert "get_client" in data_science_mcp.__all__
 
 
-@patch("agent_utilities.mcp_utilities.create_mcp_server")
+@patch("agent_utilities.mcp.server_factory.create_mcp_server")
 def test_mcp_server_entrypoint_main(mock_create_server):
     """Verify mcp_server.py __main__ entrypoint execution."""
     mock_mcp = MagicMock()

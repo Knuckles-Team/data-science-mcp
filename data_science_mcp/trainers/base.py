@@ -46,6 +46,7 @@ class TrainConfig:
     """
 
     base_model: str = "toy"
+    model_revision: str | None = None
     output_dir: str = ""
     epochs: int = 1
     lr: float = 2e-4
@@ -149,9 +150,22 @@ class TrainerBase(ABC):
                 "transformers is required to load a tokenizer; install "
                 "`data-science-mcp[training]`"
             ) from e
-        pm = PeftManager(self.config.base_model, self.config.lora)
+        from data_science_mcp.hf_security import require_pinned_revision
+
+        revision = require_pinned_revision(
+            self.config.base_model, self.config.model_revision
+        )
+        pm = PeftManager(
+            self.config.base_model,
+            self.config.lora,
+            revision=revision,
+        )
         loaded = pm.attach() if self.config.lora is not None else pm.load_base()
-        tok = tokenizer or AutoTokenizer.from_pretrained(self.config.base_model)
+        tok = tokenizer or AutoTokenizer.from_pretrained(
+            self.config.base_model,
+            revision=revision,
+            trust_remote_code=False,
+        )
         if getattr(tok, "pad_token", None) is None:
             tok.pad_token = tok.eos_token
         return (model or loaded), tok

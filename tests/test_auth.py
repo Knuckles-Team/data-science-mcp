@@ -9,10 +9,28 @@ so the verbose 1:1 tool surface (introspected from ``MLEngine``) dispatches to a
 client that actually has those methods. A prior generic REST-client placeholder
 here caused every verbose tool call (e.g. ``data_science_describe_dataset``) to
 fail with ``'Client' object has no attribute '<method>'``.
+
+The ``get_rest_client`` tests below cover the separate, optional TLS-hardened
+upstream REST seam (:func:`data_science_mcp.auth.get_rest_client`) — it is not
+part of the tool-surface contract and has no live caller today.
 """
 
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from agent_utilities.core.exceptions import AuthError
 import data_science_mcp.auth as auth
 from data_science_mcp.ml_engine import MLEngine
+
+
+@pytest.fixture(autouse=True)
+def clean_rest_client_singleton():
+    """Ensure data_science_mcp.auth._rest_client is clean before/after tests."""
+    auth._rest_client = None
+    yield
+    auth._rest_client = None
 
 
 def test_get_client_returns_ml_engine():
@@ -40,3 +58,49 @@ def test_get_client_matches_tool_surface_client_cls():
     assert type(client) is MLEngine
     assert hasattr(client, "describe_dataset")
     assert callable(client.describe_dataset)
+
+
+def test_get_rest_client_singleton_uses_tls_profile():
+    """The configured endpoint and injected TLS profile build one REST client."""
+    profile = MagicMock()
+    profile.configure_requests_session.side_effect = lambda session: session
+    with patch.dict(os.environ, {"DATA_SCIENCE_MCP_URL": "https://service.invalid"}):
+        client1 = auth.get_rest_client(profile)
+    assert client1 is not None
+    assert client1.base_url == "https://service.invalid"
+    profile.configure_requests_session.assert_called_once()
+
+    # Check singleton property
+    client2 = auth.get_rest_client(profile)
+    assert client1 is client2
+
+
+def test_get_rest_client_custom_env():
+    """Verify get_rest_client handles a custom endpoint and token."""
+    profile = MagicMock()
+    profile.configure_requests_session.side_effect = lambda session: session
+    custom_env = {
+        "DATA_SCIENCE_MCP_URL": "https://service.invalid",
+        "DATA_SCIENCE_MCP_TOKEN": "my-secret-token",
+    }
+    with patch.dict(os.environ, custom_env):
+        client = auth.get_rest_client(profile)
+        assert client.base_url == "https://service.invalid"
+        assert client.session.headers["Authorization"] == "Bearer my-secret-token"
+
+
+def test_get_rest_client_auth_error():
+    """Verify RuntimeError is raised when AuthError/UnauthorizedError occurs."""
+    profile = MagicMock()
+    with (
+        patch.dict(os.environ, {"DATA_SCIENCE_MCP_URL": "https://service.invalid"}),
+        patch("requests.Session") as mock_session_cls,
+    ):
+        # Make Session creation raise AuthError
+        mock_session_cls.side_effect = AuthError("Mocked invalid auth token")
+
+        with pytest.raises(RuntimeError) as exc_info:
+            auth.get_rest_client(profile)
+
+        assert "AUTHENTICATION ERROR" in str(exc_info.value)
+        assert "Mocked invalid auth token" not in str(exc_info.value)

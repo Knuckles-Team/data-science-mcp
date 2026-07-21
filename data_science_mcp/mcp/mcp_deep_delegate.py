@@ -99,8 +99,8 @@ def register_deep_delegate_tools(mcp: FastMCP) -> None:
             )
         try:
             from data_science_mcp.training.deep_delegate import DEEP_ALGOS
-        except ImportError as exc:
-            return json.dumps({"algo": algo, "available": False, "error": str(exc)})
+        except ImportError:
+            return json.dumps({"algo": algo, "available": False, "error": "Operation failed"})
 
         fn = DEEP_ALGOS.get(algo)
         if fn is None:
@@ -114,7 +114,7 @@ def register_deep_delegate_tools(mcp: FastMCP) -> None:
         try:
             params: dict[str, Any] = json.loads(params_json) if params_json else {}
         except (TypeError, ValueError) as exc:
-            return json.dumps({"algo": algo, "error": f"invalid params_json: {exc}"})
+            return json.dumps({"algo": algo, "error": f"invalid params_json: {type(exc).__name__}"})
         if not isinstance(params, dict):
             return json.dumps(
                 {"algo": algo, "error": "params_json must decode to an object"}
@@ -131,12 +131,12 @@ def register_deep_delegate_tools(mcp: FastMCP) -> None:
                 if algo in ("mlp_classify", "histgbm_classify") and x_predict_json:
                     kwargs["x_predict"] = json.loads(x_predict_json)
         except (TypeError, ValueError) as exc:
-            return json.dumps({"algo": algo, "error": f"invalid JSON input: {exc}"})
+            return json.dumps({"algo": algo, "error": f"invalid JSON input: {type(exc).__name__}"})
 
         try:
             result = fn(**kwargs)
         except TypeError as exc:
-            return json.dumps({"algo": algo, "error": f"bad arguments: {exc}"})
-        except Exception as exc:  # noqa: BLE001 — surface training errors as data
-            return json.dumps({"algo": algo, "error": str(exc)})
+            return json.dumps({"algo": algo, "error": f"bad arguments: {type(exc).__name__}"})
+        except Exception:  # noqa: BLE001 — surface training errors as data
+            return json.dumps({"algo": algo, "error": "Operation failed"})
         return json.dumps({"algo": algo, "available": True, "result": result})

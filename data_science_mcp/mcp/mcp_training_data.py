@@ -35,7 +35,7 @@ def register_training_data_tools(mcp: FastMCP) -> None:
                 ``filter_difficulty``; ``{"weights": {...}}`` for ``search_grpo``).
 
         Returns:
-            JSON ``{kind, count, records}`` (or ``{error}``).
+            JSON ``{kind, count, records}`` (or ``{type(error).__name__}``).
         """
         try:
             items = json.loads(items_json or "[]")
@@ -60,9 +60,9 @@ def register_training_data_tools(mcp: FastMCP) -> None:
                 return json.dumps({"error": f"unknown kind: {kind}"})
             return json.dumps({"kind": kind, "count": len(result), "records": result})
         except json.JSONDecodeError as e:
-            return json.dumps({"error": f"invalid json: {e}"})
-        except Exception as e:  # pragma: no cover - defensive
-            return json.dumps({"error": str(e)})
+            return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+        except Exception:  # pragma: no cover - defensive
+            return json.dumps({"error": "Operation failed"})
 
     @mcp.tool(tags={"model-training"})
     def compose_reward(
@@ -77,7 +77,7 @@ def register_training_data_tools(mcp: FastMCP) -> None:
                 contributes 0 (e.g. a functional-token reward only when used+correct).
 
         Returns:
-            JSON ``{reward}`` (or ``{error}``).
+            JSON ``{reward}`` (or ``{type(error).__name__}``).
         """
         try:
             components = json.loads(components_json)
@@ -87,6 +87,6 @@ def register_training_data_tools(mcp: FastMCP) -> None:
                 {"reward": td.score_reward(components, weights, conditions=conditions)}
             )
         except json.JSONDecodeError as e:
-            return json.dumps({"error": f"invalid json: {e}"})
-        except Exception as e:  # pragma: no cover - defensive
-            return json.dumps({"error": str(e)})
+            return json.dumps({"error": f"invalid json: {type(e).__name__}"})
+        except Exception:  # pragma: no cover - defensive
+            return json.dumps({"error": "Operation failed"})
