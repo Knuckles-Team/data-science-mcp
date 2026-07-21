@@ -19,8 +19,8 @@ requires-python = ">=3.11,<3.14"
 dependencies = [
     "agent-utilities[mcp]>=1.27.1,<2.0.0",
     "epistemic-graph[full]>=2.0.0",
-    "polars>=1.0.0",
-    "numpy>=1.24.0",
+    "polars>=1.43.0",
+    "numpy>=2.5.1",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +34,7 @@ agent = [
 # Rust engine). It is optional and only powers the built-in sample-dataset
 # loaders (iris/diabetes/wine/...). CSV datasets need no scikit-learn.
 datasets = [
-    "scikit-learn>=1.5.0"]
+    "scikit-learn>=1.9.0"]
 
 # Wave-C gradient trainers (SFT/DPO/GRPO/pretrain) + LoRA/QLoRA adapters +
 # served-model rollouts/eval over an OpenAI-compatible inference server (vLLM or
@@ -44,44 +44,44 @@ datasets = [
 # AMP). Heavy, GPU-oriented; imported lazily so the package installs/imports
 # without it. On Blackwell (GB10, sm_120) pin CUDA-12.6+/cu12x Blackwell builds.
 training = [
-    "torch>=2.4.0",
-    "transformers>=4.44.0",
-    "peft>=0.12.0",
-    "bitsandbytes>=0.43.0",
-    "accelerate>=0.34.0",
-    "datasets>=2.20.0",
-    "tokenizers>=0.19.0",
-    "httpx>=0.27.0",
+    "torch>=2.13.0",
+    "transformers>=5.14.1",
+    "peft>=0.19.1",
+    "bitsandbytes>=0.49.2",
+    "accelerate>=1.14.0",
+    "datasets>=5.0.0",
+    "tokenizers>=0.23.1",
+    "httpx>=0.28.1",
     # CONCEPT:KG-2.6 — re-homed TradingLSTM walk-forward trainer
     # (data_science_mcp/training/trading_lstm.py) needs StandardScaler + metrics.
-    "scikit-learn>=1.5.0"]
+    "scikit-learn>=1.9.0"]
 
 # Multi-GPU / multi-node scale-out. DeepSpeed ZeRO-3 + FlashAttention-2 are
 # GPU-HOST installs (need nvcc/CUDA toolchain); NOT CI/CPU-installable. FSDP needs
 # no extra beyond `training` (it ships with accelerate+torch).
 training-scale = [
-    "deepspeed>=0.14.0",
-    "flash-attn>=2.6.0"]
+    "deepspeed>=0.19.2",
+    "flash-attn>=2.8.3.post1"]
 
 # Fused Triton kernels (RMSNorm/SwiGLU/fused-CE) for throughput on supported archs.
 training-fast = [
-    "liger-kernel>=0.3.0"]
+    "liger-kernel>=0.8.0"]
 
 # Standardized benchmark scoring alongside the AHE-3.1 reliability suite.
 # LightEval replaces lm-eval: the latter still requires sqlitedict, whose
 # pickle-backed cache has no safe release. LightEval provides the same standard
 # task families without admitting an unsafe deserializer into the runtime.
 eval = [
-    "lighteval>=0.13.0,<0.14.0"]
+    "lighteval>=0.13.0"]
 
 # Experiment tracking. MLflow (self-hostable; the homelab default) and/or W&B.
 tracking = [
-    "mlflow>=2.14.0"]
+    "mlflow>=3.14.0"]
 
 all = [
     "agent-utilities[mcp,agent-runtime,logfire]>=1.27.1,<2.0.0",
     "epistemic-graph[full]>=2.0.0",
-    "scikit-learn>=1.5.0"]
+    "scikit-learn>=1.9.0"]
 
 [project.scripts]
 data-science-mcp = "data_science_mcp.mcp_server:mcp_server"
