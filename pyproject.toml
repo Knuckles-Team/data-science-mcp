@@ -50,7 +50,9 @@ training = [
     "bitsandbytes>=0.49.2",
     "accelerate>=1.14.0",
     "datasets>=5.0.0",
-    "tokenizers>=0.23.1",
+    # CONCEPT:PHASE2-RECONCILE — capped under 0.23.1 (the modernize-bump floor
+    # collided with the fleet's transformers/datasets pins).
+    "tokenizers<=0.23.0",
     "httpx>=0.28.1",
     # CONCEPT:KG-2.6 — re-homed TradingLSTM walk-forward trainer
     # (data_science_mcp/training/trading_lstm.py) needs StandardScaler + metrics.
