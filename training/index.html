@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="https://raw.githubusercontent.com/squidfunk/mkdocs-material/master/material/templates/assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -293,6 +293,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../configuration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Configuration, trust, and privacy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../deployment/" class="md-tabs__link">
         
   
@@ -485,6 +504,33 @@
     
   
     Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration, trust, and privacy
   
 
     
@@ -980,8 +1026,8 @@ bitsandbytes / httpx). Modules under <code>data_science_mcp/</code>:</p>
 <li><strong><code>peft_manager.py</code></strong> — <code>LoraSpec</code>/<code>PeftManager</code> (LoRA/QLoRA, lazy peft) + pure-numpy
   <code>ties_merge</code> (MeMo multi-adapter merge, CPU).</li>
 <li><strong><code>tokenizer_registry.py</code></strong> — special/functional-token injection + embedding resize.</li>
-<li><strong><code>rollout_buffer.py</code></strong> — prompt→generation→logprob→reward staging with
-  <code>VLLMRolloutClient</code> (generations served by the running vLLM) + GRPO export.</li>
+<li><strong><code>rollout_buffer.py</code></strong> — prompt→generation→logprob→reward staging with an
+  injected <code>InferenceBackend</code> + GRPO export.</li>
 <li><strong><code>trainers/eval_hooks.py</code></strong> — score a checkpoint with the <strong>AHE-3.1 reliability
   suite</strong> (<code>agent_utilities.harness.reliability_scorers</code>).</li>
 </ul>
@@ -1083,7 +1129,7 @@ for per-paper GB10 requirements.</p>
 <p>The substrate above is hardened into a full LLM trainer: robust fine-tuning at
 scale, a corpus curation engine, <strong>pretraining a model from random init</strong>, and an
 <strong>agent-driven</strong> workflow that runs the whole loop. See the SDD spec at
-<a href="../../../.specify/specs/llm-model-trainer/"><code>.specify/specs/llm-model-trainer/</code></a>.</p>
+the versioned design references distributed with the corresponding release.</p>
 <h2 id="robustness-throughput-knobs-conceptau-ahetrainerhigh-caliber-llm-trainer">Robustness &amp; throughput knobs (CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer)<a class="headerlink" href="#robustness-throughput-knobs-conceptau-ahetrainerhigh-caliber-llm-trainer" title="Permanent link">&para;</a></h2>
 <p><code>TrainConfig</code> gained additive fields (defaults reproduce the original behaviour
 exactly). They flow through one shared optimisation loop, <code>trainers/loop.py::run_loop</code>:</p>
@@ -1196,7 +1242,7 @@ TeamConfig and driven by the <code>train_model</code> workflow skill
 <p>Run it via <code>graph_orchestrate(action="execute_workflow", name="train_model", task=…)</code>.</p>
 <h2 id="benchmark-evaluation-conceptds-ahetrainerconcept-5">Benchmark evaluation (CONCEPT:DS-AHE.trainer.concept-5)<a class="headerlink" href="#benchmark-evaluation-conceptds-ahetrainerconcept-5" title="Permanent link">&para;</a></h2>
 <p>Alongside the AHE-3.1 reliability suite, <code>eval_hooks.evaluate_benchmarks(model_path,
-tasks)</code> scores a checkpoint on EleutherAI <code>lm-eval</code> tasks (<code>[eval]</code> extra; graceful
+tasks)</code> scores a checkpoint on Hugging Face LightEval tasks (<code>[eval]</code> extra; graceful
 no-op when absent).</p>
 <h2 id="compute-reality">Compute reality<a class="headerlink" href="#compute-reality" title="Permanent link">&para;</a></h2>
 <p>"High-caliber from scratch" at frontier scale is a capital problem, not a code one —
@@ -1370,7 +1416,7 @@ validated on a GPU host, not in CI.</strong></p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.instant", "navigation.instant.progress", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
