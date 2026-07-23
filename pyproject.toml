@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "agent-utilities[mcp]>=1.27.1,<2.0.0",
+    "agent-utilities[mcp]>=2.0.0,<3.0.0",
     "epistemic-graph[full]>=2.0.0",
     "polars>=1.43.0",
     "numpy>=2.5.1",
@@ -25,10 +25,10 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "agent-utilities[mcp]>=1.27.1,<2.0.0"]
+    "agent-utilities[mcp]>=2.0.0,<3.0.0"]
 
 agent = [
-    "agent-utilities[agent-runtime,logfire]>=1.27.1,<2.0.0"]
+    "agent-utilities[agent-runtime,logfire]>=2.0.0,<3.0.0"]
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
 # Rust engine). It is optional and only powers the built-in sample-dataset
@@ -81,7 +81,7 @@ tracking = [
     "mlflow>=3.14.0"]
 
 all = [
-    "agent-utilities[mcp,agent-runtime,logfire]>=1.27.1,<2.0.0",
+    "agent-utilities[mcp,agent-runtime,logfire]>=2.0.0,<3.0.0",
     "epistemic-graph[full]>=2.0.0",
     "scikit-learn>=1.9.0"]
 
