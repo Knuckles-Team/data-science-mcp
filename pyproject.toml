@@ -76,9 +76,25 @@ training-fast = [
 eval = [
     "lighteval>=0.13.0"]
 
-# Experiment tracking. MLflow (self-hostable; the homelab default) and/or W&B.
-tracking = [
-    "mlflow>=3.14.0"]
+# Experiment tracking (MLflow, self-hostable; the homelab default) — REMOVED
+# 2026-08-07 (D-W5AGB-1): mlflow==3.14.0 (the version this floor originally
+# resolved to) pins `cryptography<49`, which uv's UNIVERSAL workspace-wide
+# resolution propagates to every ecosystem member regardless of whether
+# `[tracking]` is actually installed anywhere. That forced a root-level
+# `cryptography>=48.0.1,<49` override across the whole ecosystem — which,
+# per an osv.dev check, pins the MOST vulnerable available cryptography
+# release (6 known advisories at 48.0.1 vs. 2 at 49.0.0), directly
+# contradicting agent-utilities' own CVE fix (GHSA-g6cj-pr64-35w5,
+# PYSEC-2026-3552, fixed=50.0.0). Even mlflow's latest release (3.15.1)
+# only admits `cryptography>=43.0.0,<50` — still short of the fix. `import
+# mlflow` in data_science_mcp/tracking.py is already exception-guarded
+# (best-effort, degrades cleanly when absent), and nothing else in the
+# ecosystem imports mlflow (verified via a full-tree grep before removing
+# this extra) — dropping it costs no live functionality today.
+# Reinstatement condition: once a published mlflow release supports
+# `cryptography>=50.0.0`, `tracking = ["mlflow>=<that release>"]` can come
+# back safely. Until then, do not reinstate `mlflow` here from muscle
+# memory — it will re-introduce the same workspace-wide CVE-pin conflict.
 
 all = [
     "agent-utilities[mcp,agent-runtime,logfire]>=2.0.0,<3.0.0",
