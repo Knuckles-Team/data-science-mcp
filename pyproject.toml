@@ -105,6 +105,9 @@ all = [
 data-science-mcp = "data_science_mcp.mcp_server:mcp_server"
 data-science-agent = "data_science_mcp.agent_server:agent_server"
 
+[tool.uv.workspace]
+members = ["."]
+
 [tool.setuptools.packages.find]
 where = ["."]
 
@@ -133,4 +136,12 @@ ignore_names = ["request", "config"]
 # LightEval 0.13 unnecessarily pins the vulnerable NLTK 3.9.1 release. NLTK
 # 3.10 retains the public tokenizer/corpus APIs LightEval uses and clears the
 # affected archive/resource-loading implementations.
-override-dependencies = ["nltk>=3.10.0"]
+# fastmcp-slim override is part of the B6 pattern: pins the ecosystem's
+# fastmcp fork so this repo resolves standalone against agent-utilities.
+override-dependencies = [
+    "nltk>=3.10.0",
+    "fastmcp-slim[client,server]>=4.0.0b1",
+]
+
+[tool.uv.sources]
+agent-utilities = { path = ".uv-workspace-siblings/agent-utilities", editable = true }
