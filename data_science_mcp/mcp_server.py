@@ -31,7 +31,7 @@ from agent_utilities.mcp.verbose_tools import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = get_logger(name="MCP_Server")
