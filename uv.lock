@@ -96,7 +96,6 @@ dependencies = [
     { name = "click" },
     { name = "cryptography" },
     { name = "defusedxml" },
-    { name = "epistemic-graph" },
     { name = "filelock" },
     { name = "graphql-core" },
     { name = "idna" },
@@ -153,18 +152,18 @@ mcp = [
 [package.metadata]
 requires-dist = [
     { name = "agent-terminal-ui", marker = "extra == 'terminal'", specifier = ">=1.0.0" },
-    { name = "agent-utilities", extras = ["acp", "agent-anthropic", "agent-google", "agent-groq", "agent-huggingface", "agent-mistral", "agent-runtime", "ann", "auth", "browser", "documents", "embeddings-huggingface", "embeddings-ollama", "embeddings-openai", "feeds", "finance", "graph", "langfuse", "logfire", "mcp", "messaging", "owl", "pyarrow", "sandbox", "stardog", "test", "vault"], marker = "extra == 'all'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["acp", "agent-runtime", "event-kafka", "feeds", "finance", "graph", "owl", "sandbox"], marker = "extra == 'test'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["ag-ui", "mcp", "sandbox", "terminal"], marker = "extra == 'agent-runtime'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["agent-headless", "auth", "embeddings-openai", "falkordb", "feeds", "langfuse", "logfire", "mcp", "messaging-mattermost", "messaging-telegram", "metrics", "neo4j", "ontology-guardrails", "otel", "rdf", "vault"], marker = "extra == 'serving'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-huggingface'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-ollama'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-openai'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["falkordb", "fuseki", "kafka", "neo4j", "owl", "postgresql", "test"], marker = "extra == 'test-backends'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["finance"], marker = "extra == 'finance-kronos'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["mcp", "sandbox"], marker = "extra == 'agent-headless'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["messaging-discord", "messaging-googlechat", "messaging-googlemeet", "messaging-irc", "messaging-line", "messaging-matrix", "messaging-mattermost", "messaging-nextcloud", "messaging-signal", "messaging-slack", "messaging-synology", "messaging-teams", "messaging-telegram", "messaging-twitch", "messaging-voicecall", "messaging-whatsapp"], marker = "extra == 'messaging'", editable = ".uv-workspace-siblings/agent-utilities" },
-    { name = "agent-utilities", extras = ["owl"], marker = "extra == 'stardog'", editable = ".uv-workspace-siblings/agent-utilities" },
+    { name = "agent-utilities", extras = ["acp", "agent-anthropic", "agent-google", "agent-groq", "agent-huggingface", "agent-mistral", "agent-runtime", "ann", "auth", "browser", "documents", "embeddings-huggingface", "embeddings-ollama", "embeddings-openai", "feeds", "finance", "graph", "graphos", "langfuse", "logfire", "mcp", "messaging", "owl", "pyarrow", "sandbox", "stardog", "test", "vault"], marker = "extra == 'all'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["acp", "agent-runtime", "event-kafka", "feeds", "finance", "graph", "graphos", "owl", "sandbox"], marker = "extra == 'test'" },
+    { name = "agent-utilities", extras = ["ag-ui", "mcp", "sandbox", "terminal"], marker = "extra == 'agent-runtime'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["agent-headless", "auth", "embeddings-openai", "falkordb", "feeds", "graphos", "langfuse", "logfire", "mcp", "messaging-mattermost", "messaging-telegram", "metrics", "neo4j", "ontology-guardrails", "otel", "rdf", "vault"], marker = "extra == 'serving'" },
+    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-huggingface'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-ollama'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["embeddings"], marker = "extra == 'embeddings-openai'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["falkordb", "fuseki", "kafka", "neo4j", "owl", "postgresql", "test"], marker = "extra == 'test-backends'" },
+    { name = "agent-utilities", extras = ["finance"], marker = "extra == 'finance-kronos'" },
+    { name = "agent-utilities", extras = ["mcp", "sandbox"], marker = "extra == 'agent-headless'", specifier = ">=1.0.0" },
+    { name = "agent-utilities", extras = ["messaging-discord", "messaging-googlechat", "messaging-googlemeet", "messaging-irc", "messaging-line", "messaging-matrix", "messaging-mattermost", "messaging-nextcloud", "messaging-signal", "messaging-slack", "messaging-synology", "messaging-teams", "messaging-telegram", "messaging-twitch", "messaging-voicecall", "messaging-whatsapp"], marker = "extra == 'messaging'" },
+    { name = "agent-utilities", extras = ["owl"], marker = "extra == 'stardog'" },
     { name = "agent-webui", marker = "extra == 'ag-ui'", specifier = ">=2.4.0" },
     { name = "aiohttp", marker = "extra == 'documents'", specifier = ">=3.14.1" },
     { name = "aiokafka", marker = "extra == 'kafka'", specifier = ">=0.14.0" },
@@ -176,7 +175,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=50.0.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "discord-py", marker = "extra == 'messaging-discord'", specifier = ">=2.7.1" },
-    { name = "epistemic-graph", extras = ["full"], editable = ".uv-workspace-siblings/agent-utilities/.uv-workspace-siblings/epistemic-graph" },
+    { name = "epistemic-graph", extras = ["full"], marker = "extra == 'graphos'", editable = ".uv-workspace-siblings/agent-utilities/.uv-workspace-siblings/epistemic-graph" },
     { name = "eunomia-core", marker = "extra == 'mcp'", specifier = ">=0.3.10" },
     { name = "falkordb", marker = "extra == 'falkordb'", specifier = ">=1.6.2" },
     { name = "fasta2a", extras = ["pydantic-ai"], marker = "extra == 'agent-headless'", specifier = ">=0.6.1" },
@@ -300,7 +299,7 @@ requires-dist = [
     { name = "websockets", marker = "extra == 'finance'", specifier = ">=16.1.1" },
     { name = "yfinance", marker = "extra == 'finance'", specifier = ">=1.5.1" },
 ]
-provides-extras = ["sandbox", "feeds", "kafka", "metrics", "otel", "nats", "pyarrow", "mcp", "agent-runtime", "agent-headless", "agent-google", "agent-groq", "agent-mistral", "agent-anthropic", "agent-huggingface", "dynamic-workflow", "ag-ui", "terminal", "browser", "computer-use", "acp", "documents", "embeddings", "embeddings-openai", "embeddings-huggingface", "embeddings-ollama", "logfire", "langfuse", "graph", "ann", "neo4j", "falkordb", "owl", "rdf", "ontology-guardrails", "stardog", "fuseki", "event-kafka", "ingest-dedup", "vault", "auth", "serving", "finance", "finance-kronos", "hr", "medical", "science", "law", "government", "postgresql", "messaging-discord", "messaging-slack", "messaging-telegram", "messaging-whatsapp", "messaging-teams", "messaging-googlechat", "messaging-googlemeet", "messaging-mattermost", "messaging-matrix", "messaging-irc", "messaging-signal", "messaging-imessage", "messaging-line", "messaging-twitch", "messaging-synology", "messaging-voicecall", "messaging-nextcloud", "messaging", "test", "test-backends", "all"]
+provides-extras = ["graphos", "sandbox", "feeds", "kafka", "metrics", "otel", "nats", "pyarrow", "mcp", "agent-runtime", "agent-headless", "agent-google", "agent-groq", "agent-mistral", "agent-anthropic", "agent-huggingface", "dynamic-workflow", "ag-ui", "terminal", "browser", "computer-use", "acp", "documents", "embeddings", "embeddings-openai", "embeddings-huggingface", "embeddings-ollama", "logfire", "langfuse", "graph", "ann", "neo4j", "falkordb", "owl", "rdf", "ontology-guardrails", "stardog", "fuseki", "event-kafka", "ingest-dedup", "vault", "auth", "serving", "finance", "finance-kronos", "hr", "medical", "science", "law", "government", "postgresql", "messaging-discord", "messaging-slack", "messaging-telegram", "messaging-whatsapp", "messaging-teams", "messaging-googlechat", "messaging-googlemeet", "messaging-mattermost", "messaging-matrix", "messaging-irc", "messaging-signal", "messaging-imessage", "messaging-line", "messaging-twitch", "messaging-synology", "messaging-voicecall", "messaging-nextcloud", "messaging", "test", "test-backends", "all"]
 
 [package.metadata.requires-dev]
 guardrails = [
@@ -1022,11 +1021,11 @@ wheels = [
 
 [[package]]
 name = "data-science-mcp"
-version = "2.0.0"
+version = "2.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "agent-utilities", extra = ["mcp"] },
-    { name = "epistemic-graph" },
+    { name = "epistemic-graph", extra = ["full"] },
     { name = "numpy" },
     { name = "polars" },
 ]
@@ -1037,7 +1036,7 @@ agent = [
 ]
 all = [
     { name = "agent-utilities", extra = ["agent-runtime", "logfire", "mcp"] },
-    { name = "epistemic-graph" },
+    { name = "epistemic-graph", extra = ["full"] },
     { name = "scikit-learn" },
 ]
 datasets = [
@@ -1243,30 +1242,25 @@ wheels = [
 
 [[package]]
 name = "epistemic-graph"
-source = { editable = ".uv-workspace-siblings/agent-utilities/.uv-workspace-siblings/epistemic-graph" }
+version = "2.23.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "httpx" },
     { name = "msgpack" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d7/31/0371fee399e0ef7ad7d31f9f7018c26a88714d9bddea7edcee90274d14fd/epistemic_graph-2.23.0.tar.gz", hash = "sha256:efef1a47f37230dc69e5c1c482f5260951b490a89cb2cc938603811d617002e9", size = 3994880, upload-time = "2026-07-13T13:42:09.371Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/ef/823128fefb1840a0f381c09c3dfe54f84feb27458838df311241fa3bb99d/epistemic_graph-2.23.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b67a98f29720eb405ab7fde317322eed6698e10466d588ca89b1acdb7193b45b", size = 36338954, upload-time = "2026-07-13T13:41:54.997Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/77/3325fcff639cc4006d54da43a04429887d3c3749fc620a067eaf19dacb89/epistemic_graph-2.23.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:16485b469286cefcd7059dc16c6f297edcbaf0ebfd7466e794f59b2dd4b30adb", size = 36552556, upload-time = "2026-07-13T13:41:58.205Z" },
+    { url = "https://files.pythonhosted.org/packages/24/8b/f0241761ac9c62b22bcf054b4b364956afb3a6978bcd41e51203ce37066c/epistemic_graph-2.23.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:b515014acad782c637f00ef7c8bed751437130319b88d129b0e8cf0543f681b8", size = 39665349, upload-time = "2026-07-13T13:42:02.179Z" },
+    { url = "https://files.pythonhosted.org/packages/47/d4/f766d43ccfadffb3b2845d88739c6563a7531bd91345900519c0ebdb1f11/epistemic_graph-2.23.0-py3-none-win_amd64.whl", hash = "sha256:5d84daf81fb32545f07071fc4d40d7a0bec1ec0835ac66a363cfdb62528ab429", size = 41606487, upload-time = "2026-07-13T13:42:06.407Z" },
+]
+
+[package.optional-dependencies]
+full = [
+    { name = "httpx" },
     { name = "numpy" },
     { name = "pyoxigraph" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.24.0" },
-    { name = "httpx", marker = "extra == 'lmcache'", specifier = ">=0.24.0" },
-    { name = "msgpack", specifier = ">=1.2.1" },
-    { name = "numpy", specifier = ">=1.22.0" },
-    { name = "numpy", marker = "extra == 'quant'", specifier = ">=1.22.0" },
-    { name = "pyoxigraph", specifier = ">=0.3.22" },
-    { name = "pyoxigraph", marker = "extra == 'owl'", specifier = ">=0.3.22" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.23.0" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=4.0.0" },
-    { name = "pytest-timeout", marker = "extra == 'test'", specifier = ">=2.1.0" },
-    { name = "pytest-xdist", marker = "extra == 'test'", specifier = ">=3.0.0" },
-]
-provides-extras = ["all", "ast", "datascience", "finance", "full", "lake-parity", "lmcache", "numeric", "owl", "quant", "reasoning", "server", "test"]
 
 [[package]]
 name = "eunomia-core"
