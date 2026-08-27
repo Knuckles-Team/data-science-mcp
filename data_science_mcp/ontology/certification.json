@@ -1,7 +1,7 @@
 {
   "api_version": "graphos.io/v1",
   "artifacts": {
-    "connector_manifest.yml": "9f496044b999e597b10db71126aea8abcf1d322ac560413ce3912536a10b93f5",
+    "connector_manifest.yml": "14f8469926d618ce64ead5f174d1fe08cb7a36e7f8cc64c3a1fca885ccc3a869",
     "data_science_mcp/connectors/mcp_source_presets.json": "1c3b3e429c4657d920c86031044519e94cd266bc0dedbfc1919e88d9546ec6a6",
     "data_science_mcp/connectors/tool_schema_fingerprints.json": "19cda0ae70adf2cdd99c3d306b86be05404c5a30533588a1a9fbc83f943d31b8",
     "data_science_mcp/ontology/datascience.ttl": "34174bacecdaf87b3bb6cc03573458ba74d5710058ac1270a6b1880c25a9a4d4",
@@ -18,9 +18,9 @@
     "synthetic_fixture_contract": "passed"
   },
   "compatibility": {
-    "agent_utilities": ">=2.4.0,<3",
+    "agent_utilities": ">=2.5.0,<3",
     "bundle_schema": "2",
-    "epistemic_graph": ">=2.26.0,<3"
+    "epistemic_graph": ">=2.27.0,<3"
   },
   "connector": "data-science-mcp",
   "kind": "ConnectorSourceAttestation",
@@ -32,5 +32,5 @@
   "signer": "UNSIGNED-PREVIEW",
   "signing_public_key": "",
   "status": "source-validated",
-  "validated_at": "2026-08-21T04:30:39Z"
+  "validated_at": "2026-08-26T13:42:55Z"
 }
