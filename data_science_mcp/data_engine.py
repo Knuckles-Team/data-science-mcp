@@ -58,19 +58,27 @@ def stream_corpus(
         yield from _stream_hf(spec, hf_split)
         return
     if isinstance(spec, (list, tuple)):
-        for r in spec:
-            yield {text_key: r} if isinstance(r, str) else dict(r)
+        yield from _stream_records(spec, text_key)
         return
     if isinstance(spec, str) and os.path.isfile(spec):
-        is_jsonl = ".jsonl" in spec
-        with _open_text(spec) as f:
-            for line in f:
-                line = line.strip() if is_jsonl else line.rstrip("\n")
-                if not line.strip():
-                    continue
-                yield json.loads(line) if is_jsonl else {text_key: line}
+        yield from _stream_file(spec, text_key)
         return
     raise ValueError(f"unsupported corpus spec: {type(spec).__name__}")
+
+
+def _stream_records(spec: Iterable[Any], text_key: str) -> Iterator[dict[str, Any]]:
+    for r in spec:
+        yield {text_key: r} if isinstance(r, str) else dict(r)
+
+
+def _stream_file(path: str, text_key: str) -> Iterator[dict[str, Any]]:
+    is_jsonl = ".jsonl" in path
+    with _open_text(path) as f:
+        for line in f:
+            line = line.strip() if is_jsonl else line.rstrip("\n")
+            if not line.strip():
+                continue
+            yield json.loads(line) if is_jsonl else {text_key: line}
 
 
 def _open_text(path: str) -> Any:
@@ -183,16 +191,23 @@ def _near_pairs_engine(
             threshold=threshold,
             use_lsh=len(vectors) > 4096,
         )
-        idx = {sid: i for i, sid in enumerate(ids)}
-        out: list[tuple[int, int, float]] = []
-        for p in raw:
-            a, b = p.get("a") or p.get("source"), p.get("b") or p.get("target")
-            if a in idx and b in idx:
-                out.append((idx[a], idx[b], float(p.get("similarity", threshold))))
-        return out
+        return _map_engine_pairs(raw, ids, threshold)
     except Exception as e:  # pragma: no cover - best-effort
         logger.debug("Operation failed: error_type=%s", type(e).__name__)
         return None
+
+
+def _map_engine_pairs(
+    raw: Iterable[dict[str, Any]], ids: list[str], threshold: float
+) -> list[tuple[int, int, float]]:
+    """Translate the engine's ``{a|source, b|target, similarity}`` pairs to index pairs."""
+    idx = {sid: i for i, sid in enumerate(ids)}
+    out: list[tuple[int, int, float]] = []
+    for p in raw:
+        a, b = p.get("a") or p.get("source"), p.get("b") or p.get("target")
+        if a in idx and b in idx:
+            out.append((idx[a], idx[b], float(p.get("similarity", threshold))))
+    return out
 
 
 #: Above this row count the local O(n²) near-duplicate fallback is refused rather
@@ -238,6 +253,44 @@ def near_duplicate_pairs(
 # --------------------------------------------------------------------------- #
 # Curation ops                                                                  #
 # --------------------------------------------------------------------------- #
+def _mark_exact_duplicates(
+    recs: list[dict[str, Any]], text_key: str
+) -> tuple[list[bool], int]:
+    """Content-hash de-dup; returns a per-record keep mask + removed count."""
+    keep = [True] * len(recs)
+    seen: set[str] = set()
+    removed = 0
+    for i, r in enumerate(recs):
+        h = _content_hash(str(r.get(text_key, "")))
+        if h in seen:
+            keep[i] = False
+            removed += 1
+        else:
+            seen.add(h)
+    return keep, removed
+
+
+def _mark_near_duplicates(
+    recs: list[dict[str, Any]],
+    keep: list[bool],
+    text_key: str,
+    threshold: float,
+    use_engine: bool,
+) -> int:
+    """Drop the later record of each near-duplicate pair (mutates ``keep``)."""
+    live = [i for i in range(len(recs)) if keep[i]]
+    texts = [str(recs[i].get(text_key, "")) for i in live]
+    removed = 0
+    for li, lj, _sim in near_duplicate_pairs(
+        texts, threshold=threshold, use_engine=use_engine
+    ):
+        gi, gj = live[li], live[lj]
+        if keep[gi] and keep[gj]:
+            keep[gj] = False  # drop the later record of the pair
+            removed += 1
+    return removed
+
+
 def dedup(
     records: Iterable[dict[str, Any]],
     *,
@@ -255,25 +308,10 @@ def dedup(
     keep = [True] * len(recs)
     removed_exact = 0
     if exact:
-        seen: set[str] = set()
-        for i, r in enumerate(recs):
-            h = _content_hash(str(r.get(text_key, "")))
-            if h in seen:
-                keep[i] = False
-                removed_exact += 1
-            else:
-                seen.add(h)
+        keep, removed_exact = _mark_exact_duplicates(recs, text_key)
     removed_near = 0
     if near:
-        live = [i for i in range(len(recs)) if keep[i]]
-        texts = [str(recs[i].get(text_key, "")) for i in live]
-        for li, lj, _sim in near_duplicate_pairs(
-            texts, threshold=threshold, use_engine=use_engine
-        ):
-            gi, gj = live[li], live[lj]
-            if keep[gi] and keep[gj]:
-                keep[gj] = False  # drop the later record of the pair
-                removed_near += 1
+        removed_near = _mark_near_duplicates(recs, keep, text_key, threshold, use_engine)
     kept = [recs[i] for i in range(len(recs)) if keep[i]]
     return {
         "kept": kept,
@@ -402,71 +440,23 @@ def prepare_pretrain_data(
     encode = _token_encode_fn(tokenizer)
     if append_eos and eos_id is None:
         eos_id = getattr(tokenizer, "eos_token_id", None)
-    is_h5 = out_path.endswith((".h5", ".hdf5"))
-    buf: list[np.ndarray] = []
-    npy_chunks: list[np.ndarray] = []
+    sink = _TokenSink(out_path, dtype, flush_every)
     n_docs = n_tokens = 0
-    h5f = dset = None
     try:
-        if is_h5:
-            try:
-                import h5py  # noqa: PLC0415
-            except ImportError as e:  # pragma: no cover - without the extra
-                raise RuntimeError(
-                    "h5py is required for HDF5 token output; install "
-                    "`data-science-mcp[training]` or use a .npy out_path"
-                ) from e
-            h5f = h5py.File(out_path, "w")
-            dset = h5f.create_dataset(
-                "tokens", (0,), maxshape=(None,), dtype=dtype, chunks=True
-            )
-
-        def _flush() -> None:
-            nonlocal buf
-            if not buf:
-                return
-            arr = np.concatenate(buf) if len(buf) > 1 else buf[0]
-            if is_h5:
-                old = dset.shape[0]
-                dset.resize((old + arr.size,))
-                dset[old:] = arr
-            else:
-                npy_chunks.append(arr)
-            buf = []
-
         for rec in stream_corpus(spec, text_key=text_key):
-            text = str(rec.get(text_key, ""))
-            if max_doc_chars is not None and len(text) > max_doc_chars:
-                raise ValueError("corpus document exceeds its size limit")
-            ids = encode(text)
-            if append_eos and eos_id is not None:
-                ids.append(int(eos_id))
-            if not ids:
+            ids = _encode_pretrain_doc(rec, text_key, encode, append_eos, eos_id, max_doc_chars)
+            if ids is None:
                 continue
             if max_tokens is not None and n_tokens + len(ids) > max_tokens:
                 raise ValueError("token output exceeds its size limit")
-            buf.append(np.asarray(ids, dtype=dtype))
+            sink.append(np.asarray(ids, dtype=dtype))
             n_docs += 1
             n_tokens += len(ids)
-            if sum(b.size for b in buf) >= flush_every:
-                _flush()
             if limit is not None and n_docs >= limit:
                 break
-        _flush()
-        if is_h5:
-            h5f.attrs["n_docs"] = n_docs
-            h5f.attrs["n_tokens"] = n_tokens
-            h5f.attrs["eos_id"] = -1 if eos_id is None else int(eos_id)
-        else:
-            arr = (
-                np.concatenate(npy_chunks)
-                if npy_chunks
-                else np.zeros((0,), dtype=dtype)
-            )
-            np.save(out_path, arr)
+        sink.finalize(n_docs, n_tokens, eos_id)
     finally:
-        if h5f is not None:
-            h5f.close()
+        sink.close()
     return {
         "out_path": out_path,
         "n_docs": n_docs,
@@ -474,6 +464,90 @@ def prepare_pretrain_data(
         "dtype": dtype,
         "eos_id": eos_id,
     }
+
+
+def _encode_pretrain_doc(
+    rec: dict[str, Any],
+    text_key: str,
+    encode: Callable[[str], list[int]],
+    append_eos: bool,
+    eos_id: int | None,
+    max_doc_chars: int | None,
+) -> list[int] | None:
+    """Encode one record's text; ``None`` for an empty encode (caller skips it)."""
+    text = str(rec.get(text_key, ""))
+    if max_doc_chars is not None and len(text) > max_doc_chars:
+        raise ValueError("corpus document exceeds its size limit")
+    ids = encode(text)
+    if append_eos and eos_id is not None:
+        ids.append(int(eos_id))
+    return ids if ids else None
+
+
+class _TokenSink:
+    """Accumulates encoded token chunks and streams them to an HDF5 dataset
+    (``flush_every``-token windows, bounded memory) or an in-memory buffer
+    concatenated into a single ``.npy`` array at :meth:`finalize`."""
+
+    def __init__(self, out_path: str, dtype: str, flush_every: int) -> None:
+        self.out_path = out_path
+        self.dtype = dtype
+        self.flush_every = flush_every
+        self.is_h5 = out_path.endswith((".h5", ".hdf5"))
+        self._buf: list[np.ndarray] = []
+        self._npy_chunks: list[np.ndarray] = []
+        self._h5f = None
+        self._dset = None
+        if self.is_h5:
+            self._open_h5()
+
+    def _open_h5(self) -> None:
+        try:
+            import h5py  # noqa: PLC0415
+        except ImportError as e:  # pragma: no cover - without the extra
+            raise RuntimeError(
+                "h5py is required for HDF5 token output; install "
+                "`data-science-mcp[training]` or use a .npy out_path"
+            ) from e
+        self._h5f = h5py.File(self.out_path, "w")
+        self._dset = self._h5f.create_dataset(
+            "tokens", (0,), maxshape=(None,), dtype=self.dtype, chunks=True
+        )
+
+    def append(self, ids: np.ndarray) -> None:
+        self._buf.append(ids)
+        if sum(b.size for b in self._buf) >= self.flush_every:
+            self.flush()
+
+    def flush(self) -> None:
+        if not self._buf:
+            return
+        arr = np.concatenate(self._buf) if len(self._buf) > 1 else self._buf[0]
+        if self.is_h5:
+            old = self._dset.shape[0]
+            self._dset.resize((old + arr.size,))
+            self._dset[old:] = arr
+        else:
+            self._npy_chunks.append(arr)
+        self._buf = []
+
+    def finalize(self, n_docs: int, n_tokens: int, eos_id: int | None) -> None:
+        self.flush()
+        if self.is_h5:
+            self._h5f.attrs["n_docs"] = n_docs
+            self._h5f.attrs["n_tokens"] = n_tokens
+            self._h5f.attrs["eos_id"] = -1 if eos_id is None else int(eos_id)
+        else:
+            arr = (
+                np.concatenate(self._npy_chunks)
+                if self._npy_chunks
+                else np.zeros((0,), dtype=self.dtype)
+            )
+            np.save(self.out_path, arr)
+
+    def close(self) -> None:
+        if self._h5f is not None:
+            self._h5f.close()
 
 
 def load_token_array(path: str) -> np.ndarray:

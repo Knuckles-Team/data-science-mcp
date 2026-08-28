@@ -138,25 +138,33 @@ def _normalized_dtype(array: np.ndarray, *, force_float64: bool) -> np.dtype[Any
     raise ProtocolError("array dtype is not supported")
 
 
+def _validated_dimension(dimension: object) -> int:
+    if (
+        isinstance(dimension, bool)
+        or not isinstance(dimension, int)
+        or not 0 <= dimension <= MAX_ARRAY_ELEMENTS
+    ):
+        raise ProtocolError("array dimension is invalid")
+    return dimension
+
+
+def _accumulated_size(total: int, dimension: int) -> int:
+    if dimension == 0:
+        return 0
+    if total and total > MAX_ARRAY_ELEMENTS // dimension:
+        raise ProtocolError("array has too many elements")
+    return total * dimension
+
+
 def _shape_size(shape: object) -> tuple[tuple[int, ...], int]:
     if not isinstance(shape, list) or len(shape) > MAX_ARRAY_DIMENSIONS:
         raise ProtocolError("array shape is invalid")
     parsed: list[int] = []
     total = 1
-    for dimension in shape:
-        if (
-            isinstance(dimension, bool)
-            or not isinstance(dimension, int)
-            or not 0 <= dimension <= MAX_ARRAY_ELEMENTS
-        ):
-            raise ProtocolError("array dimension is invalid")
+    for raw_dimension in shape:
+        dimension = _validated_dimension(raw_dimension)
         parsed.append(dimension)
-        if dimension == 0:
-            total = 0
-        elif total and total > MAX_ARRAY_ELEMENTS // dimension:
-            raise ProtocolError("array has too many elements")
-        else:
-            total *= dimension
+        total = _accumulated_size(total, dimension)
     if total > MAX_ARRAY_ELEMENTS:
         raise ProtocolError("array has too many elements")
     return tuple(parsed), total
