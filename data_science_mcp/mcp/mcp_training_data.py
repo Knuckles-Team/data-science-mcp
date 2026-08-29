@@ -15,6 +15,25 @@ from data_science_mcp import search_task_corpus as sc
 from data_science_mcp import training_data as td
 
 
+def _build_dataset_by_kind(kind: str, items: list[Any], options: dict[str, Any]) -> Any:
+    """Dispatch one training-dataset ``kind``; raises ``KeyError`` for an unknown kind."""
+    if kind == "filter_difficulty":
+        return td.filter_by_difficulty(
+            items,
+            min_steps=int(options.get("min_steps", 2)),
+            count_key=str(options.get("count_key", "step_count")),
+        )
+    if kind in ("sft", "dpo", "grpo"):
+        return td.build_dataset(kind, items)
+    if kind == "search_sft":
+        return sc.tasks_to_sft(items)
+    if kind == "search_dpo":
+        return sc.trajectories_to_preference_pairs(items)
+    if kind == "search_grpo":
+        return sc.rollouts_to_grpo(items, weights=options.get("weights"))
+    raise KeyError(kind)
+
+
 def register_training_data_tools(mcp: FastMCP) -> None:
     """Register the training-data tools (tag ``model-training``)."""
 
@@ -42,21 +61,9 @@ def register_training_data_tools(mcp: FastMCP) -> None:
             options = json.loads(options_json or "{}")
             if not isinstance(items, list):
                 return json.dumps({"error": "items_json must be a JSON list"})
-            if kind == "filter_difficulty":
-                result: Any = td.filter_by_difficulty(
-                    items,
-                    min_steps=int(options.get("min_steps", 2)),
-                    count_key=str(options.get("count_key", "step_count")),
-                )
-            elif kind in ("sft", "dpo", "grpo"):
-                result = td.build_dataset(kind, items)
-            elif kind == "search_sft":
-                result = sc.tasks_to_sft(items)
-            elif kind == "search_dpo":
-                result = sc.trajectories_to_preference_pairs(items)
-            elif kind == "search_grpo":
-                result = sc.rollouts_to_grpo(items, weights=options.get("weights"))
-            else:
+            try:
+                result = _build_dataset_by_kind(kind, items, options)
+            except KeyError:
                 return json.dumps({"error": f"unknown kind: {kind}"})
             return json.dumps({"kind": kind, "count": len(result), "records": result})
         except json.JSONDecodeError as e:
