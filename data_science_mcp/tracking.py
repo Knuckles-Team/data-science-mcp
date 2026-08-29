@@ -123,23 +123,31 @@ class RunTracker:
             except Exception:
                 pass
 
+    def _finish_mlflow(self) -> None:
+        if self._mlflow is None:
+            return
+        try:  # pragma: no cover - external service
+            if self.summary:
+                self._mlflow.log_metrics(
+                    {k: _num(v) for k, v in self.summary.items() if _is_num(v)}
+                )
+            self._mlflow.end_run()
+        except Exception:
+            pass
+
+    def _finish_wandb(self) -> None:
+        if self._wandb is None:
+            return
+        try:  # pragma: no cover - external service
+            self._wandb.finish()
+        except Exception:
+            pass
+
     def end(self, summary: dict[str, Any] | None = None) -> dict[str, Any]:
         """Close the run, mirror to the KG, and return the provenance payload."""
         self.summary = dict(summary or {})
-        if self._mlflow is not None:
-            try:  # pragma: no cover - external service
-                if self.summary:
-                    self._mlflow.log_metrics(
-                        {k: _num(v) for k, v in self.summary.items() if _is_num(v)}
-                    )
-                self._mlflow.end_run()
-            except Exception:
-                pass
-        if self._wandb is not None:
-            try:  # pragma: no cover - external service
-                self._wandb.finish()
-            except Exception:
-                pass
+        self._finish_mlflow()
+        self._finish_wandb()
         payload = self.provenance()
         if self.kg_log:
             _kg_mirror(payload)
