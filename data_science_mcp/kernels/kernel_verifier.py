@@ -18,6 +18,7 @@ bounded stdin/stdout protocol without exposing it to the candidate process.
 from __future__ import annotations
 
 import base64
+import dataclasses
 import json
 import math
 import os
@@ -28,8 +29,9 @@ import shutil
 import subprocess
 import tempfile
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 from agent_utilities.harness.sai_task import VerifierResult
 
@@ -106,23 +108,142 @@ def _safe_runner_error(value: object) -> str | None:
     return "kernel verification failed"
 
 
+def _kernel_failure(task_name: str, error: str, **extra: object) -> VerifierResult:
+    """The shared ``reward=0.0, passed=False`` shape every ``verify`` rejection uses."""
+    return VerifierResult(
+        reward=0.0, passed=False, detail={"task": task_name, "error": error, **extra}
+    )
+
+
+def _encode_candidate_source(candidate: object) -> bytes:
+    """Encode + size-check candidate source; raises ``ValueError`` on rejection."""
+    if not isinstance(candidate, str):
+        raise ValueError("candidate encoding rejected")
+    try:
+        candidate_bytes = candidate.encode("utf-8")
+    except UnicodeError as exc:
+        raise ValueError("candidate encoding rejected") from exc
+    if len(candidate_bytes) > _MAX_CANDIDATE_BYTES:
+        raise ValueError("candidate size limit exceeded")
+    return candidate_bytes
+
+
+def _sandbox_child_env() -> dict[str, str]:
+    """The minimal, thread-pinned environment the sandbox subprocess launches with."""
+    child_env = {
+        key: os.environ[key]
+        for key in ("PATH", "SYSTEMROOT", "WINDIR", "XDG_RUNTIME_DIR")
+        if key in os.environ
+    }
+    child_env.update(
+        {
+            "MKL_NUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONNOUSERSITE": "1",
+        }
+    )
+    return child_env
+
+
+@dataclasses.dataclass
+class _RunnerVerdict:
+    """The decoded, signature-verified result envelope from ``_runner``."""
+
+    passed: bool
+    speedup: float
+    candidate_time: float
+    reference_time: float
+    error: object
+
+
+def _validate_runner_verdict_consistency(verdict: _RunnerVerdict) -> None:
+    """Raises ``ValueError`` when the runner's own reported fields are inconsistent."""
+    if verdict.passed:
+        if verdict.error is not None or not math.isclose(
+            verdict.speedup,
+            verdict.reference_time / verdict.candidate_time,
+            rel_tol=1e-9,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("Invalid successful runner result")
+    elif (
+        verdict.speedup != 0.0
+        or verdict.candidate_time != 0.0
+        or verdict.reference_time != 0.0
+        or verdict.error is None
+    ):
+        raise ValueError("Invalid failed runner result")
+
+
+def _decode_runner_envelope(
+    raw_line: str, auth_key: bytes, request_id: str
+) -> _RunnerVerdict:
+    """Verify + decode one signed ``_runner`` result line into a :class:`_RunnerVerdict`.
+
+    Raises ``ProtocolError``/``TypeError``/``ValueError``/``ZeroDivisionError`` on
+    any rejection; the caller folds all of those into one "invalid runner protocol".
+    """
+    envelope = require_exact_keys(
+        verify_signed_message(loads_json(raw_line), auth_key),
+        {"request_id", "result", "version"},
+    )
+    envelope_version = envelope["version"]
+    if (
+        isinstance(envelope_version, bool)
+        or not isinstance(envelope_version, int)
+        or envelope_version != PROTOCOL_VERSION
+        or envelope["request_id"] != request_id
+    ):
+        raise ValueError("Invalid runner protocol envelope")
+    data = require_exact_keys(
+        envelope["result"],
+        {"candidate_time", "error", "passed", "reference_time", "speedup"},
+    )
+    if not isinstance(data["passed"], bool):
+        raise ValueError("Invalid runner pass flag")
+    passed = data["passed"]
+    verdict = _RunnerVerdict(
+        passed=passed,
+        speedup=_protocol_number(data["speedup"], positive=passed),
+        candidate_time=_protocol_number(data["candidate_time"], positive=passed),
+        reference_time=_protocol_number(data["reference_time"], positive=passed),
+        error=data["error"],
+    )
+    _validate_runner_verdict_consistency(verdict)
+    return verdict
+
+
+def _is_string_argv(value: object) -> bool:
+    return (
+        isinstance(value, Sequence)
+        and not isinstance(value, (str, bytes))
+        and bool(value)
+        and len(value) <= 128
+        and all(isinstance(item, str) and item for item in value)
+    )
+
+
+def _has_unsafe_argv_chars(parsed: tuple[str, ...]) -> bool:
+    return any("\x00" in item or "\n" in item or "\r" in item for item in parsed)
+
+
+def _missing_sandbox_placeholder(rendered: str) -> bool:
+    return any(placeholder not in rendered for placeholder in _SANDBOX_PLACEHOLDERS)
+
+
 def _validate_sandbox_command(value: object) -> tuple[str, ...]:
     """Validate an externally managed sandbox command before interpolation."""
-    if (
-        not isinstance(value, Sequence)
-        or isinstance(value, (str, bytes))
-        or not value
-        or len(value) > 128
-        or any(not isinstance(item, str) or not item for item in value)
-    ):
+    if not _is_string_argv(value):
         raise ValueError("Kernel sandbox command must be a non-empty argv array")
     parsed = tuple(value)
     if sum(len(item.encode("utf-8")) for item in parsed) > _MAX_SANDBOX_COMMAND_BYTES:
         raise ValueError("Kernel sandbox command exceeds its size limit")
-    if any("\x00" in item or "\n" in item or "\r" in item for item in parsed):
+    if _has_unsafe_argv_chars(parsed):
         raise ValueError("Kernel sandbox command contains invalid characters")
-    rendered = "\n".join(parsed)
-    if any(placeholder not in rendered for placeholder in _SANDBOX_PLACEHOLDERS):
+    if _missing_sandbox_placeholder("\n".join(parsed)):
         raise ValueError("Kernel sandbox command must include candidate and task placeholders")
     return parsed
 
@@ -163,6 +284,42 @@ def kernel_sandbox_configured() -> bool:
         )
     except ValueError:
         return False
+
+
+class _BoundedOutputCapture:
+    """Thread-drained stdout/stderr capture with a shared, hard total-byte cap.
+
+    Each stream is drained by its own thread via :meth:`drain`; bytes past the
+    cap are silently dropped and ``overflow`` is set instead of ever growing
+    ``buffers`` past ``limit``.
+    """
+
+    def __init__(self, streams: dict[str, Any], limit: int) -> None:
+        self.streams = streams
+        self.limit = limit
+        self.buffers: dict[str, bytearray] = {name: bytearray() for name in streams}
+        self.used = 0
+        self.lock = threading.Lock()
+        self.overflow = threading.Event()
+
+    def drain(self, name: str, on_overflow: Callable[[], None]) -> None:
+        stream = self.streams[name]
+        if stream is None:
+            return
+        try:
+            while chunk := stream.read(8192):
+                with self.lock:
+                    remaining = self.limit - self.used
+                    accepted = chunk[: max(remaining, 0)]
+                    self.buffers[name].extend(accepted)
+                    self.used += len(accepted)
+                    if len(accepted) != len(chunk):
+                        self.overflow.set()
+                if self.overflow.is_set():
+                    on_overflow()
+                    return
+        except (OSError, ValueError):
+            return
 
 
 class KernelVerifier:
@@ -282,45 +439,20 @@ class KernelVerifier:
             env=env,
             start_new_session=os.name == "posix",
         )
-        streams = {"stdout": proc.stdout, "stderr": proc.stderr}
-        buffers = {"stdout": bytearray(), "stderr": bytearray()}
-        used = [0]
-        lock = threading.Lock()
-        overflow = threading.Event()
-
-        def drain(name: str) -> None:
-            stream = streams[name]
-            if stream is None:
-                return
-            try:
-                while chunk := stream.read(8192):
-                    with lock:
-                        remaining = _MAX_SANDBOX_OUTPUT_BYTES - used[0]
-                        accepted = chunk[: max(remaining, 0)]
-                        buffers[name].extend(accepted)
-                        used[0] += len(accepted)
-                        if len(accepted) != len(chunk):
-                            overflow.set()
-                    if overflow.is_set():
-                        self._terminate_process(proc)
-                        return
-            except (OSError, ValueError):
-                return
-
+        capture = _BoundedOutputCapture(
+            {"stdout": proc.stdout, "stderr": proc.stderr}, _MAX_SANDBOX_OUTPUT_BYTES
+        )
         readers = [
-            threading.Thread(target=drain, args=(name,), daemon=True)
-            for name in streams
+            threading.Thread(
+                target=capture.drain,
+                args=(name, lambda: self._terminate_process(proc)),
+                daemon=True,
+            )
+            for name in capture.streams
         ]
         for reader in readers:
             reader.start()
-        if proc.stdin is not None:
-            try:
-                proc.stdin.write(input_bytes)
-                proc.stdin.flush()
-            except (BrokenPipeError, OSError, ValueError):
-                pass
-            finally:
-                proc.stdin.close()
+        self._feed_stdin(proc, input_bytes)
         try:
             returncode = proc.wait(timeout=self.timeout_s)
         except subprocess.TimeoutExpired:
@@ -330,18 +462,29 @@ class KernelVerifier:
         finally:
             for reader in readers:
                 reader.join(timeout=2.0)
-            for stream in streams.values():
+            for stream in capture.streams.values():
                 if stream is not None:
                     stream.close()
 
-        if overflow.is_set():
+        if capture.overflow.is_set():
             raise SandboxOutputLimitError
         return subprocess.CompletedProcess(
             argv,
             returncode,
-            stdout=buffers["stdout"].decode("utf-8", errors="replace"),
-            stderr=buffers["stderr"].decode("utf-8", errors="replace"),
+            stdout=capture.buffers["stdout"].decode("utf-8", errors="replace"),
+            stderr=capture.buffers["stderr"].decode("utf-8", errors="replace"),
         )
+
+    @staticmethod
+    def _feed_stdin(proc: subprocess.Popen[bytes], input_bytes: bytes) -> None:
+        if proc.stdin is not None:
+            try:
+                proc.stdin.write(input_bytes)
+                proc.stdin.flush()
+            except (BrokenPipeError, OSError, ValueError):
+                pass
+            finally:
+                proc.stdin.close()
 
     @staticmethod
     def _cleanup_container(candidate_path: Path, env: dict[str, str]) -> None:
@@ -376,33 +519,29 @@ class KernelVerifier:
         except (OSError, subprocess.TimeoutExpired):
             return
 
-    def verify(self, candidate: str) -> VerifierResult:
-        """Return correctness-gated speedup as the reward for one candidate."""
-        if not isinstance(candidate, str):
-            return VerifierResult(
-                reward=0.0,
-                passed=False,
-                detail={"task": self.task.name, "error": "candidate encoding rejected"},
-            )
-        try:
-            candidate_bytes = candidate.encode("utf-8")
-        except UnicodeError:
-            return VerifierResult(
-                reward=0.0,
-                passed=False,
-                detail={"task": self.task.name, "error": "candidate encoding rejected"},
-            )
-        if len(candidate_bytes) > _MAX_CANDIDATE_BYTES:
-            return VerifierResult(
-                reward=0.0,
-                passed=False,
-                detail={"task": self.task.name, "error": "candidate size limit exceeded"},
-            )
+    def _launch_sandbox(
+        self,
+        cand_path: Path,
+        tmp: str,
+        child_env: dict[str, str],
+        supervisor_request: bytes,
+    ) -> subprocess.CompletedProcess[str] | None:
+        """Build the sandbox argv and run it bounded. ``None`` when unconfigured;
+        may propagate ``TimeoutExpired`` / ``SandboxOutputLimitError`` / ``OSError``
+        / ``ValueError`` from the sandbox launch itself."""
+        argv = self._sandbox_argv(cand_path)
+        if argv is None:
+            return None
+        return self._run_bounded(argv, cwd=tmp, env=child_env, input_bytes=supervisor_request)
+
+    def _run_sandboxed_candidate(
+        self, candidate_bytes: bytes, auth_key: bytes, request_id: str
+    ) -> subprocess.CompletedProcess[str] | VerifierResult:
+        """Write the candidate + run it through the sandbox; a ``VerifierResult`` is
+        an already-final rejection, anything else is the completed sandbox process."""
         with tempfile.TemporaryDirectory(prefix="sai-kernel-") as tmp:
             cand_path = Path(tmp) / "candidate.py"
             cand_path.write_bytes(candidate_bytes)
-            auth_key = secrets.token_bytes(AUTH_KEY_BYTES)
-            request_id = secrets.token_hex(16)
             call_timeout_s = min(10.0, max(0.05, self.timeout_s / 3.0))
             supervisor_request = encode_line(
                 {
@@ -413,138 +552,55 @@ class KernelVerifier:
                 },
                 limit=_MAX_SUPERVISOR_REQUEST_BYTES,
             )
-            child_env = {
-                key: os.environ[key]
-                for key in (
-                    "PATH",
-                    "SYSTEMROOT",
-                    "WINDIR",
-                    "XDG_RUNTIME_DIR",
-                )
-                if key in os.environ
-            }
-            child_env.update(
-                {
-                    "MKL_NUM_THREADS": "1",
-                    "NUMEXPR_NUM_THREADS": "1",
-                    "OMP_NUM_THREADS": "1",
-                    "OPENBLAS_NUM_THREADS": "1",
-                    "PYTHONDONTWRITEBYTECODE": "1",
-                    "PYTHONNOUSERSITE": "1",
-                }
-            )
+            child_env = _sandbox_child_env()
             try:
-                argv = self._sandbox_argv(cand_path)
-                if argv is None:
-                    return VerifierResult(
-                        reward=0.0,
-                        passed=False,
-                        detail={
-                            "task": self.task.name,
-                            "error": "isolated kernel sandbox is not configured",
-                        },
+                proc = self._launch_sandbox(cand_path, tmp, child_env, supervisor_request)
+                if proc is None:
+                    return _kernel_failure(
+                        self.task.name, "isolated kernel sandbox is not configured"
                     )
-                proc = self._run_bounded(
-                    argv,
-                    cwd=tmp,
-                    env=child_env,
-                    input_bytes=supervisor_request,
-                )
             except subprocess.TimeoutExpired:
                 self._cleanup_container(cand_path, child_env)
-                return VerifierResult(
-                    reward=0.0,
-                    passed=False,
-                    detail={
-                        "task": self.task.name,
-                        "error": "timeout",
-                        "timeout_s": self.timeout_s,
-                    },
-                )
+                return _kernel_failure(self.task.name, "timeout", timeout_s=self.timeout_s)
             except SandboxOutputLimitError:
                 self._cleanup_container(cand_path, child_env)
-                return VerifierResult(
-                    reward=0.0,
-                    passed=False,
-                    detail={"task": self.task.name, "error": "sandbox output limit exceeded"},
-                )
+                return _kernel_failure(self.task.name, "sandbox output limit exceeded")
             except (OSError, ValueError):
                 self._cleanup_container(cand_path, child_env)
-                return VerifierResult(
-                    reward=0.0,
-                    passed=False,
-                    detail={"task": self.task.name, "error": "sandbox launch failed"},
-                )
+                return _kernel_failure(self.task.name, "sandbox launch failed")
+        return proc
+
+    def verify(self, candidate: str) -> VerifierResult:
+        """Return correctness-gated speedup as the reward for one candidate."""
+        try:
+            candidate_bytes = _encode_candidate_source(candidate)
+        except ValueError as exc:
+            return _kernel_failure(self.task.name, str(exc))
+
+        auth_key = secrets.token_bytes(AUTH_KEY_BYTES)
+        request_id = secrets.token_hex(16)
+        outcome = self._run_sandboxed_candidate(candidate_bytes, auth_key, request_id)
+        if isinstance(outcome, VerifierResult):
+            return outcome
+        proc = outcome
 
         raw = (proc.stdout or "").strip().splitlines()
         if proc.returncode != 0 or len(raw) != 1:
-            return VerifierResult(
-                reward=0.0, passed=False,
-                detail={"task": self.task.name, "error": "invalid runner protocol"},
-            )
+            return _kernel_failure(self.task.name, "invalid runner protocol")
         try:
-            envelope = require_exact_keys(
-                verify_signed_message(loads_json(raw[0]), auth_key),
-                {"request_id", "result", "version"},
-            )
-            envelope_version = envelope["version"]
-            if (
-                isinstance(envelope_version, bool)
-                or not isinstance(envelope_version, int)
-                or envelope_version != PROTOCOL_VERSION
-                or envelope["request_id"] != request_id
-            ):
-                raise ValueError("Invalid runner protocol envelope")
-            data = require_exact_keys(
-                envelope["result"],
-                {
-                    "candidate_time",
-                    "error",
-                    "passed",
-                    "reference_time",
-                    "speedup",
-                },
-            )
-            if not isinstance(data["passed"], bool):
-                raise ValueError("Invalid runner pass flag")
-            passed = data["passed"]
-            speedup = _protocol_number(data["speedup"], positive=passed)
-            candidate_time = _protocol_number(
-                data["candidate_time"], positive=passed
-            )
-            reference_time = _protocol_number(
-                data["reference_time"], positive=passed
-            )
-            if passed:
-                if data["error"] is not None or not math.isclose(
-                    speedup,
-                    reference_time / candidate_time,
-                    rel_tol=1e-9,
-                    abs_tol=1e-12,
-                ):
-                    raise ValueError("Invalid successful runner result")
-            elif (
-                speedup != 0.0
-                or candidate_time != 0.0
-                or reference_time != 0.0
-                or data["error"] is None
-            ):
-                raise ValueError("Invalid failed runner result")
+            verdict = _decode_runner_envelope(raw[0], auth_key, request_id)
         except (ProtocolError, TypeError, ValueError, ZeroDivisionError):
-            return VerifierResult(
-                reward=0.0, passed=False,
-                detail={"task": self.task.name, "error": "invalid runner protocol"},
-            )
+            return _kernel_failure(self.task.name, "invalid runner protocol")
 
-        reward = min(speedup, self.speedup_cap) if passed else 0.0
+        reward = min(verdict.speedup, self.speedup_cap) if verdict.passed else 0.0
         return VerifierResult(
             reward=reward,
-            passed=passed,
+            passed=verdict.passed,
             detail={
                 "task": self.task.name,
-                "speedup": speedup,
-                "candidate_time": candidate_time,
-                "reference_time": reference_time,
-                "error": _safe_runner_error(data["error"]),
+                "speedup": verdict.speedup,
+                "candidate_time": verdict.candidate_time,
+                "reference_time": verdict.reference_time,
+                "error": _safe_runner_error(verdict.error),
             },
         )
