@@ -88,6 +88,38 @@ class ReliabilityEvalHook:
         return evaluate_checkpoint(generate_fn, self.cases, scorers=self.scorers)
 
 
+def _validate_benchmark_tasks(tasks: list[str]) -> None:
+    if not tasks or any(not isinstance(task, str) or not task.strip() for task in tasks):
+        raise ValueError("at least one non-empty benchmark task is required")
+
+
+def _validate_benchmark_limit(limit: int | None) -> None:
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be positive")
+
+
+def _require_pinned_benchmark_revision(model_path: str, revision: str | None) -> bool:
+    """Returns whether ``model_path`` is a local checkpoint dir; raises when a
+    remote model path lacks a pinned commit revision."""
+    local_checkpoint = Path(model_path).expanduser().is_dir()
+    if not local_checkpoint and not (
+        revision and re.fullmatch(r"[0-9a-fA-F]{40,64}", revision)
+    ):
+        raise ValueError(
+            "remote model evaluation requires a 40-64 character immutable commit revision"
+        )
+    return local_checkpoint
+
+
+def _validate_benchmark_batch_size(batch_size: int | str) -> int | None:
+    configured_batch = None if batch_size == "auto" else batch_size
+    if not (configured_batch is None or isinstance(configured_batch, int)):
+        raise ValueError("batch_size must be a positive integer or 'auto'")
+    if isinstance(configured_batch, int) and configured_batch < 1:
+        raise ValueError("batch_size must be positive")
+    return configured_batch
+
+
 def evaluate_benchmarks(
     model_path: str,
     tasks: list[str],
@@ -125,24 +157,13 @@ def evaluate_benchmarks(
     except ImportError:  # pragma: no cover - without the extra
         return {"error": "LightEval not installed — install data-science-mcp[eval]"}
 
-    if not tasks or any(not isinstance(task, str) or not task.strip() for task in tasks):
-        return {"error": "at least one non-empty benchmark task is required"}
-    if limit is not None and limit < 1:
-        return {"error": "limit must be positive"}
-
-    local_checkpoint = Path(model_path).expanduser().is_dir()
-    if not local_checkpoint and not (
-        revision and re.fullmatch(r"[0-9a-fA-F]{40,64}", revision)
-    ):
-        return {
-            "error": "remote model evaluation requires a 40-64 character immutable commit revision"
-        }
-
-    configured_batch = None if batch_size == "auto" else batch_size
-    if not (configured_batch is None or isinstance(configured_batch, int)):
-        return {"error": "batch_size must be a positive integer or 'auto'"}
-    if isinstance(configured_batch, int) and configured_batch < 1:
-        return {"error": "batch_size must be positive"}
+    try:
+        _validate_benchmark_tasks(tasks)
+        _validate_benchmark_limit(limit)
+        local_checkpoint = _require_pinned_benchmark_revision(model_path, revision)
+        configured_batch = _validate_benchmark_batch_size(batch_size)
+    except ValueError as exc:
+        return {"error": str(exc)}
 
     # LightEval keeps logs/details in the supplied directory. A private temporary
     # directory prevents model prompts or outputs from surviving the evaluation.
