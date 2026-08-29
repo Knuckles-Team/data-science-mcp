@@ -70,6 +70,87 @@ _ENGINE_REQUIRED_ERR = (
 # Sentinel so a cached None ("engine not reachable") is distinct from "unprobed".
 _UNPROBED = object()
 
+_SKLEARN_DATASET_LOADERS = {
+    "california": "fetch_california_housing",
+    "diabetes": "load_diabetes",
+    "iris": "load_iris",
+    "wine": "load_wine",
+    "breast_cancer": "load_breast_cancer",
+    "digits": "load_digits",
+}
+
+
+def _load_sklearn_dataset(name: str) -> dict[str, Any]:
+    """Load one of the built-in scikit-learn sample datasets.
+
+    Returns an ``{"error": ...}`` dict when scikit-learn isn't installed.
+    """
+    try:
+        from sklearn import datasets as sk_datasets  # noqa: PLC0415
+    except ImportError:
+        return {
+            "error": (
+                "Built-in sample datasets require scikit-learn. Install "
+                "'data-science-mcp[datasets]' or pass a .csv file path."
+            )
+        }
+    loader = getattr(sk_datasets, _SKLEARN_DATASET_LOADERS[name.lower()])
+    bunch = loader()
+    return {
+        "X": bunch.data,
+        "y": bunch.target,
+        "feature_names": list(
+            getattr(bunch, "feature_names", [f"x{i}" for i in range(bunch.data.shape[1])])
+        ),
+        "target_name": getattr(bunch, "target_names", ["target"])[0]
+        if hasattr(bunch, "target_names")
+        else "target",
+        "description": getattr(bunch, "DESCR", "")[:200],
+    }
+
+
+def _read_csv_matrix(csv_path: str) -> tuple[list[str], Any]:
+    """Read a CSV into ``(columns, matrix)`` — polars when available, else stdlib
+    csv + numpy (which also works without the polars wheel, which core-dumps on
+    CPUs lacking its SIMD baseline)."""
+    import numpy as np
+
+    try:
+        import polars as pl  # noqa: PLC0415
+
+        df = pl.read_csv(csv_path)
+        return list(df.columns), df.to_numpy()
+    except ImportError:
+        import csv as _csv  # noqa: PLC0415
+
+        with open(csv_path, newline="") as fh:
+            reader = _csv.reader(fh)
+            columns = next(reader)
+            rows = [[float(v) for v in row] for row in reader if row]
+        return columns, np.asarray(rows, dtype=float)
+
+
+def _load_csv_dataset(csv_path: str, target_column: str) -> dict[str, Any]:
+    import numpy as np
+
+    columns, matrix = _read_csv_matrix(csv_path)
+    if target_column and target_column in columns:
+        t_idx = columns.index(target_column)
+    else:
+        # Last column as target
+        t_idx = len(columns) - 1
+        target_column = columns[t_idx]
+    y = matrix[:, t_idx]
+    X = np.delete(matrix, t_idx, axis=1)
+    feature_names = [c for i, c in enumerate(columns) if i != t_idx]
+    return {
+        "X": X,
+        "y": y,
+        "feature_names": feature_names,
+        "target_name": target_column,
+        "description": f"CSV dataset: {os.path.basename(csv_path)}",
+    }
+
 
 class MLEngine:
     """Stateful ML engine for model training and evaluation.
@@ -246,93 +327,21 @@ class MLEngine:
             Dict with dataset summary: shape, features, target, description.
         """
         try:
-            data: dict[str, Any] = {}
-
-            sklearn_datasets = {
-                "california": "fetch_california_housing",
-                "diabetes": "load_diabetes",
-                "iris": "load_iris",
-                "wine": "load_wine",
-                "breast_cancer": "load_breast_cancer",
-                "digits": "load_digits",
-            }
             csv_path = source_path or name
-
-            if name.lower() in sklearn_datasets:
-                try:
-                    from sklearn import datasets as sk_datasets
-                except ImportError:
-                    return {
-                        "error": (
-                            "Built-in sample datasets require scikit-learn. Install "
-                            "'data-science-mcp[datasets]' or pass a .csv file path."
-                        )
-                    }
-
-                loader = getattr(sk_datasets, sklearn_datasets[name.lower()])
-                bunch = loader()
-                data = {
-                    "X": bunch.data,
-                    "y": bunch.target,
-                    "feature_names": list(
-                        getattr(
-                            bunch,
-                            "feature_names",
-                            [f"x{i}" for i in range(bunch.data.shape[1])],
-                        )
-                    ),
-                    "target_name": getattr(bunch, "target_names", ["target"])[0]
-                    if hasattr(bunch, "target_names")
-                    else "target",
-                    "description": getattr(bunch, "DESCR", "")[:200],
-                }
+            if name.lower() in _SKLEARN_DATASET_LOADERS:
+                data = _load_sklearn_dataset(name)
             elif source_path is not None and not csv_path.lower().endswith(".csv"):
                 return {"error": "Only CSV dataset files are supported"}
             elif csv_path.lower().endswith(".csv"):
-                # Fast path: polars when available; otherwise stdlib csv + numpy,
-                # so numeric CSV loading still works without the polars wheel
-                # (which core-dumps on CPUs lacking its SIMD baseline).
-                import numpy as np
-
-                try:
-                    import polars as pl
-
-                    df = pl.read_csv(csv_path)
-                    columns = list(df.columns)
-                    matrix = df.to_numpy()
-                except ImportError:
-                    import csv as _csv
-
-                    with open(csv_path, newline="") as fh:
-                        reader = _csv.reader(fh)
-                        columns = next(reader)
-                        rows = [[float(v) for v in row] for row in reader if row]
-                    matrix = np.asarray(rows, dtype=float)
-
-                if target_column and target_column in columns:
-                    t_idx = columns.index(target_column)
-                else:
-                    # Last column as target
-                    t_idx = len(columns) - 1
-                    target_column = columns[t_idx]
-                y = matrix[:, t_idx]
-                X = np.delete(matrix, t_idx, axis=1)
-                feature_names = [c for i, c in enumerate(columns) if i != t_idx]
-
-                data = {
-                    "X": X,
-                    "y": y,
-                    "feature_names": feature_names,
-                    "target_name": target_column,
-                    "description": f"CSV dataset: {os.path.basename(csv_path)}",
-                }
+                data = _load_csv_dataset(csv_path, target_column)
             else:
                 return {
                     "error": "Unknown dataset. Use a sample name or an authorized CSV path."
                 }
+            if "error" in data:
+                return data
 
             self._datasets[name] = data
-
             return {
                 "name": name,
                 "shape": list(data["X"].shape),
