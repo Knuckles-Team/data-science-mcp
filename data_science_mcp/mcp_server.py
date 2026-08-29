@@ -269,6 +269,74 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
 # ── Interpretability Tools ───────────────────────────────────────────
 
 
+def _grade_answer(response: str, expected: str, *, float_tolerance: float) -> bool:
+    """Case-insensitive match, else float-tolerance match, else substring fallback."""
+    r_clean = response.strip().lower()
+    e_clean = expected.strip().lower()
+    if r_clean == e_clean:
+        return True
+    try:
+        r_val = float(r_clean)
+        e_val = float(e_clean)
+        return abs(r_val - e_val) < float_tolerance
+    except ValueError:
+        return e_clean in r_clean or r_clean in e_clean
+
+
+def _grade_interpretability_test(
+    test_id: str, expected: str, answers: dict[str, str]
+) -> dict[str, Any]:
+    ans = answers.get(test_id, "no answer provided")
+    passed = _grade_answer(ans, expected, float_tolerance=1e-3)
+    return {
+        "test_id": test_id,
+        "passed": passed,
+        "response": ans,
+        "expected": expected,
+        "score": 1.0 if passed else 0.0,
+    }
+
+
+def _load_interpretability_answers(answers_json: str) -> dict[str, str] | None:
+    try:
+        return json.loads(answers_json)
+    except Exception:  # noqa: BLE001 - any decode failure surfaces as "not found"
+        return None
+
+
+def _interpretability_reference(model_id: str) -> dict[str, Any] | None:
+    engine = MLEngine()
+    if model_id not in engine._models:
+        return None
+    # Reference answers from the engine-backed model (no sklearn object).
+    return engine.interpretability_reference(model_id)
+
+
+def _interpretability_expected_answers(
+    model_id: str, ref: dict[str, Any]
+) -> dict[str, str]:
+    return {
+        f"att_{model_id}_0": ref["largest_feature"],
+        f"sim_{model_id}_0": str(round(ref["baseline_pred"], 4)),
+        f"sens_{model_id}_0": str(round(ref["coef_first"], 4)),
+        f"cf_{model_id}_0": "0.0",
+        f"conf_{model_id}_0": str(round(ref["r2"], 4)),
+        f"data_{model_id}_0": str(ref["n_train"]),
+    }
+
+
+def _interpretability_report(
+    model_id: str, results: list[dict[str, Any]], total_tests: int
+) -> dict[str, Any]:
+    return {
+        "model_id": model_id,
+        "overall_score": sum(r["score"] for r in results) / total_tests,
+        "passed_count": sum(1 for r in results if r["passed"]),
+        "failed_count": sum(1 for r in results if not r["passed"]),
+        "detailed_results": results,
+    }
+
+
 def register_interpretability_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"interpretability"})
     async def generate_interpretability_tests(
@@ -342,25 +410,7 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
         if ctx:
             await ctx.info(f"Grading response for test {test_id}...")
 
-        # Simple grading logic: case-insensitive match or float match if float
-        passed = False
-        r_clean = response.strip().lower()
-        e_clean = expected.strip().lower()
-
-        if r_clean == e_clean:
-            passed = True
-        else:
-            # Try parsing as float
-            try:
-                r_val = float(r_clean)
-                e_val = float(e_clean)
-                if abs(r_val - e_val) < 1e-4:
-                    passed = True
-            except ValueError:
-                # Substring match fallback
-                if e_clean in r_clean or r_clean in e_clean:
-                    passed = True
-
+        passed = _grade_answer(response, expected, float_tolerance=1e-4)
         result = {
             "test_id": test_id,
             "passed": passed,
@@ -386,69 +436,20 @@ def register_interpretability_tools(mcp: FastMCP) -> None:
             await ctx.info(
                 f"Running full interpretability suite for model {model_id}..."
             )
-        try:
-            answers = json.loads(answers_json)
-        except Exception:
+        answers = _load_interpretability_answers(answers_json)
+        if answers is None:
             return {"error": "Operation failed"}
 
-        engine = MLEngine()
-        if model_id not in engine._models:
-            return {"error": f"Model {model_id} not found."}
-
-        # Reference answers from the engine-backed model (no sklearn object).
-        ref = engine.interpretability_reference(model_id)
+        ref = _interpretability_reference(model_id)
         if ref is None:
             return {"error": f"Model {model_id} not found."}
+        expected_answers = _interpretability_expected_answers(model_id, ref)
 
-        expected_answers = {
-            f"att_{model_id}_0": ref["largest_feature"],
-            f"sim_{model_id}_0": str(round(ref["baseline_pred"], 4)),
-            f"sens_{model_id}_0": str(round(ref["coef_first"], 4)),
-            f"cf_{model_id}_0": "0.0",
-            f"conf_{model_id}_0": str(round(ref["r2"], 4)),
-            f"data_{model_id}_0": str(ref["n_train"]),
-        }
-
-        results = []
-        score_sum = 0.0
-        for test_id, expected in expected_answers.items():
-            ans = answers.get(test_id, "no answer provided")
-            # Grade
-            passed = False
-            r_clean = ans.strip().lower()
-            e_clean = expected.strip().lower()
-            if r_clean == e_clean:
-                passed = True
-            else:
-                try:
-                    r_val = float(r_clean)
-                    e_val = float(e_clean)
-                    if abs(r_val - e_val) < 1e-3:
-                        passed = True
-                except ValueError:
-                    if e_clean in r_clean or r_clean in e_clean:
-                        passed = True
-
-            score = 1.0 if passed else 0.0
-            score_sum += score
-            results.append(
-                {
-                    "test_id": test_id,
-                    "passed": passed,
-                    "response": ans,
-                    "expected": expected,
-                    "score": score,
-                }
-            )
-
-        total_tests = len(expected_answers)
-        return {
-            "model_id": model_id,
-            "overall_score": score_sum / total_tests,
-            "passed_count": sum(1 for r in results if r["passed"]),
-            "failed_count": sum(1 for r in results if not r["passed"]),
-            "detailed_results": results,
-        }
+        results = [
+            _grade_interpretability_test(test_id, expected, answers)
+            for test_id, expected in expected_answers.items()
+        ]
+        return _interpretability_report(model_id, results, len(expected_answers))
 
 
 # ── Data Management Tools ────────────────────────────────────────────
