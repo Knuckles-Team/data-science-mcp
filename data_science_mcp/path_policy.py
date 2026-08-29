@@ -36,31 +36,33 @@ def data_root() -> Path:
         raise ValueError("Configured data root is invalid") from exc
 
 
-def resolve_data_path(value: str, *, must_exist: bool = False) -> Path:
-    """Resolve ``value`` beneath :func:`data_root`, rejecting traversal/symlinks."""
-    raw = str(value or "").strip()
-    if (
-        not raw
-        or len(raw) > 4096
-        or "\x00" in raw
-        or "\r" in raw
-        or "\n" in raw
-    ):
+def _validate_raw_data_path(raw: str) -> None:
+    if not raw or len(raw) > 4096 or "\x00" in raw or "\r" in raw or "\n" in raw:
         raise ValueError("Invalid data path")
     if PureWindowsPath(raw).is_absolute() and not Path(raw).is_absolute():
         raise ValueError("Data path uses a foreign absolute path")
 
+
+def _prepared_data_root() -> Path:
     try:
         root = data_root()
         root.mkdir(parents=True, exist_ok=True)
+        return root
     except (OSError, ValueError) as exc:
         raise ValueError("Configured data root is unavailable") from exc
+
+
+def _candidate_under_root(raw: str, root: Path) -> Path:
     try:
         candidate = Path(raw).expanduser()
     except (OSError, RuntimeError) as exc:
         raise ValueError("Invalid data path") from exc
     if not candidate.is_absolute():
         candidate = root / candidate
+    return candidate
+
+
+def _reject_symlink_traversal(root: Path, candidate: Path) -> None:
     try:
         lexical = Path(os.path.abspath(candidate))
         relative = lexical.relative_to(root)
@@ -71,6 +73,9 @@ def resolve_data_path(value: str, *, must_exist: bool = False) -> Path:
         current /= component
         if current.is_symlink():
             raise ValueError("Data paths must not traverse symbolic links")
+
+
+def _resolve_within_root(candidate: Path, root: Path, *, must_exist: bool) -> Path:
     try:
         resolved = candidate.resolve(strict=must_exist)
         resolved.relative_to(root)
@@ -78,6 +83,17 @@ def resolve_data_path(value: str, *, must_exist: bool = False) -> Path:
         raise ValueError("Data path escapes DATA_SCIENCE_DATA_ROOT") from exc
     if resolved == root:
         raise ValueError("Data path must name a file")
+    return resolved
+
+
+def resolve_data_path(value: str, *, must_exist: bool = False) -> Path:
+    """Resolve ``value`` beneath :func:`data_root`, rejecting traversal/symlinks."""
+    raw = str(value or "").strip()
+    _validate_raw_data_path(raw)
+    root = _prepared_data_root()
+    candidate = _candidate_under_root(raw, root)
+    _reject_symlink_traversal(root, candidate)
+    return _resolve_within_root(candidate, root, must_exist=must_exist)
     return resolved
 
 
