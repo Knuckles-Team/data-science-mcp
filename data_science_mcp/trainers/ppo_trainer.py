@@ -32,6 +32,7 @@ Concept: ppo-trainer
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from data_science_mcp.trainers.base import TrainConfig, TrainerBase, _torch
@@ -44,33 +45,47 @@ from data_science_mcp.trainers.objectives import (
 )
 
 
+@dataclass
+class _PpoModels:
+    """The policy/value/reference/reward models placed on ``device`` for one
+    :meth:`PpoTrainer.train` call."""
+
+    model: Any
+    tokenizer: Any
+    value_model: Any
+    ref: Any
+    reward_model: Any | None
+    device: Any
+
+
+@dataclass
+class _PpoOptimization:
+    """The optimizer, its accelerated model, scheduler, tracker, and planned
+    total optimizer-step count for one :meth:`PpoTrainer.train` call."""
+
+    accelerator: Any
+    model: Any
+    optimizer: Any
+    scheduler: Any
+    tracker: Any
+    total_steps: Any
+
+
 class PpoTrainer(TrainerBase):
     """Actor-critic PPO with GAE, value clipping, and a KL-to-reference penalty."""
 
     name = "ppo"
     kind = "ppo"
 
-    def train(
+    def _prepare_ppo_models(
         self,
-        dataset: list[dict[str, Any]],
-        *,
-        model: Any | None = None,
-        tokenizer: Any | None = None,
-        value_model: Any | None = None,
-        ref_model: Any | None = None,
-        reward_model: Any | None = None,
-        reward_fn: Callable[[str, str], float] | None = None,
-        optimizer: Any | None = None,
-        **_: Any,
-    ) -> dict[str, Any]:
-        """Optimise the PPO objective over ``{prompt, completion, reward?}`` records."""
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
-
-        torch = _torch()
-        items = [d for d in dataset if d.get("prompt") and d.get("completion")]
-        if not items:
-            return {"trainer": self.name, "steps": 0, "examples": 0, "losses": []}
-        torch.manual_seed(self.config.seed)
+        model: Any | None,
+        tokenizer: Any | None,
+        value_model: Any | None,
+        ref_model: Any | None,
+        reward_model: Any | None,
+    ) -> _PpoModels:
+        """Resolve/place the policy, value head, frozen reference, and reward model."""
         model, tokenizer = self._resolve(model, tokenizer)
         device = self._device()
         model.to(device)
@@ -101,16 +116,27 @@ class PpoTrainer(TrainerBase):
             reward_model.to(device)
             reward_model.eval()
 
-        # One optimizer over policy + value params (shared step in run_loop).
+        return _PpoModels(
+            model=model,
+            tokenizer=tokenizer,
+            value_model=value_model,
+            ref=ref,
+            reward_model=reward_model,
+            device=device,
+        )
+
+    def _prepare_ppo_optimization(
+        self, model: Any, value_model: Any, optimizer: Any | None, n_items: int
+    ) -> _PpoOptimization:
+        """Build the shared policy+value optimizer, then accelerate/schedule/track it."""
+        torch = _torch()
         params = [p for p in model.parameters() if p.requires_grad] + [
             p for p in value_model.parameters() if p.requires_grad
         ]
-        opt = optimizer if optimizer is not None else torch.optim.AdamW(
-            params, lr=self.config.lr
-        )
+        opt = optimizer if optimizer is not None else torch.optim.AdamW(params, lr=self.config.lr)
         accel, model, opt = self._prepare(model, opt)
         total = self._total_opt_steps(
-            (len(items) + self.config.batch_size - 1) // max(1, self.config.batch_size)
+            (n_items + self.config.batch_size - 1) // max(1, self.config.batch_size)
         )
         sched = self._scheduler(opt, total)
         tracker = self._tracker(
@@ -124,6 +150,56 @@ class PpoTrainer(TrainerBase):
                 "lr": self.config.lr,
                 "precision": self.config.precision,
             }
+        )
+        return _PpoOptimization(
+            accelerator=accel,
+            model=model,
+            optimizer=opt,
+            scheduler=sched,
+            tracker=tracker,
+            total_steps=total,
+        )
+
+    def train(
+        self,
+        dataset: list[dict[str, Any]],
+        *,
+        model: Any | None = None,
+        tokenizer: Any | None = None,
+        value_model: Any | None = None,
+        ref_model: Any | None = None,
+        reward_model: Any | None = None,
+        reward_fn: Callable[[str, str], float] | None = None,
+        optimizer: Any | None = None,
+        **_: Any,
+    ) -> dict[str, Any]:
+        """Optimise the PPO objective over ``{prompt, completion, reward?}`` records."""
+        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+
+        torch = _torch()
+        items = [d for d in dataset if d.get("prompt") and d.get("completion")]
+        if not items:
+            return {"trainer": self.name, "steps": 0, "examples": 0, "losses": []}
+        torch.manual_seed(self.config.seed)
+        models = self._prepare_ppo_models(model, tokenizer, value_model, ref_model, reward_model)
+        model, tokenizer, value_model, ref, reward_model, device = (
+            models.model,
+            models.tokenizer,
+            models.value_model,
+            models.ref,
+            models.reward_model,
+            models.device,
+        )
+
+        # One optimizer over policy + value params (shared step in run_loop).
+        optimization = self._prepare_ppo_optimization(model, value_model, optimizer, len(items))
+        accel, model, opt, sched, tracker, total = (
+            optimization.accelerator,
+            optimization.model,
+            optimization.optimizer,
+            optimization.scheduler,
+            optimization.tracker,
+            optimization.total_steps,
         )
 
         # --- reward per item (no grad) --------------------------------------- #
@@ -217,8 +293,25 @@ class PpoTrainer(TrainerBase):
             tracker=tracker,
             total_steps=total,
         )
+        report = self._ppo_report(items, out, rewards_seen, kls)
+        tracker.end(
+            {
+                "final_loss": report["final_loss"],
+                "mean_reward": report["mean_reward"],
+                "steps": out["steps"],
+            }
+        )
+        return report
+
+    def _ppo_report(
+        self,
+        items: list[dict[str, Any]],
+        out: dict[str, Any],
+        rewards_seen: list[float],
+        kls: list[float],
+    ) -> dict[str, Any]:
         losses = out["losses"]
-        report = {
+        return {
             "trainer": self.name,
             "kind": self.kind,
             "examples": len(items),
@@ -234,14 +327,6 @@ class PpoTrainer(TrainerBase):
             "checkpoints": out["checkpoints"],
             "resumed_from_step": out["resumed_from_step"],
         }
-        tracker.end(
-            {
-                "final_loss": report["final_loss"],
-                "mean_reward": report["mean_reward"],
-                "steps": out["steps"],
-            }
-        )
-        return report
 
 
 def build_ppo_trainer(config: TrainConfig | None = None) -> PpoTrainer:
