@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 from data_science_mcp.trainers.base import _torch
@@ -119,6 +120,26 @@ def _enforce_limit(checkpoints: list[str], limit: int) -> None:
         del checkpoints[:-limit]
 
 
+def _try_load_state(target: Any, path: str, torch: Any) -> None:
+    """Best-effort load a torch state dict from ``path`` into ``target``."""
+    if os.path.isfile(path):
+        try:
+            target.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
+        except Exception:  # pragma: no cover - shape drift
+            pass
+
+
+def _resume_step(path: str) -> int:
+    tsf = os.path.join(path, "training_state.json")
+    if not os.path.isfile(tsf):
+        return 0
+    try:
+        with open(tsf, encoding="utf-8") as f:
+            return int(json.load(f).get("step", 0))
+    except Exception:  # pragma: no cover
+        return 0
+
+
 def maybe_resume(model: Any, optimizer: Any, scheduler: Any, config: Any) -> int:
     """Restore weights/optimizer/scheduler/step from ``config.resume_from``.
 
@@ -129,41 +150,237 @@ def maybe_resume(model: Any, optimizer: Any, scheduler: Any, config: Any) -> int
     path = getattr(config, "resume_from", None)
     if not path or not os.path.isdir(path):
         return 0
-    msf = os.path.join(path, "model_state.pt")
-    if os.path.isfile(msf):
-        try:
-            model.load_state_dict(
-                torch.load(msf, map_location="cpu", weights_only=True)
-            )
-        except Exception:  # pragma: no cover - shape drift
-            pass
-    osf = os.path.join(path, "optimizer.pt")
-    if optimizer is not None and os.path.isfile(osf):
-        try:
-            optimizer.load_state_dict(
-                torch.load(osf, map_location="cpu", weights_only=True)
-            )
-        except Exception:  # pragma: no cover
-            pass
-    ssf = os.path.join(path, "scheduler.pt")
-    if scheduler is not None and os.path.isfile(ssf):
-        try:
-            scheduler.load_state_dict(
-                torch.load(ssf, map_location="cpu", weights_only=True)
-            )
-        except Exception:  # pragma: no cover
-            pass
-    tsf = os.path.join(path, "training_state.json")
-    if os.path.isfile(tsf):
-        try:
-            with open(tsf, encoding="utf-8") as f:
-                return int(json.load(f).get("step", 0))
-        except Exception:  # pragma: no cover
-            return 0
-    return 0
+    _try_load_state(model, os.path.join(path, "model_state.pt"), torch)
+    if optimizer is not None:
+        _try_load_state(optimizer, os.path.join(path, "optimizer.pt"), torch)
+    if scheduler is not None:
+        _try_load_state(scheduler, os.path.join(path, "scheduler.pt"), torch)
+    return _resume_step(path)
 
 
 # --- the loop --------------------------------------------------------------- #
+@dataclass
+class _StepEngine:
+    """Owns the mixed-precision forward/backward/optimizer-step machinery for one
+    :func:`run_loop` call (plain AMP, fp16 GradScaler, or an Accelerate backend)."""
+
+    model: Any
+    optimizer: Any
+    scheduler: Any | None
+    accelerator: Any | None
+    compute_loss: Callable[[Any], Any]
+    use_amp: bool
+    amp_dtype: Any
+    use_scaler: bool
+    scaler: Any | None
+    max_grad_norm: float | None
+    torch: Any
+
+    def forward(self, item: Any) -> Any:
+        if self.accelerator is None and self.use_amp:
+            with self.torch.autocast(device_type="cuda", dtype=self.amp_dtype):
+                return self.compute_loss(item)
+        return self.compute_loss(item)
+
+    def backward(self, scaled_loss: Any) -> None:
+        if self.accelerator is not None:
+            self.accelerator.backward(scaled_loss)
+        elif self.use_scaler:
+            self.scaler.scale(scaled_loss).backward()
+        else:
+            scaled_loss.backward()
+
+    def optimizer_step(self) -> None:
+        if self.accelerator is not None:
+            if self.max_grad_norm is not None and self.accelerator.sync_gradients:
+                self.accelerator.clip_grad_norm_(_trainable(self.model), self.max_grad_norm)
+            self.optimizer.step()
+        elif self.use_scaler:
+            if self.max_grad_norm is not None:
+                self.scaler.unscale_(self.optimizer)
+                self.torch.nn.utils.clip_grad_norm_(_trainable(self.model), self.max_grad_norm)
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            if self.max_grad_norm is not None:
+                self.torch.nn.utils.clip_grad_norm_(_trainable(self.model), self.max_grad_norm)
+            self.optimizer.step()
+        if self.scheduler is not None:
+            self.scheduler.step()
+        self.optimizer.zero_grad(set_to_none=True)
+
+
+@dataclass
+class _LoopRunContext:
+    """The per-``run_loop``-call config a checkpoint/pause decision needs."""
+
+    config: Any
+    tracker: Any | None
+    save_steps: int
+    save_limit: int
+    max_steps: int | None
+    should_pause: Callable[[], bool] | None
+    start_step: int
+
+
+@dataclass
+class _StepOutcome:
+    stop: bool
+    paused: bool
+
+
+def _log_step_metrics(engine: _StepEngine, ctx: _LoopRunContext, step: int, raw_loss: float) -> None:
+    if ctx.tracker is not None:
+        ctx.tracker.log_metrics(
+            {"loss": raw_loss, "lr": _cur_lr(engine.optimizer)}, step=ctx.start_step + step
+        )
+
+
+def _maybe_save_periodic_checkpoint(
+    engine: _StepEngine, ctx: _LoopRunContext, step: int, checkpoints: list[str]
+) -> None:
+    if ctx.save_steps and step % ctx.save_steps == 0:
+        ck = _save_checkpoint(engine.model, engine.optimizer, engine.scheduler, ctx.config, ctx.start_step + step)
+        if ck:
+            checkpoints.append(ck)
+            _enforce_limit(checkpoints, ctx.save_limit)
+
+
+def _save_pause_checkpoint(
+    engine: _StepEngine, ctx: _LoopRunContext, step: int, checkpoints: list[str]
+) -> None:
+    """Cooperative preempt: persist a resume point and yield the slot."""
+    ck = _save_checkpoint(engine.model, engine.optimizer, engine.scheduler, ctx.config, ctx.start_step + step)
+    if ck and ck not in checkpoints:
+        checkpoints.append(ck)
+
+
+def _after_optimizer_step(
+    engine: _StepEngine,
+    ctx: _LoopRunContext,
+    step: int,
+    raw_loss: float,
+    checkpoints: list[str],
+) -> _StepOutcome:
+    """Tracker logging, periodic checkpointing, and the max-steps/pause stop checks
+    that run once per completed optimizer step."""
+    _log_step_metrics(engine, ctx, step, raw_loss)
+    _maybe_save_periodic_checkpoint(engine, ctx, step, checkpoints)
+    if ctx.max_steps is not None and step >= ctx.max_steps:
+        return _StepOutcome(stop=True, paused=False)
+    if ctx.should_pause is not None and ctx.should_pause():
+        _save_pause_checkpoint(engine, ctx, step, checkpoints)
+        return _StepOutcome(stop=True, paused=True)
+    return _StepOutcome(stop=False, paused=False)
+
+
+def _resolve_step_engine(
+    config: Any,
+    model: Any,
+    optimizer: Any,
+    scheduler: Any | None,
+    accelerator: Any | None,
+    device: Any,
+    compute_loss: Callable[[Any], Any],
+) -> _StepEngine:
+    torch = _torch()
+    precision = (getattr(config, "precision", "fp32") or "fp32").lower()
+    max_grad_norm = getattr(config, "max_grad_norm", None)
+    use_amp = precision in ("fp16", "bf16") and getattr(device, "type", "cpu") == "cuda"
+    amp_dtype = torch.float16 if precision == "fp16" else torch.bfloat16
+    use_scaler = precision == "fp16" and accelerator is None and use_amp
+    scaler = _grad_scaler(enabled=True) if use_scaler else None
+    return _StepEngine(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        accelerator=accelerator,
+        compute_loss=compute_loss,
+        use_amp=use_amp,
+        amp_dtype=amp_dtype,
+        use_scaler=use_scaler,
+        scaler=scaler,
+        max_grad_norm=max_grad_norm,
+        torch=torch,
+    )
+
+
+def _build_loop_run_context(
+    config: Any,
+    tracker: Any | None,
+    should_pause: Callable[[], bool] | None,
+    start_step: int,
+) -> _LoopRunContext:
+    return _LoopRunContext(
+        config=config,
+        tracker=tracker,
+        save_steps=int(getattr(config, "save_steps", 0) or 0),
+        save_limit=int(getattr(config, "save_total_limit", 0) or 0),
+        max_steps=getattr(config, "max_steps", None),
+        should_pause=should_pause,
+        start_step=start_step,
+    )
+
+
+@dataclass
+class _RunLoopState:
+    """The accumulators + fixed collaborators shared across every epoch of one
+    :func:`run_loop` call."""
+
+    engine: _StepEngine
+    ctx: _LoopRunContext
+    accum: int
+    losses: list[float]
+    checkpoints: list[str]
+
+
+def _process_training_item(engine: _StepEngine, accum: int, item: Any) -> float:
+    """Forward + backward for one item; returns the raw (unscaled) loss."""
+    loss = engine.forward(item)
+    raw = float(loss.detach())
+    engine.backward(loss / accum)
+    return raw
+
+
+def _run_one_epoch(
+    state: _RunLoopState, items: Iterable[Any], step: int, micro: int
+) -> tuple[int, int, bool, bool]:
+    """Runs one epoch's items; returns ``(step, micro, stop, paused)``."""
+    for item in items:
+        raw = _process_training_item(state.engine, state.accum, item)
+        state.losses.append(raw)
+        micro += 1
+        if micro % state.accum == 0:
+            state.engine.optimizer_step()
+            step += 1
+            outcome = _after_optimizer_step(state.engine, state.ctx, step, raw, state.checkpoints)
+            if outcome.stop:
+                return step, micro, True, outcome.paused
+    return step, micro, False, False
+
+
+def _run_training_epochs(
+    engine: _StepEngine,
+    ctx: _LoopRunContext,
+    accum: int,
+    epochs: int,
+    epoch_items: Callable[[], Iterable[Any]],
+) -> tuple[list[float], list[str], int, int, bool]:
+    """Runs all epochs (or until an early stop/pause); returns
+    ``(losses, checkpoints, step, micro, paused)``."""
+    state = _RunLoopState(engine=engine, ctx=ctx, accum=accum, losses=[], checkpoints=[])
+    step = 0
+    micro = 0
+    paused = False
+    for _epoch in range(epochs):
+        step, micro, stop, epoch_paused = _run_one_epoch(state, epoch_items(), step, micro)
+        if epoch_paused:
+            paused = True
+        if stop:
+            break
+    return state.losses, state.checkpoints, step, micro, paused
+
+
 def run_loop(
     *,
     config: Any,
@@ -195,99 +412,20 @@ def run_loop(
             checkpoint and stops early with ``paused=True`` so a GPU-slot scheduler
             can preempt the run and resume it later via ``config.resume_from``.
     """
-    torch = _torch()
     accum = max(1, int(getattr(config, "grad_accum", 1) or 1))
-    precision = (getattr(config, "precision", "fp32") or "fp32").lower()
-    max_grad_norm = getattr(config, "max_grad_norm", None)
-    save_steps = int(getattr(config, "save_steps", 0) or 0)
-    save_limit = int(getattr(config, "save_total_limit", 0) or 0)
-    max_steps = getattr(config, "max_steps", None)
-
-    use_amp = precision in ("fp16", "bf16") and getattr(device, "type", "cpu") == "cuda"
-    amp_dtype = torch.float16 if precision == "fp16" else torch.bfloat16
-    use_scaler = precision == "fp16" and accelerator is None and use_amp
-    scaler = _grad_scaler(enabled=True) if use_scaler else None
-
+    epochs = max(1, int(getattr(config, "epochs", 1) or 1))
     start_step = maybe_resume(model, optimizer, scheduler, config)
-    losses: list[float] = []
-    checkpoints: list[str] = []
-    step = 0
-    micro = 0
-    stop = False
-    paused = False
+    engine = _resolve_step_engine(config, model, optimizer, scheduler, accelerator, device, compute_loss)
+    ctx = _build_loop_run_context(config, tracker, should_pause, start_step)
+
     optimizer.zero_grad(set_to_none=True)
-
-    def _forward(item: Any) -> Any:
-        if accelerator is None and use_amp:
-            with torch.autocast(device_type="cuda", dtype=amp_dtype):
-                return compute_loss(item)
-        return compute_loss(item)
-
-    def _optim_step() -> None:
-        if accelerator is not None:
-            if max_grad_norm is not None and accelerator.sync_gradients:
-                accelerator.clip_grad_norm_(_trainable(model), max_grad_norm)
-            optimizer.step()
-        elif use_scaler:
-            if max_grad_norm is not None:
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(_trainable(model), max_grad_norm)
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            if max_grad_norm is not None:
-                torch.nn.utils.clip_grad_norm_(_trainable(model), max_grad_norm)
-            optimizer.step()
-        if scheduler is not None:
-            scheduler.step()
-        optimizer.zero_grad(set_to_none=True)
-
-    for _epoch in range(max(1, int(getattr(config, "epochs", 1) or 1))):
-        for item in epoch_items():
-            loss = _forward(item)
-            raw = float(loss.detach())
-            losses.append(raw)
-            scaled = loss / accum
-            if accelerator is not None:
-                accelerator.backward(scaled)
-            elif use_scaler:
-                scaler.scale(scaled).backward()
-            else:
-                scaled.backward()
-            micro += 1
-            if micro % accum == 0:
-                _optim_step()
-                step += 1
-                if tracker is not None:
-                    tracker.log_metrics(
-                        {"loss": raw, "lr": _cur_lr(optimizer)}, step=start_step + step
-                    )
-                if save_steps and step % save_steps == 0:
-                    ck = _save_checkpoint(
-                        model, optimizer, scheduler, config, start_step + step
-                    )
-                    if ck:
-                        checkpoints.append(ck)
-                        _enforce_limit(checkpoints, save_limit)
-                if max_steps is not None and step >= max_steps:
-                    stop = True
-                    break
-                if should_pause is not None and should_pause():
-                    # Cooperative preempt: persist a resume point and yield the slot.
-                    ck = _save_checkpoint(
-                        model, optimizer, scheduler, config, start_step + step
-                    )
-                    if ck and ck not in checkpoints:
-                        checkpoints.append(ck)
-                    paused = True
-                    stop = True
-                    break
-        if stop:
-            break
+    losses, checkpoints, step, micro, paused = _run_training_epochs(
+        engine, ctx, accum, epochs, epoch_items
+    )
 
     # Flush a trailing partial accumulation window so no gradient work is lost.
     if micro % accum != 0:
-        _optim_step()
+        engine.optimizer_step()
         step += 1
 
     return {
