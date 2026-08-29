@@ -106,24 +106,43 @@ def _load_candidate(candidate_path: Path, entrypoint: str) -> tuple[Any | None, 
     return function, None
 
 
+def _valid_protocol_version(version: object) -> bool:
+    return (
+        not isinstance(version, bool)
+        and isinstance(version, int)
+        and version == PROTOCOL_VERSION
+    )
+
+
+def _valid_positive_sequence(sequence: object) -> bool:
+    return (
+        not isinstance(sequence, bool)
+        and isinstance(sequence, int)
+        and sequence > 0
+    )
+
+
+def _valid_candidate_request(
+    version: object, sequence: object, nonce: object, args: object
+) -> bool:
+    return (
+        _valid_protocol_version(version)
+        and _valid_positive_sequence(sequence)
+        and isinstance(nonce, str)
+        and bool(_NONCE_RE.fullmatch(nonce))
+        and isinstance(args, list)
+        and len(args) <= 16
+    )
+
+
 def _decode_request(raw: bytes) -> tuple[int, str, list[Any]]:
     request = require_exact_keys(
         loads_json(raw),
         {"args", "nonce", "seq", "version"},
     )
     sequence = request["seq"]
-    version = request["version"]
-    if (
-        isinstance(version, bool)
-        or not isinstance(version, int)
-        or version != PROTOCOL_VERSION
-        or isinstance(sequence, bool)
-        or not isinstance(sequence, int)
-        or sequence <= 0
-        or not isinstance(request["nonce"], str)
-        or not _NONCE_RE.fullmatch(request["nonce"])
-        or not isinstance(request["args"], list)
-        or len(request["args"]) > 16
+    if not _valid_candidate_request(
+        request["version"], sequence, request["nonce"], request["args"]
     ):
         raise ProtocolError("invalid candidate request")
     return sequence, request["nonce"], [

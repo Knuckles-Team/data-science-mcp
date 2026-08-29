@@ -183,6 +183,27 @@ def _safe_worker_error(value: object) -> str:
     return "candidate execution failed"
 
 
+def _valid_protocol_int(value: object, *, expected: int) -> bool:
+    return not isinstance(value, bool) and isinstance(value, int) and value == expected
+
+
+def _valid_worker_response(
+    version: object,
+    sequence: object,
+    expected_sequence: int,
+    nonce: object,
+    expected_nonce: str | None,
+    status: object,
+) -> bool:
+    return (
+        _valid_protocol_int(version, expected=PROTOCOL_VERSION)
+        and _valid_protocol_int(sequence, expected=expected_sequence)
+        and nonce == expected_nonce
+        and isinstance(status, str)
+        and status in {"ready", "ok", "error", "closed"}
+    )
+
+
 class WorkerClient:
     """Authenticated client for the trusted broker process."""
 
@@ -276,18 +297,8 @@ class WorkerClient:
         except ProtocolError as exc:
             self._terminate()
             raise WorkerFailure("candidate protocol violation") from exc
-        response_version = body["version"]
-        response_sequence = body["seq"]
-        if (
-            isinstance(response_version, bool)
-            or not isinstance(response_version, int)
-            or response_version != PROTOCOL_VERSION
-            or isinstance(response_sequence, bool)
-            or not isinstance(response_sequence, int)
-            or response_sequence != sequence
-            or body["nonce"] != nonce
-            or not isinstance(body["status"], str)
-            or body["status"] not in {"ready", "ok", "error", "closed"}
+        if not _valid_worker_response(
+            body["version"], body["seq"], sequence, body["nonce"], nonce, body["status"]
         ):
             self._terminate()
             raise WorkerFailure("candidate protocol violation")
@@ -317,29 +328,26 @@ class WorkerClient:
             raise WorkerFailure(_safe_worker_error(response["error"]))
         raise WorkerFailure("candidate protocol violation")
 
-    def close(self) -> None:
-        if self._proc.poll() is None:
-            self._sequence += 1
-            nonce = secrets.token_hex(16)
-            body = {
-                "args": [],
-                "nonce": nonce,
-                "op": "close",
-                "seq": self._sequence,
-                "version": PROTOCOL_VERSION,
-            }
-            try:
-                self._write(encode_line(signed_message(body, self._key)))
-                response = self._read_response(self._sequence, nonce)
-                if response["status"] != "closed":
-                    self._terminate()
-            except (ProtocolError, WorkerFailure):
+    def _send_close_message(self) -> None:
+        """Best-effort close handshake; falls back to termination on any protocol issue."""
+        self._sequence += 1
+        nonce = secrets.token_hex(16)
+        body = {
+            "args": [],
+            "nonce": nonce,
+            "op": "close",
+            "seq": self._sequence,
+            "version": PROTOCOL_VERSION,
+        }
+        try:
+            self._write(encode_line(signed_message(body, self._key)))
+            response = self._read_response(self._sequence, nonce)
+            if response["status"] != "closed":
                 self._terminate()
-        if self._proc.stdin is not None:
-            try:
-                self._proc.stdin.close()
-            except OSError:
-                pass
+        except (ProtocolError, WorkerFailure):
+            self._terminate()
+
+    def _wait_for_exit(self) -> None:
         try:
             self._proc.wait(timeout=2.0)
         except subprocess.TimeoutExpired:
@@ -348,6 +356,16 @@ class WorkerClient:
                 self._proc.wait(timeout=1.0)
             except subprocess.TimeoutExpired:
                 pass
+
+    def close(self) -> None:
+        if self._proc.poll() is None:
+            self._send_close_message()
+        if self._proc.stdin is not None:
+            try:
+                self._proc.stdin.close()
+            except OSError:
+                pass
+        self._wait_for_exit()
         for stream in (self._proc.stdout, self._proc.stderr):
             if stream is not None:
                 try:
@@ -374,83 +392,92 @@ def _failure(error: str) -> dict[str, object]:
     }
 
 
+def _candidate_path_ok(candidate_path: Path) -> bool:
+    return (
+        not candidate_path.is_symlink()
+        and candidate_path.is_file()
+        and candidate_path.stat().st_size <= _MAX_CANDIDATE_BYTES
+    )
+
+
+def _freeze_reference_challenges(
+    task: Any, generator: np.random.Generator
+) -> tuple[list[tuple[list[dict[str, object]], np.ndarray]], float]:
+    """Run every reference input at benchmark time (before candidate startup).
+
+    This prevents a candidate-created background workload from inflating
+    trusted reference timings in the shared outer sandbox.
+    """
+    challenges: list[tuple[list[dict[str, object]], np.ndarray]] = []
+    reference_best = math.inf
+    for _ in range(task.n_batches):
+        for _ in range(_REPEATS):
+            arguments = task.make_inputs(generator)
+            encoded_arguments = [encode_array(argument) for argument in arguments]
+            reference_arguments = tuple(
+                decode_array(argument) for argument in encoded_arguments
+            )
+            reference_started = time.perf_counter_ns()
+            expected = task.reference(*reference_arguments)
+            reference_elapsed = max(time.perf_counter_ns() - reference_started, 1)
+            expected_array = decode_array(encode_array(expected, force_float64=True))
+            reference_best = min(reference_best, reference_elapsed / 1_000_000_000)
+            challenges.append((encoded_arguments, expected_array))
+    return challenges, reference_best
+
+
+def _run_candidate_challenges(
+    worker: WorkerClient,
+    challenges: list[tuple[list[dict[str, object]], np.ndarray]],
+    task: Any,
+) -> float | None:
+    """Runs each challenge through the worker; ``None`` on the first mismatch."""
+    candidate_best = math.inf
+    for encoded_arguments, expected_array in challenges:
+        started = time.perf_counter_ns()
+        encoded_result = worker.call(encoded_arguments)
+        candidate_elapsed = max(time.perf_counter_ns() - started, 1)
+        candidate_array = decode_array(encoded_result)
+        candidate_best = min(candidate_best, candidate_elapsed / 1_000_000_000)
+        if candidate_array.shape != expected_array.shape or not np.allclose(
+            candidate_array, expected_array, atol=task.atol, rtol=task.rtol
+        ):
+            return None
+    return candidate_best
+
+
+def _valid_benchmark_result(candidate_best: float, reference_best: float) -> bool:
+    return (
+        math.isfinite(candidate_best)
+        and math.isfinite(reference_best)
+        and candidate_best > 0
+        and reference_best > 0
+    )
+
+
 def _run(candidate_path: Path, task_name: str, call_timeout_s: float) -> dict[str, object]:
-    if (
-        candidate_path.is_symlink()
-        or not candidate_path.is_file()
-        or candidate_path.stat().st_size > _MAX_CANDIDATE_BYTES
-    ):
+    if not _candidate_path_ok(candidate_path):
         return _failure("candidate execution failed")
     task = get_kernel_task(task_name)
     generator = np.random.default_rng(secrets.randbits(128))
-    candidate_best = math.inf
-    reference_best = math.inf
-    challenges: list[
-        tuple[list[dict[str, object]], np.ndarray]
-    ] = []
 
     try:
-        # Freeze every reference result and baseline before candidate startup.
-        # This prevents a candidate-created background workload from inflating
-        # trusted reference timings in the shared outer sandbox.
-        for _ in range(task.n_batches):
-            for _ in range(_REPEATS):
-                arguments = task.make_inputs(generator)
-                encoded_arguments = [encode_array(argument) for argument in arguments]
-                reference_arguments = tuple(
-                    decode_array(argument) for argument in encoded_arguments
-                )
-                reference_started = time.perf_counter_ns()
-                expected = task.reference(*reference_arguments)
-                reference_elapsed = max(
-                    time.perf_counter_ns() - reference_started,
-                    1,
-                )
-                expected_array = decode_array(
-                    encode_array(expected, force_float64=True)
-                )
-                reference_best = min(
-                    reference_best,
-                    reference_elapsed / 1_000_000_000,
-                )
-                challenges.append((encoded_arguments, expected_array))
-
+        challenges, reference_best = _freeze_reference_challenges(task, generator)
         with WorkerClient(
             candidate_path,
             task.entrypoint,
             call_timeout_s=call_timeout_s,
             cwd=str(candidate_path.parent),
         ) as worker:
-            for encoded_arguments, expected_array in challenges:
-                started = time.perf_counter_ns()
-                encoded_result = worker.call(encoded_arguments)
-                candidate_elapsed = max(time.perf_counter_ns() - started, 1)
-                candidate_array = decode_array(encoded_result)
-                candidate_best = min(
-                    candidate_best,
-                    candidate_elapsed / 1_000_000_000,
-                )
-                if (
-                    candidate_array.shape != expected_array.shape
-                    or not np.allclose(
-                        candidate_array,
-                        expected_array,
-                        atol=task.atol,
-                        rtol=task.rtol,
-                    )
-                ):
-                    return _failure("incorrect output")
+            candidate_best = _run_candidate_challenges(worker, challenges, task)
+            if candidate_best is None:
+                return _failure("incorrect output")
     except WorkerFailure as exc:
         return _failure(_safe_worker_error(str(exc)))
     except (MemoryError, OSError, ProtocolError, ValueError):
         return _failure("supervisor failed")
 
-    if (
-        not math.isfinite(candidate_best)
-        or not math.isfinite(reference_best)
-        or candidate_best <= 0
-        or reference_best <= 0
-    ):
+    if not _valid_benchmark_result(candidate_best, reference_best):
         return _failure("supervisor failed")
     speedup = reference_best / candidate_best
     return {
@@ -460,6 +487,22 @@ def _run(candidate_path: Path, task_name: str, call_timeout_s: float) -> dict[st
         "reference_time": reference_best,
         "speedup": speedup,
     }
+
+
+def _valid_supervisor_fields(
+    version: object, request_id: object, encoded_key: object, timeout_s: object
+) -> bool:
+    return (
+        not isinstance(version, bool)
+        and isinstance(version, int)
+        and version == PROTOCOL_VERSION
+        and isinstance(request_id, str)
+        and bool(_REQUEST_ID_RE.fullmatch(request_id))
+        and isinstance(encoded_key, str)
+        and not isinstance(timeout_s, bool)
+        and isinstance(timeout_s, (int, float))
+        and 0.01 <= float(timeout_s) <= 10.0
+    )
 
 
 def _read_supervisor_request() -> tuple[str, bytes, float]:
@@ -475,17 +518,8 @@ def _read_supervisor_request() -> tuple[str, bytes, float]:
     request_id = request["request_id"]
     encoded_key = request["key"]
     timeout_s = request["call_timeout_s"]
-    version = request["version"]
-    if (
-        isinstance(version, bool)
-        or not isinstance(version, int)
-        or version != PROTOCOL_VERSION
-        or not isinstance(request_id, str)
-        or not _REQUEST_ID_RE.fullmatch(request_id)
-        or not isinstance(encoded_key, str)
-        or isinstance(timeout_s, bool)
-        or not isinstance(timeout_s, (int, float))
-        or not 0.01 <= float(timeout_s) <= 10.0
+    if not _valid_supervisor_fields(
+        request["version"], request_id, encoded_key, timeout_s
     ):
         raise ProtocolError("invalid supervisor request")
     try:
