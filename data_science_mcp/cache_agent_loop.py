@@ -142,34 +142,41 @@ class ThreeTierToolCache:
             self._entries.append(_Entry(tool, _arg_tokens(args), value, emb))
         self._exact[key] = value
 
+    @staticmethod
+    def _best_match(
+        entries: list[_Entry], tool: str, score_fn: Callable[[_Entry], float]
+    ) -> tuple[float, _Entry | None]:
+        """The highest-scoring same-``tool`` entry under ``score_fn``, or ``(0.0, None)``."""
+        best: tuple[float, _Entry | None] = (0.0, None)
+        for e in entries:
+            if e.tool != tool:
+                continue
+            s = score_fn(e)
+            if s > best[0]:
+                best = (s, e)
+        return best
+
     def lookup(self, tool: str, args: Any) -> CacheResult:
         key = self._exact_key(tool, args)
         if key in self._exact:
             return CacheResult(True, CacheTier.EXACT, self._exact[key], 1.0)
 
         tokens = _arg_tokens(args)
-        best_fuzzy = (0.0, None)
-        for e in self._entries:
-            if e.tool != tool:
-                continue
-            s = _jaccard(tokens, e.tokens)
-            if s > best_fuzzy[0]:
-                best_fuzzy = (s, e)
+        best_fuzzy = self._best_match(
+            self._entries, tool, lambda e: _jaccard(tokens, e.tokens)
+        )
         if best_fuzzy[1] is not None and best_fuzzy[0] >= self.fuzzy_threshold:
             return CacheResult(True, CacheTier.FUZZY, best_fuzzy[1].value, best_fuzzy[0])
 
         # Tier 2: semantic (embedding cosine, or token-overlap proxy offline).
         query_emb = self._embed_fn(_norm_args(args)) if self._embed_fn else None
-        best_sem = (0.0, None)
-        for e in self._entries:
-            if e.tool != tool:
-                continue
+
+        def _semantic_score(e: _Entry) -> float:
             if query_emb is not None and e.embedding is not None:
-                s = _cosine(query_emb, e.embedding)
-            else:
-                s = _jaccard(tokens, e.tokens)  # offline proxy
-            if s > best_sem[0]:
-                best_sem = (s, e)
+                return _cosine(query_emb, e.embedding)
+            return _jaccard(tokens, e.tokens)  # offline proxy
+
+        best_sem = self._best_match(self._entries, tool, _semantic_score)
         if best_sem[1] is not None and best_sem[0] >= self.semantic_threshold:
             return CacheResult(True, CacheTier.SEMANTIC, best_sem[1].value, best_sem[0])
 
