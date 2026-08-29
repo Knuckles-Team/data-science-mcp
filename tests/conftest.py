@@ -56,6 +56,39 @@ def _find_engine_binary() -> str | None:
     return max(existing, key=os.path.getmtime)
 
 
+def _wait_for_engine_socket(
+    sock: str, proc: subprocess.Popen, *, attempts: int = 60, interval: float = 0.5
+) -> None:
+    for _ in range(attempts):
+        if os.path.exists(sock) or proc.poll() is not None:
+            break
+        time.sleep(interval)
+
+
+def _launch_engine_process(binary: str, sock: str) -> subprocess.Popen:
+    proc = subprocess.Popen(
+        [binary, "--socket-path", sock],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    _wait_for_engine_socket(sock, proc)
+    return proc
+
+
+def _stop_engine_process(proc: subprocess.Popen, sock: str) -> None:
+    proc.terminate()
+    try:
+        proc.wait(timeout=10)
+    except Exception:
+        proc.kill()
+    if os.path.exists(sock):
+        try:
+            os.remove(sock)
+        except OSError:
+            pass
+    os.environ.pop("EPISTEMIC_GRAPH_SOCKET", None)
+
+
 @pytest.fixture(scope="session")
 def epistemic_graph_engine():
     """Launch a local epistemic-graph engine for the session (best effort).
@@ -77,15 +110,7 @@ def epistemic_graph_engine():
 
     tmpdir = tempfile.mkdtemp(prefix="ds-mcp-eg-")
     sock = os.path.join(tmpdir, "engine.sock")
-    proc = subprocess.Popen(
-        [binary, "--socket-path", sock],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    for _ in range(60):
-        if os.path.exists(sock) or proc.poll() is not None:
-            break
-        time.sleep(0.5)
+    proc = _launch_engine_process(binary, sock)
 
     if os.path.exists(sock):
         os.environ["EPISTEMIC_GRAPH_SOCKET"] = sock
@@ -93,17 +118,7 @@ def epistemic_graph_engine():
     try:
         yield proc
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=10)
-        except Exception:
-            proc.kill()
-        if os.path.exists(sock):
-            try:
-                os.remove(sock)
-            except OSError:
-                pass
-        os.environ.pop("EPISTEMIC_GRAPH_SOCKET", None)
+        _stop_engine_process(proc, sock)
 
 
 @pytest.fixture
