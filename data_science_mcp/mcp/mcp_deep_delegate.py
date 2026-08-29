@@ -34,6 +34,94 @@ def _has_torch() -> bool:
         return False
 
 
+def _parse_deep_delegate_params(params_json: str) -> dict[str, Any]:
+    """Decode ``params_json``; raises ``ValueError("invalid params_json: ...")`` or
+    ``ValueError("params_json must decode to an object")`` on rejection."""
+    try:
+        params = json.loads(params_json) if params_json else {}
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid params_json: {type(exc).__name__}") from exc
+    if not isinstance(params, dict):
+        raise ValueError("params_json must decode to an object")
+    return params
+
+
+def _lstm_forecast_inputs(values_json: str) -> dict[str, Any]:
+    return {"values": json.loads(values_json) if values_json else []}
+
+
+def _tabular_inputs(
+    algo: str, x_json: str, y_json: str, x_predict_json: str
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {"x": json.loads(x_json) if x_json else []}
+    if algo in ("mlp_classify", "histgbm_classify"):
+        kwargs["y"] = json.loads(y_json) if y_json else []
+    if algo in ("mlp_classify", "histgbm_classify") and x_predict_json:
+        kwargs["x_predict"] = json.loads(x_predict_json)
+    return kwargs
+
+
+def _parse_deep_delegate_inputs(
+    algo: str, x_json: str, y_json: str, values_json: str, x_predict_json: str
+) -> dict[str, Any]:
+    """Decode the algo-specific JSON inputs; raises
+    ``ValueError("invalid JSON input: ...")`` on any bad JSON."""
+    try:
+        if algo == "lstm_forecast":
+            return _lstm_forecast_inputs(values_json)
+        return _tabular_inputs(algo, x_json, y_json, x_predict_json)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid JSON input: {type(exc).__name__}") from exc
+
+
+def _run_deep_delegate(
+    algo: str,
+    x_json: str,
+    y_json: str,
+    values_json: str,
+    x_predict_json: str,
+    params_json: str,
+) -> str:
+    algo = (algo or "mlp_classify").strip()
+    if not _has_torch() and algo != "histgbm_classify":
+        return json.dumps(
+            {
+                "algo": algo,
+                "available": False,
+                "error": "torch not installed — install data-science-mcp[training]",
+            }
+        )
+    try:
+        from data_science_mcp.training.deep_delegate import DEEP_ALGOS  # noqa: PLC0415
+    except ImportError:
+        return json.dumps({"algo": algo, "available": False, "error": "Operation failed"})
+
+    fn = DEEP_ALGOS.get(algo)
+    if fn is None:
+        return json.dumps(
+            {
+                "algo": algo,
+                "available": False,
+                "error": f"unknown algo {algo!r}; choose one of {sorted(DEEP_ALGOS)}",
+            }
+        )
+    try:
+        kwargs = dict(_parse_deep_delegate_params(params_json))
+        kwargs.update(
+            _parse_deep_delegate_inputs(algo, x_json, y_json, values_json, x_predict_json)
+        )
+    except ValueError as exc:
+        return json.dumps({"algo": algo, "error": str(exc)})
+
+    try:
+        result = fn(**kwargs)
+    except TypeError as exc:
+        return json.dumps({"algo": algo, "error": f"bad arguments: {type(exc).__name__}"})
+    except Exception:  # noqa: BLE001 — surface training errors as data
+        return json.dumps({"algo": algo, "error": "Operation failed"})
+    return json.dumps({"algo": algo, "available": True, "result": result})
+
+
 def register_deep_delegate_tools(mcp: FastMCP) -> None:
     """Register ``deep_train_predict`` (tag ``deep-delegate``)."""
 
@@ -88,55 +176,4 @@ def register_deep_delegate_tools(mcp: FastMCP) -> None:
         one tool, five algos, dispatching into :mod:`data_science_mcp.training.deep_delegate`.
         Never raises on a missing torch install: returns ``{"available": false, ...}``.
         """
-        algo = (algo or "mlp_classify").strip()
-        if not _has_torch() and algo != "histgbm_classify":
-            return json.dumps(
-                {
-                    "algo": algo,
-                    "available": False,
-                    "error": "torch not installed — install data-science-mcp[training]",
-                }
-            )
-        try:
-            from data_science_mcp.training.deep_delegate import DEEP_ALGOS
-        except ImportError:
-            return json.dumps({"algo": algo, "available": False, "error": "Operation failed"})
-
-        fn = DEEP_ALGOS.get(algo)
-        if fn is None:
-            return json.dumps(
-                {
-                    "algo": algo,
-                    "available": False,
-                    "error": f"unknown algo {algo!r}; choose one of {sorted(DEEP_ALGOS)}",
-                }
-            )
-        try:
-            params: dict[str, Any] = json.loads(params_json) if params_json else {}
-        except (TypeError, ValueError) as exc:
-            return json.dumps({"algo": algo, "error": f"invalid params_json: {type(exc).__name__}"})
-        if not isinstance(params, dict):
-            return json.dumps(
-                {"algo": algo, "error": "params_json must decode to an object"}
-            )
-
-        kwargs = dict(params)
-        try:
-            if algo == "lstm_forecast":
-                kwargs["values"] = json.loads(values_json) if values_json else []
-            else:
-                kwargs["x"] = json.loads(x_json) if x_json else []
-                if algo in ("mlp_classify", "histgbm_classify"):
-                    kwargs["y"] = json.loads(y_json) if y_json else []
-                if algo in ("mlp_classify", "histgbm_classify") and x_predict_json:
-                    kwargs["x_predict"] = json.loads(x_predict_json)
-        except (TypeError, ValueError) as exc:
-            return json.dumps({"algo": algo, "error": f"invalid JSON input: {type(exc).__name__}"})
-
-        try:
-            result = fn(**kwargs)
-        except TypeError as exc:
-            return json.dumps({"algo": algo, "error": f"bad arguments: {type(exc).__name__}"})
-        except Exception:  # noqa: BLE001 — surface training errors as data
-            return json.dumps({"algo": algo, "error": "Operation failed"})
-        return json.dumps({"algo": algo, "available": True, "result": result})
+        return _run_deep_delegate(algo, x_json, y_json, values_json, x_predict_json, params_json)
