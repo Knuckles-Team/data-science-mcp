@@ -11,6 +11,7 @@ These are **action-routed** tools: one tool per domain, dispatching on an
 """
 
 import json
+from collections.abc import Callable
 from typing import Any
 
 from fastmcp import Context, FastMCP
@@ -210,59 +211,55 @@ def register_quant_tools(mcp: FastMCP) -> None:
         fin = _finance()
         if fin is None:
             return {"error": _ENGINE_REQUIRED_ERR}
-        try:
-            if action == "ofi_series":
-                return {
-                    "ofi": fin.ofi_series(
-                        _loads("ts_json", ts_json),
-                        _loads("bid_px_json", bid_px_json),
-                        _loads("bid_sz_json", bid_sz_json),
-                        _loads("ask_px_json", ask_px_json),
-                        _loads("ask_sz_json", ask_sz_json),
-                        window_secs,
-                    )
-                }
-            if action == "microprice_series":
-                return {
-                    "microprice": fin.microprice_series(
-                        _loads("bid_px_json", bid_px_json),
-                        _loads("bid_sz_json", bid_sz_json),
-                        _loads("ask_px_json", ask_px_json),
-                        _loads("ask_sz_json", ask_sz_json),
-                    )
-                }
-            if action == "vpin_pm":
-                return {
-                    "vpin": fin.vpin_pm(
-                        _loads("buy_vol_json", buy_vol_json),
-                        _loads("sell_vol_json", sell_vol_json),
-                        _loads("p_mean_json", p_mean_json),
-                    )
-                }
-            if action == "hawkes_mle":
-                return fin.hawkes_mle(
-                    _loads("times_json", times_json), t_horizon, max_iter
+        actions: dict[str, Callable[[], Any]] = {
+            "ofi_series": lambda: {
+                "ofi": fin.ofi_series(
+                    _loads("ts_json", ts_json),
+                    _loads("bid_px_json", bid_px_json),
+                    _loads("bid_sz_json", bid_sz_json),
+                    _loads("ask_px_json", ask_px_json),
+                    _loads("ask_sz_json", ask_sz_json),
+                    window_secs,
                 )
-            if action == "hardiman_bouchaud":
-                return {
-                    "branching_ratio": fin.hardiman_bouchaud(
-                        _loads("times_json", times_json), t_horizon, n_windows
-                    )
-                }
-            if action == "queue_imbalance":
-                return fin.queue_imbalance(
-                    _loads("bid_q_json", bid_q_json),
-                    _loads("ask_q_json", ask_q_json),
-                    _loads("bid_rate_json", bid_rate_json),
-                    _loads("ask_rate_json", ask_rate_json),
+            },
+            "microprice_series": lambda: {
+                "microprice": fin.microprice_series(
+                    _loads("bid_px_json", bid_px_json),
+                    _loads("bid_sz_json", bid_sz_json),
+                    _loads("ask_px_json", ask_px_json),
+                    _loads("ask_sz_json", ask_sz_json),
                 )
-            if action == "realized_vol_tick":
-                return {
-                    "realized_vol": fin.realized_vol_tick(
-                        _loads("mid_json", mid_json), window
-                    )
-                }
+            },
+            "vpin_pm": lambda: {
+                "vpin": fin.vpin_pm(
+                    _loads("buy_vol_json", buy_vol_json),
+                    _loads("sell_vol_json", sell_vol_json),
+                    _loads("p_mean_json", p_mean_json),
+                )
+            },
+            "hawkes_mle": lambda: fin.hawkes_mle(
+                _loads("times_json", times_json), t_horizon, max_iter
+            ),
+            "hardiman_bouchaud": lambda: {
+                "branching_ratio": fin.hardiman_bouchaud(
+                    _loads("times_json", times_json), t_horizon, n_windows
+                )
+            },
+            "queue_imbalance": lambda: fin.queue_imbalance(
+                _loads("bid_q_json", bid_q_json),
+                _loads("ask_q_json", ask_q_json),
+                _loads("bid_rate_json", bid_rate_json),
+                _loads("ask_rate_json", ask_rate_json),
+            ),
+            "realized_vol_tick": lambda: {
+                "realized_vol": fin.realized_vol_tick(_loads("mid_json", mid_json), window)
+            },
+        }
+        handler = actions.get(action)
+        if handler is None:
             return {"error": f"Unknown action: {action}"}
+        try:
+            return handler()
         except ValueError:
             return {"error": "Operation failed"}
         except Exception:  # noqa: BLE001
@@ -579,50 +576,44 @@ def register_quant_tools(mcp: FastMCP) -> None:
         fin = _finance()
         if fin is None:
             return {"error": _ENGINE_REQUIRED_ERR}
-        try:
-            if action == "kalman_filter":
-                return fin.kalman_filter_1d(
-                    _loads("observations_json", observations_json),
-                    f,
-                    q,
-                    h,
-                    r,
-                    x0,
+        actions: dict[str, Callable[[], Any]] = {
+            "kalman_filter": lambda: fin.kalman_filter_1d(
+                _loads("observations_json", observations_json), f, q, h, r, x0, p0
+            ),
+            "kalman_beta": lambda: fin.kalman_beta(
+                _loads("market_returns_json", market_returns_json),
+                _loads("asset_returns_json", asset_returns_json),
+                q,
+                r,
+                beta0,
+                p0,
+            ),
+            "kalman_volatility": lambda: {
+                "annualized_vol": fin.kalman_volatility(
+                    _loads("returns_json", returns_json),
+                    q_vol,
+                    r_vol,
+                    log_var0,
                     p0,
+                    annualization,
                 )
-            if action == "kalman_beta":
-                return fin.kalman_beta(
-                    _loads("market_returns_json", market_returns_json),
-                    _loads("asset_returns_json", asset_returns_json),
-                    q,
-                    r,
-                    beta0,
-                    p0,
+            },
+            "adf_test": lambda: fin.adf_test(_loads("series_json", series_json), max_lag),
+            "ou_calibrate": lambda: fin.ou_calibrate(_loads("spread_json", spread_json), dt),
+            "ou_optimal_thresholds": lambda: fin.ou_optimal_thresholds(
+                theta, mu, sigma, sigma_eq, cost
+            ),
+            "markov_transition": lambda: {
+                "transition_matrix": fin.markov_transition_matrix(
+                    _loads("states_json", states_json), n_states
                 )
-            if action == "kalman_volatility":
-                return {
-                    "annualized_vol": fin.kalman_volatility(
-                        _loads("returns_json", returns_json),
-                        q_vol,
-                        r_vol,
-                        log_var0,
-                        p0,
-                        annualization,
-                    )
-                }
-            if action == "adf_test":
-                return fin.adf_test(_loads("series_json", series_json), max_lag)
-            if action == "ou_calibrate":
-                return fin.ou_calibrate(_loads("spread_json", spread_json), dt)
-            if action == "ou_optimal_thresholds":
-                return fin.ou_optimal_thresholds(theta, mu, sigma, sigma_eq, cost)
-            if action == "markov_transition":
-                return {
-                    "transition_matrix": fin.markov_transition_matrix(
-                        _loads("states_json", states_json), n_states
-                    )
-                }
+            },
+        }
+        handler = actions.get(action)
+        if handler is None:
             return {"error": f"Unknown action: {action}"}
+        try:
+            return handler()
         except ValueError:
             return {"error": "Operation failed"}
         except Exception:  # noqa: BLE001
@@ -701,42 +692,37 @@ def register_quant_tools(mcp: FastMCP) -> None:
         fin = _finance()
         if fin is None:
             return {"error": _ENGINE_REQUIRED_ERR}
-        try:
-            if action == "order_book_imbalance":
-                return {
-                    "imbalance": fin.order_book_imbalance(
-                        _loads("v_bid_json", v_bid_json),
-                        _loads("v_ask_json", v_ask_json),
-                    )
-                }
-            if action == "information_ratio":
-                return {"information_ratio": fin.information_ratio(ic, n_independent)}
-            if action == "effective_independent_n":
-                return {
-                    "effective_n": fin.effective_independent_n(
-                        _loads("returns_matrix_json", returns_matrix_json)
-                    )
-                }
-            if action == "alpha_combination":
-                return {
-                    "weights": fin.alpha_combination_engine(
-                        _loads("returns_matrix_json", returns_matrix_json),
-                        lookback,
-                    )
-                }
-            if action == "convergence_gate":
-                return fin.convergence_gate(
-                    _loads("strengths_json", strengths_json),
-                    strong_threshold,
-                    min_agree,
+        actions: dict[str, Callable[[], Any]] = {
+            "order_book_imbalance": lambda: {
+                "imbalance": fin.order_book_imbalance(
+                    _loads("v_bid_json", v_bid_json), _loads("v_ask_json", v_ask_json)
                 )
-            if action == "spread_reversion":
-                return fin.spread_reversion(
-                    _loads("bid_px_json", bid_px_json),
-                    _loads("ask_px_json", ask_px_json),
-                    window,
+            },
+            "information_ratio": lambda: {
+                "information_ratio": fin.information_ratio(ic, n_independent)
+            },
+            "effective_independent_n": lambda: {
+                "effective_n": fin.effective_independent_n(
+                    _loads("returns_matrix_json", returns_matrix_json)
                 )
+            },
+            "alpha_combination": lambda: {
+                "weights": fin.alpha_combination_engine(
+                    _loads("returns_matrix_json", returns_matrix_json), lookback
+                )
+            },
+            "convergence_gate": lambda: fin.convergence_gate(
+                _loads("strengths_json", strengths_json), strong_threshold, min_agree
+            ),
+            "spread_reversion": lambda: fin.spread_reversion(
+                _loads("bid_px_json", bid_px_json), _loads("ask_px_json", ask_px_json), window
+            ),
+        }
+        handler = actions.get(action)
+        if handler is None:
             return {"error": f"Unknown action: {action}"}
+        try:
+            return handler()
         except ValueError:
             return {"error": "Operation failed"}
         except Exception:  # noqa: BLE001
