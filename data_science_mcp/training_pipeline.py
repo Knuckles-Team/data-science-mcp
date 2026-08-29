@@ -233,6 +233,43 @@ def _deploy_checkpoint(
     }
 
 
+def _run_reliability_eval(
+    eval_cases: list[dict[str, Any]] | None, generate_fn: Callable[[str], str] | None
+) -> dict[str, Any] | None:
+    """Reliability-suite evaluation (AHE-3.1); ``None`` when no cases are supplied."""
+    if not eval_cases:
+        return None
+    from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+
+    return evaluate_checkpoint(_resolve_eval_generate_fn(generate_fn), eval_cases)
+
+
+def _deploy_pipeline_checkpoint(
+    registry: Any,
+    deploy: DeploymentTarget | None,
+    cid: str,
+    report: dict[str, Any],
+    config: TrainConfig,
+) -> dict[str, Any] | None:
+    """The deploy seam shared by all three pipelines; ``None`` when not deploying."""
+    if registry is None or deploy is None:
+        return None
+    adapter_path = str(report.get("checkpoint", {}).get("path") or config.output_dir or "")
+    return _deploy_checkpoint(registry, deploy, cid, adapter_path)
+
+
+def _save_sft_checkpoint(config: TrainConfig, model: Any, cid: str) -> dict[str, Any] | None:
+    """Best-effort checkpoint save (real HF/PEFT models expose ``save_pretrained``);
+    ``None`` when there's nothing to save."""
+    if not (config.output_dir and model is not None and hasattr(model, "save_pretrained")):
+        return None
+    try:
+        model.save_pretrained(config.output_dir)
+        return {"path": config.output_dir, "saved": True, "id": cid}
+    except Exception:  # pragma: no cover - defensive
+        return {"error": "Operation failed", "id": cid}
+
+
 def run_sft_pipeline(
     config: TrainConfig,
     *,
@@ -279,31 +316,45 @@ def run_sft_pipeline(
     report["train"] = trainer.train(examples, model=model, tokenizer=tokenizer)
 
     # 4) Reliability evaluation (AHE-3.1) — only when cases are supplied
-    if eval_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint
-
-        report["eval"] = evaluate_checkpoint(
-            _resolve_eval_generate_fn(generate_fn), eval_cases
-        )
+    eval_result = _run_reliability_eval(eval_cases, generate_fn)
+    if eval_result is not None:
+        report["eval"] = eval_result
 
     # 5) Save checkpoint (best-effort; real HF/PEFT models expose save_pretrained)
     cid = checkpoint_id or f"sft-{(config.base_model or 'model').replace('/', '-')}"
-    if config.output_dir and model is not None and hasattr(model, "save_pretrained"):
-        try:
-            model.save_pretrained(config.output_dir)
-            report["checkpoint"] = {"path": config.output_dir, "saved": True, "id": cid}
-        except Exception:  # pragma: no cover - defensive
-            report["checkpoint"] = {"error": "Operation failed", "id": cid}
+    checkpoint = _save_sft_checkpoint(config, model, cid)
+    if checkpoint is not None:
+        report["checkpoint"] = checkpoint
 
     # 6) Deploy seam — register + bind a role (goes live with no hot-path edit),
     #    then best-effort hot-load the adapter onto the serving vLLM/SGLang.
-    if registry is not None and deploy is not None:
-        adapter_path = str(
-            report.get("checkpoint", {}).get("path") or config.output_dir or ""
-        )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+    deployment = _deploy_pipeline_checkpoint(registry, deploy, cid, report, config)
+    if deployment is not None:
+        report["deployment"] = deployment
 
     return report
+
+
+def _maybe_train_tokenizer(
+    records: list[dict[str, Any]],
+    tokenizer: Any,
+    train_tokenizer_first: bool,
+    tokenizer_spec: Any,
+    config: TrainConfig,
+) -> tuple[Any, dict[str, Any] | None]:
+    """Train a BPE tokenizer over ``records`` when requested; returns
+    ``(tokenizer, report)`` where ``report`` is ``None`` when nothing was trained."""
+    if not (train_tokenizer_first and tokenizer is None):
+        return tokenizer, None
+    from data_science_mcp.tokenizer_trainer import TokenizerSpec, train_tokenizer  # noqa: PLC0415
+
+    tspec = tokenizer_spec or TokenizerSpec()
+    tokenizer = train_tokenizer(
+        (str(r.get("text", "")) for r in records),
+        spec=tspec,
+        output_dir=config.output_dir or None,
+    )
+    return tokenizer, {"vocab_size": len(tokenizer)}
 
 
 def run_pretrain_pipeline(
@@ -343,19 +394,11 @@ def run_pretrain_pipeline(
     report["data"] = {"records": len(records)}
 
     # 1) (optional) train a tokenizer from the corpus.
-    if train_tokenizer_first and tokenizer is None:
-        from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
-            TokenizerSpec,
-            train_tokenizer,
-        )
-
-        tspec = tokenizer_spec or TokenizerSpec()
-        tokenizer = train_tokenizer(
-            (str(r.get("text", "")) for r in records),
-            spec=tspec,
-            output_dir=config.output_dir or None,
-        )
-        report["tokenizer"] = {"vocab_size": len(tokenizer)}
+    tokenizer, tokenizer_report = _maybe_train_tokenizer(
+        records, tokenizer, train_tokenizer_first, tokenizer_spec, config
+    )
+    if tokenizer_report is not None:
+        report["tokenizer"] = tokenizer_report
 
     # 2) Build trainer (random-init model from spec) + plan.
     trainer = PretrainTrainer(config, spec or PretrainSpec())
@@ -365,24 +408,67 @@ def run_pretrain_pipeline(
     report["train"] = trainer.train(records, model=model, tokenizer=tokenizer)
 
     # 4) Reliability evaluation (optional).
-    if eval_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
-
-        report["eval"] = evaluate_checkpoint(
-            _resolve_eval_generate_fn(generate_fn), eval_cases
-        )
+    eval_result = _run_reliability_eval(eval_cases, generate_fn)
+    if eval_result is not None:
+        report["eval"] = eval_result
 
     # 5) Deploy seam — identical to the SFT pipeline.
     cid = (
         checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
     )
-    if registry is not None and deploy is not None:
-        adapter_path = str(
-            report.get("checkpoint", {}).get("path") or config.output_dir or ""
-        )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+    deployment = _deploy_pipeline_checkpoint(registry, deploy, cid, report, config)
+    if deployment is not None:
+        report["deployment"] = deployment
 
     return report
+
+
+def _run_eval_gates(
+    eval_cases: list[dict[str, Any]] | None,
+    gsm8k_cases: list[dict[str, Any]] | None,
+    generate_fn: Callable[[str], str] | None,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Reliability + (optional) GSM8K eval; each result is ``None`` when its
+    cases weren't supplied."""
+    eval_result = None
+    gsm8k_result = None
+    if eval_cases:
+        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+
+        eval_result = evaluate_checkpoint(_resolve_eval_generate_fn(generate_fn), eval_cases)
+    if gsm8k_cases:
+        from data_science_mcp.trainers.eval_hooks import evaluate_gsm8k  # noqa: PLC0415
+
+        gsm8k_result = evaluate_gsm8k(_resolve_eval_generate_fn(generate_fn), gsm8k_cases)
+    return eval_result, gsm8k_result
+
+
+def _maybe_run_sft_warmstart(
+    config: TrainConfig,
+    run_sft: bool,
+    sft_examples: list[dict[str, Any]] | None,
+    model: Any,
+    tokenizer: Any,
+) -> dict[str, Any] | None:
+    """Optional SFT warm-start (trains the policy in place when injected)."""
+    if not (run_sft and sft_examples):
+        return None
+    sft = get_trainer("sft", config)
+    return sft.train(sft_examples, model=model, tokenizer=tokenizer)
+
+
+def _maybe_train_reward_model(
+    config: TrainConfig,
+    preference_pairs: list[dict[str, Any]] | None,
+    reward_model: Any,
+    tokenizer: Any,
+) -> dict[str, Any] | None:
+    """Reward model training; skipped for a pure verifier run with no pairs."""
+    using_reward_model = config.reward_source == "reward_model"
+    if not (preference_pairs and (using_reward_model or reward_model is not None)):
+        return None
+    reward_trainer = get_trainer("reward", config)
+    return reward_trainer.train(preference_pairs, model=reward_model, tokenizer=tokenizer)
 
 
 def run_rlhf_pipeline(
@@ -423,19 +509,14 @@ def run_rlhf_pipeline(
     report: dict[str, Any] = {"stages": {}}
 
     # 1) Optional SFT warm-start (trains the policy in place when injected).
-    if run_sft and sft_examples:
-        sft = get_trainer("sft", config)
-        report["stages"]["sft"] = sft.train(
-            sft_examples, model=model, tokenizer=tokenizer
-        )
+    sft_result = _maybe_run_sft_warmstart(config, run_sft, sft_examples, model, tokenizer)
+    if sft_result is not None:
+        report["stages"]["sft"] = sft_result
 
     # 2) Reward model (skip for a pure verifier run with no pairs).
-    using_reward_model = config.reward_source == "reward_model"
-    if preference_pairs and (using_reward_model or reward_model is not None):
-        reward_trainer = get_trainer("reward", config)
-        report["stages"]["reward"] = reward_trainer.train(
-            preference_pairs, model=reward_model, tokenizer=tokenizer
-        )
+    reward_result = _maybe_train_reward_model(config, preference_pairs, reward_model, tokenizer)
+    if reward_result is not None:
+        report["stages"]["reward"] = reward_result
 
     # 3) PPO — the reward model trained above (in place) is reused as the scorer.
     ppo = get_trainer("ppo", config)
@@ -449,26 +530,17 @@ def run_rlhf_pipeline(
     )
 
     # 4) Eval gates — reliability suite + (optional) GSM8K accuracy.
-    if eval_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
-
-        report["eval"] = evaluate_checkpoint(
-            _resolve_eval_generate_fn(generate_fn), eval_cases
-        )
-    if gsm8k_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_gsm8k  # noqa: PLC0415
-
-        report["gsm8k"] = evaluate_gsm8k(
-            _resolve_eval_generate_fn(generate_fn), gsm8k_cases
-        )
+    eval_result, gsm8k_result = _run_eval_gates(eval_cases, gsm8k_cases, generate_fn)
+    if eval_result is not None:
+        report["eval"] = eval_result
+    if gsm8k_result is not None:
+        report["gsm8k"] = gsm8k_result
 
     # 5) Deploy seam — identical to the SFT/pretrain pipelines.
     cid = checkpoint_id or f"ppo-{(config.base_model or 'model').replace('/', '-')}"
-    if registry is not None and deploy is not None:
-        adapter_path = str(
-            report.get("checkpoint", {}).get("path") or config.output_dir or ""
-        )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+    deployment = _deploy_pipeline_checkpoint(registry, deploy, cid, report, config)
+    if deployment is not None:
+        report["deployment"] = deployment
 
     return report
 
