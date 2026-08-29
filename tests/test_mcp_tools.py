@@ -10,6 +10,7 @@ sys.argv = ["mcp_server.py"]
 
 import json
 import tempfile
+from typing import Any
 import pytest
 from unittest.mock import patch
 import numpy as np
@@ -301,17 +302,14 @@ async def test_verbose_describe_dataset_tool_dispatches(
 
 
 @pytest.mark.asyncio
-async def test_mcp_model_training_tools(require_engine, require_sklearn):
-    """Verify FastMCP fit, predict, evaluate, and cross-validate tools."""
-    mcp, _, _, _ = get_mcp_instance()
-    tools = await mcp.list_tools()
+def _tool(tools, name: str):
+    """Look up a registered MCP tool by name."""
+    return next(t for t in tools if t.name == name)
 
-    # Load iris dataset first
-    load_tool = next(t for t in tools if t.name == "load_dataset")
-    await load_tool.fn(name="iris", ctx=None)
 
-    # 1. Test fit_model tool
-    fit_tool = next(t for t in tools if t.name == "fit_model")
+async def _assert_fit_model_tool(fit_tool) -> dict:
+    """fit_model: happy path returns a model_id; invalid hyperparameters_json rejects
+    (covers mcp_server.py line 81-82)."""
     res_fit = await fit_tool.fn(
         model_class="LinearRegression",
         dataset_name="iris",
@@ -320,9 +318,6 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
         ctx=None,
     )
     assert "model_id" in res_fit
-    model_id = res_fit["model_id"]
-
-    # Fit with invalid hyperparameters_json (covers mcp_server.py line 81-82)
     res_fit_err = await fit_tool.fn(
         model_class="LinearRegression",
         dataset_name="iris",
@@ -331,10 +326,12 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
         ctx=None,
     )
     assert "error" in res_fit_err
+    return res_fit
 
-    # 2. Test predict tool
-    predict_tool = next(t for t in tools if t.name == "predict")
-    feature_names = res_fit["feature_names"]
+
+async def _assert_predict_tool(predict_tool, model_id: str, feature_names: list[str]) -> None:
+    """predict: happy path, invalid json, and a nonexistent model ID (covers
+    mcp_server.py line 114-115)."""
     inputs_json = json.dumps([{f: 0.1 for f in feature_names}])
     res_pred = await predict_tool.fn(
         model_id=model_id, inputs_json=inputs_json, ctx=None
@@ -342,27 +339,26 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
     assert "predictions" in res_pred
     assert len(res_pred["predictions"]) == 1
 
-    # Predict with invalid json
     res_pred_err = await predict_tool.fn(
         model_id=model_id, inputs_json="{invalid", ctx=None
     )
     assert "error" in res_pred_err
 
-    # Predict with nonexistent model ID (covers mcp_server.py line 114-115)
     res_pred_err2 = await predict_tool.fn(
         model_id="nonexistent_id", inputs_json=inputs_json, ctx=None
     )
     assert "error" in res_pred_err2
 
-    # 3. Test evaluate_model tool
-    evaluate_tool = next(t for t in tools if t.name == "evaluate_model")
+
+async def _assert_evaluate_model_tool(evaluate_tool, model_id: str) -> None:
     res_eval = await evaluate_tool.fn(
         model_id=model_id, dataset_name="iris", split="test", ctx=None
     )
     assert "rmse" in res_eval
 
-    # 4. Test cross_validate tool
-    cv_tool = next(t for t in tools if t.name == "cross_validate")
+
+async def _assert_cross_validate_tool(cv_tool) -> None:
+    """cross_validate: happy path returns per-fold RMSE; invalid json rejects."""
     res_cv = await cv_tool.fn(
         model_class="Ridge",
         dataset_name="iris",
@@ -372,7 +368,6 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
     )
     assert "rmse_per_fold" in res_cv
 
-    # CV with invalid json
     res_cv_err = await cv_tool.fn(
         model_class="Ridge",
         dataset_name="iris",
@@ -380,6 +375,28 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
         ctx=None,
     )
     assert "error" in res_cv_err
+
+
+async def test_mcp_model_training_tools(require_engine, require_sklearn):
+    """Verify FastMCP fit, predict, evaluate, and cross-validate tools."""
+    mcp, _, _, _ = get_mcp_instance()
+    tools = await mcp.list_tools()
+
+    # Load iris dataset first
+    await _tool(tools, "load_dataset").fn(name="iris", ctx=None)
+
+    # 1. Test fit_model tool
+    res_fit = await _assert_fit_model_tool(_tool(tools, "fit_model"))
+    model_id = res_fit["model_id"]
+
+    # 2. Test predict tool
+    await _assert_predict_tool(_tool(tools, "predict"), model_id, res_fit["feature_names"])
+
+    # 3. Test evaluate_model tool
+    await _assert_evaluate_model_tool(_tool(tools, "evaluate_model"), model_id)
+
+    # 4. Test cross_validate tool
+    await _assert_cross_validate_tool(_tool(tools, "cross_validate"))
 
 
 @pytest.mark.asyncio
@@ -439,6 +456,112 @@ async def test_mcp_model_evolution_tools(require_engine, require_sklearn):
 
 
 @pytest.mark.asyncio
+async def _assert_generate_interpretability_tests_tool(gen_tool, model_id: str) -> None:
+    res_gen = await gen_tool.fn(model_id=model_id, ctx=None)
+    assert "tests" in res_gen
+    assert len(res_gen["tests"]) == 6
+
+    res_gen_err = await gen_tool.fn(model_id="non_existent", ctx=None)
+    assert "error" in res_gen_err
+
+
+async def _assert_grade_response_tool(grade_tool) -> None:
+    """Exact, float-proximity, substring, and failed-match grading."""
+    res_g1 = await grade_tool.fn(
+        test_id="test_0",
+        response="LinearRegression",
+        expected="LinearRegression",
+        ctx=None,
+    )
+    assert res_g1["passed"] is True
+
+    res_g2 = await grade_tool.fn(
+        test_id="test_1", response=" 1.23456 ", expected="1.2345", ctx=None
+    )
+    assert res_g2["passed"] is True
+
+    res_g3 = await grade_tool.fn(
+        test_id="test_2",
+        response="The feature is sepal length (cm)",
+        expected="sepal length (cm)",
+        ctx=None,
+    )
+    assert res_g3["passed"] is True
+
+    res_g4 = await grade_tool.fn(
+        test_id="test_3", response="wrong", expected="correct", ctx=None
+    )
+    assert res_g4["passed"] is False
+
+
+def _build_interpretability_answer_sets(detailed_results: list[dict]) -> tuple[dict, dict]:
+    """Exact reference answers, plus a fallback set exercising substring (attribution)
+    and float-proximity (numeric) grading instead of an exact match."""
+    answers = {}
+    answers_fallback = {}
+    for item in detailed_results:
+        tid = item["test_id"]
+        exp = item["expected"]
+        answers[tid] = exp
+        if "att" in tid:
+            answers_fallback[tid] = f"The feature is {exp}"
+        else:
+            try:
+                val = float(exp)
+                answers_fallback[tid] = f" {val + 0.0002} "
+            except ValueError:
+                answers_fallback[tid] = exp
+    return answers, answers_fallback
+
+
+async def _assert_run_interpretability_suite_scoring(run_suite_tool, model_id: str) -> None:
+    """A perfect score with exact reference answers, and again with the
+    substring/float-proximity fallback set."""
+    res_empty = await run_suite_tool.fn(model_id=model_id, answers_json="{}", ctx=None)
+    assert "detailed_results" in res_empty
+
+    answers, answers_fallback = _build_interpretability_answer_sets(
+        res_empty["detailed_results"]
+    )
+    res_suite = await run_suite_tool.fn(
+        model_id=model_id, answers_json=json.dumps(answers), ctx=None
+    )
+    assert res_suite["overall_score"] == 1.0
+
+    res_suite_fb = await run_suite_tool.fn(
+        model_id=model_id, answers_json=json.dumps(answers_fallback), ctx=None
+    )
+    assert res_suite_fb["overall_score"] == 1.0
+
+
+async def _assert_run_interpretability_suite_nonlinear_model(fit_tool, run_suite_tool) -> None:
+    """A DecisionTree has no linear coefficients — exercises the 'unknown'-attribution
+    reference path."""
+    res_dt = await fit_tool.fn(
+        model_class="DecisionTree",
+        dataset_name="iris",
+        hyperparameters_json="{}",
+        test_size=0.2,
+        ctx=None,
+    )
+    res_suite_dt = await run_suite_tool.fn(
+        model_id=res_dt["model_id"], answers_json="{}", ctx=None
+    )
+    assert "overall_score" in res_suite_dt
+
+
+async def _assert_run_interpretability_suite_error_paths(run_suite_tool, model_id: str) -> None:
+    res_suite_err = await run_suite_tool.fn(
+        model_id=model_id, answers_json="{invalid", ctx=None
+    )
+    assert "error" in res_suite_err
+
+    res_suite_err2 = await run_suite_tool.fn(
+        model_id="non_existent", answers_json="{}", ctx=None
+    )
+    assert "error" in res_suite_err2
+
+
 async def test_mcp_interpretability_tools(require_engine, require_sklearn):
     """Verify FastMCP interpretability tests suite, grading, and run tools."""
     mcp, _, _, _ = get_mcp_instance()
@@ -457,210 +580,131 @@ async def test_mcp_interpretability_tools(require_engine, require_sklearn):
 
     # 1. Test generate_interpretability_tests tool
     gen_tool = next(t for t in tools if t.name == "generate_interpretability_tests")
-    res_gen = await gen_tool.fn(model_id=model_id, ctx=None)
-    assert "tests" in res_gen
-    assert len(res_gen["tests"]) == 6
-
-    # Test non-existent model ID
-    res_gen_err = await gen_tool.fn(model_id="non_existent", ctx=None)
-    assert "error" in res_gen_err
+    await _assert_generate_interpretability_tests_tool(gen_tool, model_id)
 
     # 2. Test grade_response tool (float, exact, substring matches)
     grade_tool = next(t for t in tools if t.name == "grade_response")
-
-    # Exact match
-    res_g1 = await grade_tool.fn(
-        test_id="test_0",
-        response="LinearRegression",
-        expected="LinearRegression",
-        ctx=None,
-    )
-    assert res_g1["passed"] is True
-
-    # Float proximity match
-    res_g2 = await grade_tool.fn(
-        test_id="test_1", response=" 1.23456 ", expected="1.2345", ctx=None
-    )
-    assert res_g2["passed"] is True
-
-    # Substring match
-    res_g3 = await grade_tool.fn(
-        test_id="test_2",
-        response="The feature is sepal length (cm)",
-        expected="sepal length (cm)",
-        ctx=None,
-    )
-    assert res_g3["passed"] is True
-
-    # Failed match
-    res_g4 = await grade_tool.fn(
-        test_id="test_3", response="wrong", expected="correct", ctx=None
-    )
-    assert res_g4["passed"] is False
+    await _assert_grade_response_tool(grade_tool)
 
     # 3. Test run_interpretability_suite tool
     run_suite_tool = next(t for t in tools if t.name == "run_interpretability_suite")
-
-    # Generate reference answers for test ids by first running with empty answers to get expected values
-    res_empty = await run_suite_tool.fn(model_id=model_id, answers_json="{}", ctx=None)
-    assert "detailed_results" in res_empty
-
-    answers = {}
-    answers_fallback = {}
-    for item in res_empty["detailed_results"]:
-        tid = item["test_id"]
-        exp = item["expected"]
-        # Standard correct answer
-        answers[tid] = exp
-        # Fallback answers: substring for attribution, float proximity for numbers
-        if "att" in tid:
-            answers_fallback[tid] = f"The feature is {exp}"
-        else:
-            try:
-                val = float(exp)
-                answers_fallback[tid] = f" {val + 0.0002} "
-            except ValueError:
-                answers_fallback[tid] = exp
-
-    answers_json = json.dumps(answers)
-    res_suite = await run_suite_tool.fn(
-        model_id=model_id, answers_json=answers_json, ctx=None
-    )
-    assert res_suite["overall_score"] == 1.0
-
-    res_suite_fb = await run_suite_tool.fn(
-        model_id=model_id, answers_json=json.dumps(answers_fallback), ctx=None
-    )
-    assert res_suite_fb["overall_score"] == 1.0
+    await _assert_run_interpretability_suite_scoring(run_suite_tool, model_id)
 
     # 4. Test run_interpretability_suite with a non-linear model (no linear
     # coefficients) — exercises the 'unknown'-attribution reference path.
-    res_dt = await fit_tool.fn(
-        model_class="DecisionTree",
-        dataset_name="iris",
-        hyperparameters_json="{}",
-        test_size=0.2,
-        ctx=None,
-    )
-    dt_model_id = res_dt["model_id"]
-    res_suite_dt = await run_suite_tool.fn(
-        model_id=dt_model_id, answers_json="{}", ctx=None
-    )
-    assert "overall_score" in res_suite_dt
+    await _assert_run_interpretability_suite_nonlinear_model(fit_tool, run_suite_tool)
 
-    # Test run interpretability suite with invalid json
-    res_suite_err = await run_suite_tool.fn(
-        model_id=model_id, answers_json="{invalid", ctx=None
-    )
-    assert "error" in res_suite_err
-
-    # Test run interpretability suite with non-existent model
-    res_suite_err2 = await run_suite_tool.fn(
-        model_id="non_existent", answers_json="{}", ctx=None
-    )
-    assert "error" in res_suite_err2
+    # 5. Test run_interpretability_suite's invalid-json and non-existent-model errors
+    await _assert_run_interpretability_suite_error_paths(run_suite_tool, model_id)
 
 
 @pytest.mark.asyncio
+class _MockContext:
+    def __init__(self):
+        self.logged: list[str] = []
+
+    async def info(self, msg: str):
+        self.logged.append(msg)
+
+
+async def _assert_tool_logs(
+    tools, name: str, kwargs: dict[str, Any], expected_substring: str, ctx: _MockContext
+) -> Any:
+    """Call MCP tool ``name`` with ``kwargs`` + ``ctx``; assert ``expected_substring``
+    appears in a logged message; returns the tool's result."""
+    tool = next(t for t in tools if t.name == name)
+    result = await tool.fn(**kwargs, ctx=ctx)
+    assert any(expected_substring in m for m in ctx.logged)
+    return result
+
+
 async def test_mcp_context_logging(require_engine, require_sklearn):
     """Verify that passing a mock context invokes info/logging methods in all tools."""
-
-    class MockContext:
-        def __init__(self):
-            self.logged = []
-
-        async def info(self, msg: str):
-            self.logged.append(msg)
-
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    ctx = MockContext()
+    ctx = _MockContext()
 
-    # Load dataset tool with context
-    load_tool = next(t for t in tools if t.name == "load_dataset")
-    await load_tool.fn(name="iris", ctx=ctx)
-    assert any("Loading configured dataset" in m for m in ctx.logged)
-
-    # Describe dataset tool with context
-    describe_tool = next(t for t in tools if t.name == "describe_dataset")
-    await describe_tool.fn(name="iris", ctx=ctx)
-    assert any("Describing statistics" in m for m in ctx.logged)
-
-    # Split dataset tool with context
-    split_tool = next(t for t in tools if t.name == "split_dataset")
-    await split_tool.fn(
-        name="iris", test_size=0.2, validation_size=0.0, random_seed=42, ctx=ctx
+    await _assert_tool_logs(tools, "load_dataset", {"name": "iris"}, "Loading configured dataset", ctx)
+    await _assert_tool_logs(tools, "describe_dataset", {"name": "iris"}, "Describing statistics", ctx)
+    await _assert_tool_logs(
+        tools,
+        "split_dataset",
+        {"name": "iris", "test_size": 0.2, "validation_size": 0.0, "random_seed": 42},
+        "Splitting configured dataset",
+        ctx,
     )
-    assert any("Splitting configured dataset" in m for m in ctx.logged)
 
-    # Fit model tool with context
-    fit_tool = next(t for t in tools if t.name == "fit_model")
-    res_fit = await fit_tool.fn(
-        model_class="LinearRegression",
-        dataset_name="iris",
-        hyperparameters_json="{}",
-        test_size=0.2,
-        ctx=ctx,
+    res_fit = await _assert_tool_logs(
+        tools,
+        "fit_model",
+        {
+            "model_class": "LinearRegression",
+            "dataset_name": "iris",
+            "hyperparameters_json": "{}",
+            "test_size": 0.2,
+        },
+        "Fitting model class",
+        ctx,
     )
-    assert any("Fitting model class" in m for m in ctx.logged)
     model_id = res_fit["model_id"]
+    inputs_json = json.dumps([{f: 0.1 for f in res_fit["feature_names"]}])
 
-    # Predict tool with context
-    predict_tool = next(t for t in tools if t.name == "predict")
-    feature_names = res_fit["feature_names"]
-    inputs_json = json.dumps([{f: 0.1 for f in feature_names}])
-    await predict_tool.fn(model_id=model_id, inputs_json=inputs_json, ctx=ctx)
-    assert any("Generating predictions" in m for m in ctx.logged)
-
-    # Evaluate model tool with context
-    evaluate_tool = next(t for t in tools if t.name == "evaluate_model")
-    await evaluate_tool.fn(
-        model_id=model_id, dataset_name="iris", split="test", ctx=ctx
+    await _assert_tool_logs(
+        tools,
+        "predict",
+        {"model_id": model_id, "inputs_json": inputs_json},
+        "Generating predictions",
+        ctx,
     )
-    assert any("Evaluating model" in m for m in ctx.logged)
-
-    # Cross validate tool with context
-    cv_tool = next(t for t in tools if t.name == "cross_validate")
-    await cv_tool.fn(
-        model_class="Ridge",
-        dataset_name="iris",
-        n_folds=3,
-        hyperparameters_json="{}",
-        ctx=ctx,
+    await _assert_tool_logs(
+        tools,
+        "evaluate_model",
+        {"model_id": model_id, "dataset_name": "iris", "split": "test"},
+        "Evaluating model",
+        ctx,
     )
-    assert any("Running" in m for m in ctx.logged)
-
-    # Evolve model tool with context
-    evolve_tool = next(t for t in tools if t.name == "evolve_model_class")
-    await evolve_tool.fn(
-        model_class="LinearRegression", base_performance=0.7, complexity=0.1, ctx=ctx
+    await _assert_tool_logs(
+        tools,
+        "cross_validate",
+        {
+            "model_class": "Ridge",
+            "dataset_name": "iris",
+            "n_folds": 3,
+            "hyperparameters_json": "{}",
+        },
+        "Running",
+        ctx,
     )
-    assert any("Submitting" in m for m in ctx.logged)
-
-    # Rank models tool with context
-    rank_tool = next(t for t in tools if t.name == "rank_models")
-    await rank_tool.fn(ctx=ctx)
-    assert any("Ranking models" in m for m in ctx.logged)
-
-    # Get pareto frontier tool with context
-    pareto_tool = next(t for t in tools if t.name == "get_pareto_frontier")
-    await pareto_tool.fn(ctx=ctx)
-    assert any("Retrieving" in m for m in ctx.logged)
-
-    # Generate interpretability tests tool with context
-    gen_tool = next(t for t in tools if t.name == "generate_interpretability_tests")
-    await gen_tool.fn(model_id=model_id, ctx=ctx)
-    assert any("Generating interpretability tests" in m for m in ctx.logged)
-
-    # Grade response tool with context
-    grade_tool = next(t for t in tools if t.name == "grade_response")
-    await grade_tool.fn(test_id="t_0", response="0.1", expected="0.1", ctx=ctx)
-    assert any("Grading response" in m for m in ctx.logged)
-
-    # Run interpretability suite tool with context
-    run_suite_tool = next(t for t in tools if t.name == "run_interpretability_suite")
-    await run_suite_tool.fn(model_id=model_id, answers_json="{}", ctx=ctx)
-    assert any("Running full interpretability suite" in m for m in ctx.logged)
+    await _assert_tool_logs(
+        tools,
+        "evolve_model_class",
+        {"model_class": "LinearRegression", "base_performance": 0.7, "complexity": 0.1},
+        "Submitting",
+        ctx,
+    )
+    await _assert_tool_logs(tools, "rank_models", {}, "Ranking models", ctx)
+    await _assert_tool_logs(tools, "get_pareto_frontier", {}, "Retrieving", ctx)
+    await _assert_tool_logs(
+        tools,
+        "generate_interpretability_tests",
+        {"model_id": model_id},
+        "Generating interpretability tests",
+        ctx,
+    )
+    await _assert_tool_logs(
+        tools,
+        "grade_response",
+        {"test_id": "t_0", "response": "0.1", "expected": "0.1"},
+        "Grading response",
+        ctx,
+    )
+    await _assert_tool_logs(
+        tools,
+        "run_interpretability_suite",
+        {"model_id": model_id, "answers_json": "{}"},
+        "Running full interpretability suite",
+        ctx,
+    )
 
 
 @pytest.mark.asyncio
