@@ -174,6 +174,26 @@ def _parent_death_signal() -> None:
         return
 
 
+def _valid_candidate_int(value: object, *, expected: int) -> bool:
+    return not isinstance(value, bool) and isinstance(value, int) and value == expected
+
+
+def _valid_candidate_response(
+    version: object,
+    sequence: object,
+    expected_sequence: int,
+    nonce: object,
+    expected_nonce: str | None,
+    status: object,
+) -> bool:
+    return (
+        _valid_candidate_int(version, expected=PROTOCOL_VERSION)
+        and _valid_candidate_int(sequence, expected=expected_sequence)
+        and nonce == expected_nonce
+        and isinstance(status, str)
+    )
+
+
 class CandidateProcess:
     """One persistent, resource-bounded untrusted candidate interpreter."""
 
@@ -252,17 +272,8 @@ class CandidateProcess:
         except ProtocolError as exc:
             self._fail("candidate protocol violation")
             raise CandidateFailure("candidate protocol violation") from exc
-        response_version = response["version"]
-        response_sequence = response["seq"]
-        if (
-            isinstance(response_version, bool)
-            or not isinstance(response_version, int)
-            or response_version != PROTOCOL_VERSION
-            or isinstance(response_sequence, bool)
-            or not isinstance(response_sequence, int)
-            or response_sequence != sequence
-            or response["nonce"] != nonce
-            or not isinstance(response["status"], str)
+        if not _valid_candidate_response(
+            response["version"], response["seq"], sequence, response["nonce"], nonce, response["status"]
         ):
             self._fail("candidate protocol violation")
             raise CandidateFailure("candidate protocol violation")
@@ -289,13 +300,9 @@ class CandidateProcess:
         self._fail("candidate protocol violation")
         raise CandidateFailure("candidate protocol violation")
 
-    def call(
-        self,
-        sequence: int,
-        nonce: str,
-        arguments: list[dict[str, object]],
-        timeout_s: float,
-    ) -> dict[str, object]:
+    def _send_call_request(
+        self, sequence: int, nonce: str, arguments: list[dict[str, object]]
+    ) -> None:
         if self._proc.poll() is not None or self._proc.stdin is None:
             raise CandidateFailure(self._current_failure() or "candidate exited")
         request = {
@@ -309,7 +316,8 @@ class CandidateProcess:
             self._proc.stdin.flush()
         except (BrokenPipeError, OSError, ValueError) as exc:
             raise CandidateFailure("candidate exited") from exc
-        response = self._receive(sequence, nonce, timeout_s)
+
+    def _decode_call_response(self, response: dict[str, object]) -> dict[str, object]:
         if (
             response["status"] == "ok"
             and response["result"] is not None
@@ -324,6 +332,17 @@ class CandidateProcess:
             raise CandidateFailure(self._candidate_error(response["error"]))
         self._fail("candidate protocol violation")
         raise CandidateFailure("candidate protocol violation")
+
+    def call(
+        self,
+        sequence: int,
+        nonce: str,
+        arguments: list[dict[str, object]],
+        timeout_s: float,
+    ) -> dict[str, object]:
+        self._send_call_request(sequence, nonce, arguments)
+        response = self._receive(sequence, nonce, timeout_s)
+        return self._decode_call_response(response)
 
     def close(self) -> None:
         if self._proc.stdin is not None:
@@ -394,6 +413,36 @@ def _send_signed(
     sys.stdout.buffer.flush()
 
 
+def _valid_supervisor_version_and_sequence(version: object, sequence: object) -> bool:
+    return (
+        not isinstance(version, bool)
+        and isinstance(version, int)
+        and version == PROTOCOL_VERSION
+        and not isinstance(sequence, bool)
+        and isinstance(sequence, int)
+        and sequence > 0
+    )
+
+
+def _valid_supervisor_op_and_args(nonce: object, op: object, args: object) -> bool:
+    return (
+        isinstance(nonce, str)
+        and bool(_NONCE_RE.fullmatch(nonce))
+        and isinstance(op, str)
+        and op in {"call", "close"}
+        and isinstance(args, list)
+        and len(args) <= 16
+    )
+
+
+def _valid_supervisor_message_fields(
+    version: object, sequence: object, nonce: object, op: object, args: object
+) -> bool:
+    return _valid_supervisor_version_and_sequence(
+        version, sequence
+    ) and _valid_supervisor_op_and_args(nonce, op, args)
+
+
 def _read_supervisor_request(key: bytes) -> dict[str, object]:
     message = loads_json(
         read_bounded_line(sys.stdin.buffer, limit=MAX_CONTROL_LINE_BYTES)
@@ -402,24 +451,37 @@ def _read_supervisor_request(key: bytes) -> dict[str, object]:
         verify_signed_message(message, key),
         {"args", "nonce", "op", "seq", "version"},
     )
-    sequence = body["seq"]
-    version = body["version"]
-    if (
-        isinstance(version, bool)
-        or not isinstance(version, int)
-        or version != PROTOCOL_VERSION
-        or isinstance(sequence, bool)
-        or not isinstance(sequence, int)
-        or sequence <= 0
-        or not isinstance(body["nonce"], str)
-        or not _NONCE_RE.fullmatch(body["nonce"])
-        or not isinstance(body["op"], str)
-        or body["op"] not in {"call", "close"}
-        or not isinstance(body["args"], list)
-        or len(body["args"]) > 16
+    if not _valid_supervisor_message_fields(
+        body["version"], body["seq"], body["nonce"], body["op"], body["args"]
     ):
         raise ProtocolError("invalid supervisor request")
     return body
+
+
+def _handle_supervisor_request(
+    candidate: CandidateProcess, key: bytes, timeout_s: float
+) -> int | None:
+    """Process one supervisor request; an int is the exit code for ``main``,
+    ``None`` means keep looping."""
+    try:
+        request = _read_supervisor_request(key)
+    except ProtocolError:
+        return 2
+    sequence = int(request["seq"])
+    nonce = str(request["nonce"])
+    if request["op"] == "close":
+        if request["args"]:
+            return 2
+        _send_signed(key, sequence, nonce=nonce, status="closed")
+        return 0
+    try:
+        arguments = [encode_array(decode_array(item)) for item in request["args"]]
+        result = candidate.call(sequence, nonce, arguments, timeout_s)
+    except (CandidateFailure, ProtocolError) as exc:
+        _send_signed(key, sequence, nonce=nonce, status="error", error=str(exc))
+        return 1
+    _send_signed(key, sequence, nonce=nonce, status="ok", result=result)
+    return None
 
 
 def main() -> int:
@@ -441,32 +503,9 @@ def main() -> int:
         _send_signed(key, 0, nonce=None, status="ready")
 
         while True:
-            try:
-                request = _read_supervisor_request(key)
-            except ProtocolError:
-                return 2
-            sequence = int(request["seq"])
-            nonce = str(request["nonce"])
-            if request["op"] == "close":
-                if request["args"]:
-                    return 2
-                _send_signed(key, sequence, nonce=nonce, status="closed")
-                return 0
-            try:
-                arguments = [
-                    encode_array(decode_array(item)) for item in request["args"]
-                ]
-                result = candidate.call(sequence, nonce, arguments, timeout_s)
-            except (CandidateFailure, ProtocolError) as exc:
-                _send_signed(
-                    key,
-                    sequence,
-                    nonce=nonce,
-                    status="error",
-                    error=str(exc),
-                )
-                return 1
-            _send_signed(key, sequence, nonce=nonce, status="ok", result=result)
+            outcome = _handle_supervisor_request(candidate, key, timeout_s)
+            if outcome is not None:
+                return outcome
     finally:
         if candidate is not None:
             candidate.close()
