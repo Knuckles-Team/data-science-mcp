@@ -30,6 +30,148 @@ _MAX_FLUSH_TOKENS = 1_000_000
 _ALLOWED_TOKEN_DTYPES = frozenset({"int32", "int64", "uint16", "uint32"})
 
 
+class _PretrainPlanRejected(ValueError):
+    """Carries the user-facing rejection message for a not-executed pretrain plan."""
+
+
+def _validate_pretrain_request_sizes(corpus_spec_json: str, options_json: str) -> None:
+    if len(corpus_spec_json) > _MAX_CORPUS_SPEC_CHARS:
+        raise ValueError("corpus specification exceeds its size limit")
+    if len(options_json) > _MAX_OPTIONS_CHARS:
+        raise ValueError("pretraining options exceed their size limit")
+
+
+def _build_pretrain_plan(out_path: str, opts: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "out_path": out_path,
+        "format": "hdf5" if out_path.endswith((".h5", ".hdf5")) else "npy",
+        "tokenizer": opts.get("tokenizer"),
+        "revision": opts.get("revision"),
+        "append_eos": opts.get("append_eos", True),
+        "limit": opts.get("limit"),
+    }
+
+
+def _validate_pretrain_bounds(limit: Any, flush_every: Any, dtype: Any) -> None:
+    if (
+        isinstance(limit, bool)
+        or not isinstance(limit, int)
+        or not 1 <= limit <= _MAX_PRETRAIN_DOCS
+    ):
+        raise _PretrainPlanRejected(
+            f"options.limit must be between 1 and {_MAX_PRETRAIN_DOCS}"
+        )
+    if (
+        isinstance(flush_every, bool)
+        or not isinstance(flush_every, int)
+        or not 1 <= flush_every <= _MAX_FLUSH_TOKENS
+        or dtype not in _ALLOWED_TOKEN_DTYPES
+    ):
+        raise _PretrainPlanRejected("invalid dtype or flush_every boundary")
+
+
+def _resolve_pretrain_output(out_path: str) -> Path:
+    from data_science_mcp.path_policy import resolve_data_path  # noqa: PLC0415
+
+    safe_out = resolve_data_path(out_path)
+    if not safe_out.name.lower().endswith(_TOKEN_OUTPUT_SUFFIXES):
+        raise _PretrainPlanRejected("out_path must end with .npy, .h5, or .hdf5")
+    safe_out.parent.mkdir(parents=True, exist_ok=True)
+    return safe_out
+
+
+def _valid_hf_dataset_id(dataset_id: object) -> bool:
+    return isinstance(dataset_id, str) and bool(_TOKENIZER_REPOSITORY_RE.fullmatch(dataset_id))
+
+
+def _valid_hf_extra_fields(spec: dict[str, Any]) -> bool:
+    if any(key not in {"hf", "config", "split"} for key in spec):
+        return False
+    return not any(
+        value is not None and (not isinstance(value, str) or len(value) > 256)
+        for key, value in spec.items()
+        if key in {"config", "split"}
+    )
+
+
+def _validate_hf_corpus_spec(spec: dict[str, Any]) -> None:
+    if not _valid_hf_dataset_id(spec.get("hf")) or not _valid_hf_extra_fields(spec):
+        raise _PretrainPlanRejected("invalid Hugging Face dataset reference")
+
+
+def _resolve_pretrain_corpus_spec(spec: Any) -> Any:
+    from data_science_mcp.path_policy import resolve_data_path  # noqa: PLC0415
+
+    if isinstance(spec, str):
+        safe_spec = resolve_data_path(spec, must_exist=True)
+        if not safe_spec.name.lower().endswith(_CORPUS_SUFFIXES):
+            raise _PretrainPlanRejected("local corpus must be .txt, .jsonl, or .jsonl.zst")
+        return str(safe_spec)
+    if isinstance(spec, dict) and "hf" in spec:
+        _validate_hf_corpus_spec(spec)
+        return spec
+    if isinstance(spec, list):
+        return spec
+    raise _PretrainPlanRejected(
+        "corpus spec must be an inline list, dataset ID, or confined path"
+    )
+
+
+def _resolve_pretrain_tokenizer_ref(tok_ref: Any) -> tuple[str, bool]:
+    from data_science_mcp.path_policy import data_root, resolve_data_path  # noqa: PLC0415
+
+    if not isinstance(tok_ref, str):
+        raise _PretrainPlanRejected("options.tokenizer must be a repository ID or local path")
+    token_path = Path(tok_ref).expanduser()
+    local_tokenizer = (
+        token_path.is_absolute()
+        or tok_ref.startswith((".", "~"))
+        or (data_root() / token_path).exists()
+    )
+    if local_tokenizer:
+        return str(resolve_data_path(tok_ref, must_exist=True)), True
+    if not _TOKENIZER_REPOSITORY_RE.fullmatch(tok_ref):
+        raise _PretrainPlanRejected("invalid tokenizer repository ID")
+    return tok_ref, False
+
+
+def _load_pinned_tokenizer(
+    tok_ref: str, requested_revision: Any, *, local_tokenizer: bool
+) -> Any:
+    try:
+        from transformers import AutoTokenizer  # noqa: PLC0415
+    except ImportError:
+        raise _PretrainPlanRejected(
+            "transformers required — install data-science-mcp[training]"
+        ) from None
+    from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+
+    revision = require_pinned_revision(
+        tok_ref, requested_revision, local_files_only=local_tokenizer
+    )
+    return AutoTokenizer.from_pretrained(
+        tok_ref, revision=revision, trust_remote_code=False, local_files_only=local_tokenizer
+    )
+
+
+def _prepare_pretrain_execution(
+    spec: Any, out_path: str, opts: dict[str, Any]
+) -> tuple[Any, Path, Any]:
+    """Validate + resolve everything an ``execute=true`` run needs.
+
+    Raises :class:`_PretrainPlanRejected` on any rejection.
+    """
+    limit = opts.get("limit")
+    flush_every = opts.get("flush_every", _MAX_FLUSH_TOKENS)
+    dtype = opts.get("dtype", "int32")
+    _validate_pretrain_bounds(limit, flush_every, dtype)
+    safe_out = _resolve_pretrain_output(out_path)
+    resolved_spec = _resolve_pretrain_corpus_spec(spec)
+    tok_ref, local_tokenizer = _resolve_pretrain_tokenizer_ref(opts.get("tokenizer"))
+    tok = _load_pinned_tokenizer(tok_ref, opts.get("revision"), local_tokenizer=local_tokenizer)
+    return resolved_spec, safe_out, tok
+
+
 def register_data_engine_tools(mcp: FastMCP) -> None:
     """Register the corpus-curation tools (tag ``data-engine``)."""
 
@@ -156,135 +298,29 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 prepare_pretrain_data as _prep,
             )
 
-            if len(corpus_spec_json) > _MAX_CORPUS_SPEC_CHARS:
-                raise ValueError("corpus specification exceeds its size limit")
-            if len(options_json) > _MAX_OPTIONS_CHARS:
-                raise ValueError("pretraining options exceed their size limit")
+            _validate_pretrain_request_sizes(corpus_spec_json, options_json)
             spec = json.loads(corpus_spec_json)
             opts = json.loads(options_json or "{}")
             if not isinstance(opts, dict):
                 raise ValueError("pretraining options must be a JSON object")
-            tok_ref = opts.get("tokenizer")
-            plan = {
-                "out_path": out_path,
-                "format": "hdf5" if out_path.endswith((".h5", ".hdf5")) else "npy",
-                "tokenizer": tok_ref,
-                "revision": opts.get("revision"),
-                "append_eos": opts.get("append_eos", True),
-                "limit": opts.get("limit"),
-            }
+            plan = _build_pretrain_plan(out_path, opts)
             if not opts.get("execute"):
                 return {"plan": plan, "executed": False, "note": "set execute=true to run"}
-            if not tok_ref:
-                return {"plan": plan, "executed": False, "error": "options.tokenizer (HF name or local dir) is required to execute"}
-            limit = opts.get("limit")
-            flush_every = opts.get("flush_every", _MAX_FLUSH_TOKENS)
-            dtype = opts.get("dtype", "int32")
-            if (
-                isinstance(limit, bool)
-                or not isinstance(limit, int)
-                or not 1 <= limit <= _MAX_PRETRAIN_DOCS
-            ):
+            if not opts.get("tokenizer"):
                 return {
                     "plan": plan,
                     "executed": False,
-                    "error": f"options.limit must be between 1 and {_MAX_PRETRAIN_DOCS}",
-                }
-            if (
-                isinstance(flush_every, bool)
-                or not isinstance(flush_every, int)
-                or not 1 <= flush_every <= _MAX_FLUSH_TOKENS
-                or dtype not in _ALLOWED_TOKEN_DTYPES
-            ):
-                return {
-                    "plan": plan,
-                    "executed": False,
-                    "error": "invalid dtype or flush_every boundary",
-                }
-            from data_science_mcp.path_policy import data_root, resolve_data_path
-
-            safe_out = resolve_data_path(out_path)
-            if not safe_out.name.lower().endswith(_TOKEN_OUTPUT_SUFFIXES):
-                return {
-                    "plan": plan,
-                    "executed": False,
-                    "error": "out_path must end with .npy, .h5, or .hdf5",
-                }
-            safe_out.parent.mkdir(parents=True, exist_ok=True)
-
-            if isinstance(spec, str):
-                safe_spec = resolve_data_path(spec, must_exist=True)
-                if not safe_spec.name.lower().endswith(_CORPUS_SUFFIXES):
-                    return {
-                        "plan": plan,
-                        "executed": False,
-                        "error": "local corpus must be .txt, .jsonl, or .jsonl.zst",
-                    }
-                spec = str(safe_spec)
-            elif isinstance(spec, dict) and "hf" in spec:
-                dataset_id = spec.get("hf")
-                if (
-                    not isinstance(dataset_id, str)
-                    or not _TOKENIZER_REPOSITORY_RE.fullmatch(dataset_id)
-                    or any(key not in {"hf", "config", "split"} for key in spec)
-                    or any(
-                        value is not None
-                        and (not isinstance(value, str) or len(value) > 256)
-                        for key, value in spec.items()
-                        if key in {"config", "split"}
-                    )
-                ):
-                    return {
-                        "plan": plan,
-                        "executed": False,
-                        "error": "invalid Hugging Face dataset reference",
-                    }
-            elif not isinstance(spec, list):
-                return {
-                    "plan": plan,
-                    "executed": False,
-                    "error": "corpus spec must be an inline list, dataset ID, or confined path",
-                }
-
-            if not isinstance(tok_ref, str):
-                return {
-                    "plan": plan,
-                    "executed": False,
-                    "error": "options.tokenizer must be a repository ID or local path",
-                }
-            token_path = Path(tok_ref).expanduser()
-            local_tokenizer = (
-                token_path.is_absolute()
-                or tok_ref.startswith((".", "~"))
-                or (data_root() / token_path).exists()
-            )
-            if local_tokenizer:
-                tok_ref = str(resolve_data_path(tok_ref, must_exist=True))
-            elif not _TOKENIZER_REPOSITORY_RE.fullmatch(tok_ref):
-                return {
-                    "plan": plan,
-                    "executed": False,
-                    "error": "invalid tokenizer repository ID",
+                    "error": "options.tokenizer (HF name or local dir) is required to execute",
                 }
             try:
-                from transformers import AutoTokenizer  # noqa: PLC0415
-            except ImportError:
-                return {"plan": plan, "executed": False, "error": "transformers required — install data-science-mcp[training]"}
-            from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+                resolved_spec, safe_out, tok = _prepare_pretrain_execution(
+                    spec, out_path, opts
+                )
+            except _PretrainPlanRejected as exc:
+                return {"plan": plan, "executed": False, "error": str(exc)}
 
-            revision = require_pinned_revision(
-                tok_ref,
-                opts.get("revision"),
-                local_files_only=local_tokenizer,
-            )
-            tok = AutoTokenizer.from_pretrained(
-                tok_ref,
-                revision=revision,
-                trust_remote_code=False,
-                local_files_only=local_tokenizer,
-            )
             report = _prep(
-                spec,
+                resolved_spec,
                 tok,
                 str(safe_out),
                 max_doc_chars=_MAX_DOC_CHARS,
