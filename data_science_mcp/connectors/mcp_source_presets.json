@@ -3,7 +3,6 @@
   "datascience-model-registry": {
     "server": "data-science-mcp",
     "tool": "rank_models",
-    "action": "list",
     "records_path": "ranked_models",
     "id_field": "model_id",
     "title_field": "model_str",
