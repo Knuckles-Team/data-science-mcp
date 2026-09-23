@@ -227,7 +227,18 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
             "pareto_frontier": frontier,
         }
 
-    @mcp.tool(tags={"model-evolution"})
+    @mcp.tool(
+        tags={"model-evolution"},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+        meta={
+            "eg.annotations": {"modalities_in": ["text"], "modalities_out": ["text"]}
+        },
+    )
     async def rank_models(
         ctx: Context | None = Field(
             default=None, description="MCP context for progress reporting"
@@ -459,8 +470,7 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     async def load_dataset(
         name: str = Field(
             description=(
-                "Built-in dataset name or CSV path confined to "
-                "DATA_SCIENCE_DATA_ROOT"
+                "Built-in dataset name or CSV path confined to DATA_SCIENCE_DATA_ROOT"
             )
         ),
         target_column: str = Field(
