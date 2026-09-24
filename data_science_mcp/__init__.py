@@ -9,7 +9,6 @@ __all__: list[str] = []
 CORE_MODULES: list[str] = ["data_science_mcp.auth"]
 
 OPTIONAL_MODULES = {
-    "data_science_mcp.agent_server": "agent",
     "data_science_mcp.mcp_server": "mcp",
 }
 

@@ -15,10 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_utilities.core.transport_security import (
-    ResolvedTLSProfile,
-    resolve_configured_tls_profile,
-)
+from agent_connector_sdk.tls.profile import ResolvedTLSProfile
+from agent_connector_sdk.tls.resolve import resolve_tls_profile
 
 from data_science_mcp.inference.base import InferenceBackend
 
@@ -47,7 +45,7 @@ class OpenAICompatibleBackend(InferenceBackend):
         self.model = model
         self.api_key = api_key
         self.timeout = timeout
-        self.tls_profile = tls_profile or resolve_configured_tls_profile("model")
+        self.tls_profile = tls_profile or resolve_tls_profile("model")
         # LoRA hot-swap serving: when set (or passed per-call), the served model
         # name is the adapter id. vLLM started with ``--enable-lora --lora-modules
         # <name>=<path>`` (or sent a runtime ``/v1/load_lora_adapter``) serves each

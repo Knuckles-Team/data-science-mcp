@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import os
 
-from agent_utilities.core.transport_security import ResolvedTLSProfile
+from agent_connector_sdk.tls.profile import ResolvedTLSProfile
 
 from data_science_mcp.inference.base import InferenceBackend
 from data_science_mcp.inference.openai_compatible import OpenAICompatibleBackend

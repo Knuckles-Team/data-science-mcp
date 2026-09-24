@@ -17,6 +17,18 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
+    # EH-480: mcp.server_factory/core.config (mcp_server.py, auth.py) migrated
+    # to agent-connector-sdk. agent-utilities stays a full base dependency
+    # (not an extra) because training_pipeline.py, data_engine.py, tracking.py,
+    # adapter_library.py, search_task_corpus.py, path_policy.py, kernels/ and
+    # trainers/ import agent_utilities.{harness,models.model_registry,
+    # knowledge_graph.facade,knowledge_graph.ingestion.gpu_slot_scheduler,
+    # knowledge_graph.research.sai_factory,graph.training_signals,core.paths}
+    # at module scope for core (non-optional) ML-training/SAI functionality
+    # with no SDK equivalent and, per RF-ADR-009, arguably out of a connector
+    # SDK's scope entirely (agent-plane, not vendor-API connector logic) —
+    # see SDK-GAPS.md #6.
+    "agent-connector-sdk>=0.1.0,<1.0.0",
     "agent-utilities[mcp]>=2.0.0,<3.0.0",
     "epistemic-graph[full]>=2.0.0",
     "polars>=1.43.0",
@@ -26,9 +38,6 @@ dependencies = [
 [project.optional-dependencies]
 mcp = [
     "agent-utilities[mcp]>=2.0.0,<3.0.0"]
-
-agent = [
-    "agent-utilities[agent-runtime,logfire]>=2.0.0,<3.0.0"]
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
 # Rust engine). It is optional and only powers the built-in sample-dataset
@@ -103,7 +112,6 @@ all = [
 
 [project.scripts]
 data-science-mcp = "data_science_mcp.mcp_server:mcp_server"
-data-science-agent = "data_science_mcp.agent_server:agent_server"
 
 [tool.uv.workspace]
 members = ["."]
@@ -144,4 +152,5 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
+agent-connector-sdk = { path = ".uv-workspace-siblings/agent-connector-sdk", editable = true }
 agent-utilities = { path = ".uv-workspace-siblings/agent-utilities", editable = true }
