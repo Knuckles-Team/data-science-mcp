@@ -429,99 +429,11 @@ The full list is in the [Available MCP Tools](#available-mcp-tools) table above.
 | `EUNOMIA_POLICY_FILE` | Embedded policy file | `mcp_policies.json` |
 | `EUNOMIA_REMOTE_URL` | Remote Eunomia server URL | — |
 
-### Agent CLI (full `[agent]` runtime only)
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MCP_URL` | URL of the MCP server the agent connects to | `http://localhost:8000/mcp` |
-| `PROVIDER` | LLM provider (e.g. `openai`) | `openai` |
-| `MODEL_ID` | Model id (e.g. `gpt-4o`) | `gpt-4o` |
-| `ENABLE_WEB_UI` | Serve the AG-UI web interface | `True` |
 
 See [`.env.example`](.env.example) for a copy-paste starting point.
 
-## Agent
-
-This repository features a fully integrated Pydantic AI Graph Agent. It communicates over the **Agent Control Protocol (ACP)** and interacts seamlessly with the **Agent Web UI (AG-UI)** and Terminal interface.
-
-### Running the Agent CLI
-To start the interactive command-line agent:
-
-```bash
-# Set credentials
-export DATA_SCIENCE_MCP_URL="your_value"
-export DATA_SCIENCE_MCP_TOKEN="your_value"
-
-# Run the agent server
-data-science-agent --provider openai --model-id gpt-4o
-```
-
 ### Docker Compose Orchestration
-The following `docker/agent.compose.yml` configures the Agent, Web UI, and Terminal Interface together:
-
-```yaml
-version: '3.8'
-
-services:
-  data-science-mcp-mcp:
-    image: example/data-science-mcp:mcp
-    container_name: data-science-mcp-mcp
-    hostname: data-science-mcp-mcp
-    restart: always
-    env_file:
-      - ../.env
-    environment:
-      - PYTHONUNBUFFERED=1
-      - HOST=0.0.0.0
-      - PORT=8000
-      - TRANSPORT=streamable-http
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  data-science-mcp-agent:
-    image: example/data-science-mcp@sha256:<digest>
-    container_name: data-science-mcp-agent
-    hostname: data-science-mcp-agent
-    restart: always
-    depends_on:
-      - data-science-mcp-mcp
-    env_file:
-      - ../.env
-    command: [ "data-science-agent" ]
-    environment:
-      - PYTHONUNBUFFERED=1
-      - HOST=0.0.0.0
-      - PORT=9004
-      - MCP_URL=http://data-science-mcp-mcp:8000/mcp
-      - PROVIDER=${PROVIDER:-openai}
-      - MODEL_ID=${MODEL_ID:-gpt-4o}
-      - ENABLE_WEB_UI=True
-      - ENABLE_OTEL=True
-    ports:
-      - "9004:9004"
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9004/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-```
+`docker/mcp.compose.yml` runs the MCP server as a hardened, least-privilege container (see the file for the full service definition).
 
 Detailed graph node architecture explanations, custom skill configurations, and agentic trace guides are available in [docs/deployment.md](docs/deployment.md).
 
@@ -552,8 +464,6 @@ Pick the extra that matches what you want to run:
 | Extra | Installs | Use when |
 |-------|----------|----------|
 | `data-science-mcp[mcp]` | Connector-focused MCP server (`agent-utilities[mcp]` — FastMCP/FastAPI + `epistemic-graph[full]`) | You only run the **MCP server** (smallest install / image) |
-| `data-science-mcp[agent]` | Agent runtime (`agent-utilities[agent-runtime,logfire]` — model orchestration + `epistemic-graph[full]`) | You run the **integrated agent** |
-| `data-science-mcp[all]` | Everything (`mcp` + `agent` + `scikit-learn` sample-dataset loaders) | Development / both surfaces |
 
 Heavy ML extras are opt-in and imported lazily — add them only when needed:
 `[training]` (torch/PEFT gradient trainers), `[training-scale]` (DeepSpeed/FlashAttention,
@@ -563,37 +473,28 @@ loaders), `[eval]` (LightEval), `[tracking]` (MLflow). See **[docs/training.md](
 ```bash
 # Connector-focused MCP server (includes the shared graph engine)
 uv pip install "data-science-mcp[mcp]"
-
-# Agent runtime (adds model orchestration to the shared graph engine)
-uv pip install "data-science-mcp[agent]"
-
-# Everything (development)
-uv pip install "data-science-mcp[all]"      # or: python -m pip install "data-science-mcp[all]"
 ```
 
-### Container images (`:mcp` vs `:agent`)
+### Container images (`:mcp`)
 
-One multi-stage `docker/Dockerfile` builds two right-sized images, selected by `--target`:
+One `docker/Dockerfile` builds a single slim MCP-server image:
 
-| Image tag | Build target | Contents | Entrypoint |
-|-----------|--------------|----------|------------|
-| `example/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **connector-focused**, includes `epistemic-graph[full]`; no model-orchestration stack | `data-science-mcp` |
-| `example/data-science-mcp@sha256:<digest>` | `--target agent` (default) | `data-science-mcp[agent]` — **agent runtime**, model orchestration + `epistemic-graph[full]` | `data-science-agent` |
+| Image tag | Contents | Entrypoint |
+|-----------|----------|------------|
+| `example/data-science-mcp:mcp` | `data-science-mcp[mcp]` -- connector-focused, includes `epistemic-graph[full]` | `data-science-mcp` |
 
 ```bash
-docker build --target mcp   -t example/data-science-mcp:mcp    docker/   # connector-focused MCP server
-docker build --target agent -t example/data-science-mcp:agent-local docker/   # agent runtime
+docker build -t example/data-science-mcp:mcp docker/   # connector-focused MCP server
 ```
 
-`docker/mcp.compose.yml` runs the connector-focused `:mcp` server; `docker/agent.compose.yml` runs the
-agent (`immutable agent digest`) with a co-located `:mcp` sidecar.
+`docker/mcp.compose.yml` runs the connector-focused `:mcp` server.
 
 ### Knowledge-graph database (`epistemic-graph`)
 
 `data-science-mcp` uses the mandatory `epistemic-graph[full]` compute capabilities on top of
 the `epistemic-graph[full]` runtime carried by every Agent Utilities install.
 The connector-focused `[mcp]` surface uses that engine without enabling model
-orchestration; `[agent]` adds the orchestration stack. Local deployments can use the
+orchestration. Local deployments can use the
 bundled engine. For production or shared state, configure a dedicated epistemic-graph
 service. See the
 [epistemic-graph deployment guide](https://knuckles-team.github.io/epistemic-graph/deployment/).
@@ -648,7 +549,7 @@ to **"deploy `data-science-mcp` with agent-utilities-deployment"**.
 | Install mode | Command |
 |------|---------|
 | Installed package | `uv tool install "data-science-mcp[mcp]"`, then run `data-science-mcp` |
-| Editable source | `uv pip install -e ".[agent]"`, then run `data-science-mcp` |
+| Editable source | `uv pip install -e ".[mcp]"`, then run `data-science-mcp` |
 | Immutable container | deploy `registry.example.invalid/data-science-mcp@sha256:<digest>` through the operator-selected orchestrator |
 
 The repository embeds no deployment profile, credential value, certificate path, or
