@@ -589,10 +589,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#capability-what-you-need" class="md-nav__link">
+  <a href="#capability-what-the-operator-need" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability → what you need
+        Capability → what the operator need
       
     </span>
   </a>
@@ -846,10 +846,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#capability-what-you-need" class="md-nav__link">
+  <a href="#capability-what-the-operator-need" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability → what you need
+        Capability → what the operator need
       
     </span>
   </a>
@@ -922,7 +922,7 @@
 
 <h1 id="installation-dependencies">Installation &amp; Dependencies<a class="headerlink" href="#installation-dependencies" title="Permanent link">&para;</a></h1>
 <p><code>data-science-mcp</code> installs light by default and pulls heavy ML/GPU dependencies only
-through <strong>optional extras</strong>, so you install exactly what a capability needs. The core
+through <strong>optional extras</strong>, so the operator install exactly what a capability needs. The core
 package imports and runs (planning, data curation, engine-backed ML) with <strong>no torch
 and no GPU</strong>.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
@@ -995,7 +995,7 @@ sample-dataset deps (<code>agent</code>, <code>datasets</code>) but <strong>not<
 <tr>
 <td><code>tracking</code></td>
 <td><code>mlflow</code></td>
-<td>experiment-tracking dashboard (self-hostable). <code>wandb</code> is supported by <code>RunTracker</code> but install it yourself</td>
+<td>experiment-tracking dashboard (self-hostable). <code>wandb</code> is supported by <code>RunTracker</code> but install it the operator</td>
 </tr>
 <tr>
 <td><code>agent</code></td>
@@ -1010,8 +1010,8 @@ sample-dataset deps (<code>agent</code>, <code>datasets</code>) but <strong>not<
 </tbody>
 </table>
 <p>All heavy deps are <strong>lazily imported</strong> — they load only when a capability that needs
-them actually executes, so the package installs and imports without them.</p>
-<h2 id="capability-what-you-need">Capability → what you need<a class="headerlink" href="#capability-what-you-need" title="Permanent link">&para;</a></h2>
+them actually runs, so the package installs and imports without them.</p>
+<h2 id="capability-what-the-operator-need">Capability → what the operator need<a class="headerlink" href="#capability-what-the-operator-need" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>

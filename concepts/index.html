@@ -949,7 +949,7 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <tr>
 <td><code>CONCEPT:DS-AHE.trainer.data-transformation</code></td>
 <td>Flat-Token Pretrain Data</td>
-<td><code>data_engine.prepare_pretrain_data</code> / <code>read_token_blocks</code> — stream (<code>.jsonl</code>/<code>.jsonl.zst</code>/HF) → tokenize (EOS-sep) → contiguous HDF5/<code>.npy</code> token array, batched on the fly (no padding); tool <code>prepare_pretrain_data</code></td>
+<td><code>data_engine.prepare_pretrain_data</code> / <code>read_token_blocks</code> — stream (<code>.jsonl</code>/<code>.jsonl.zst</code>/HF) → tokenize (EOS-sep) → contiguous HDF5/<code>.npy</code> token array, batched while running (no padding); tool <code>prepare_pretrain_data</code></td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-AHE.trainer.join-inference</code></td>
