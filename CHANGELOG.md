@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **LoRA hot-swap serving + per-task adapter library (SAI weight-arm seam)** —
   `inference/openai_compatible.py` per-request `adapter` swap (one base-model vLLM `--enable-lora`
   server serves N specialists by name, no reload) + `adapter_library.py` (`AdapterLibrary` maps
-  `task_signature` → trained LoRA specialist so many specialists coexist on one base, each routed by
+  `task_signature` → trained LoRA specialist so multiple specialists coexist on one base, each routed by
   `task:`/`adapter:`/`base:` tags via `pick_for_task`). Closes the gap where adapters were trained
   but never served.
 - **Shortcut-resistant search-task corpora (CONCEPT:KG-2.70/2.71/2.72, AHE-3.30)** —

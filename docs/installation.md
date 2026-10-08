@@ -1,7 +1,7 @@
 # Installation & Dependencies
 
 `data-science-mcp` installs light by default and pulls heavy ML/GPU dependencies only
-through **optional extras**, so you install exactly what a capability needs. The core
+through **optional extras**, so the operator install exactly what a capability needs. The core
 package imports and runs (planning, data curation, engine-backed ML) with **no torch
 and no GPU**.
 
@@ -47,14 +47,14 @@ pip install -e ".[training]"
 | `training-scale` | `deepspeed`, `flash-attn` | **GPU host only** — needs the CUDA toolchain (`nvcc`); **not** CI/CPU-installable |
 | `training-fast` | `liger-kernel` | fused Triton kernels (supported GPU archs) |
 | `eval` | `lighteval` | Hardened multi-backend benchmark harness |
-| `tracking` | `mlflow` | experiment-tracking dashboard (self-hostable). `wandb` is supported by `RunTracker` but install it yourself |
+| `tracking` | `mlflow` | experiment-tracking dashboard (self-hostable). `wandb` is supported by `RunTracker` but install it the operator |
 | `agent` | `agent-utilities[agent-runtime,logfire]` | the bundled Pydantic-AI A2A agent runtime |
 | `all` | `agent-utilities[mcp,agent-runtime,logfire]`, `epistemic-graph[full]`, `scikit-learn` | everything **except** the GPU training extras |
 
 All heavy deps are **lazily imported** — they load only when a capability that needs
-them actually executes, so the package installs and imports without them.
+them actually runs, so the package installs and imports without them.
 
-## Capability → what you need
+## Capability → what the operator need
 
 | Capability | Tools / API | Needs |
 |---|---|---|
