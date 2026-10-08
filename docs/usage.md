@@ -1,7 +1,7 @@
 # Usage — MCP / Python API / CLI
 
 `data-science-mcp` exposes the same capability three ways: as **MCP tools** an agent
-calls, as a **Python API** (`MLEngine`) you import, and as **console scripts** you run
+calls, as a **Python API** (`MLEngine`) the operator import, and as **console scripts** the operator run
 directly. The ecosystem role and the full concept registry are in
 [Overview](overview.md).
 
@@ -9,7 +9,7 @@ directly. The ecosystem role and the full concept registry are in
 
 Once [deployed](deployment.md), the server registers action-routed tools grouped into
 five independently togglable domains. Each domain is gated by an environment toggle so
-you can keep the LLM context lean.
+the operator can keep the LLM context lean.
 
 | Domain | Toggle | Representative actions |
 |---|---|---|

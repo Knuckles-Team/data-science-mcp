@@ -36,7 +36,7 @@ with SFT / DPO / GRPO. It provides:
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[Installation](installation.md)** — pip, source, extras, and the prebuilt Docker image.
+- :material-rocket-start: **[Installation](installation.md)** — pip, source, extras, and the prebuilt Docker image.
 - :material-server-network: **[Deployment](deployment.md)** — run the MCP server and A2A agent, Docker Compose, Caddy + Technitium.
 - :material-console: **[Usage](usage.md)** — the MCP tools, the `MLEngine` Python API, and the CLI.
 - :material-sitemap: **[Overview](overview.md)** — ecosystem role, enterprise readiness, and the concept registry.
