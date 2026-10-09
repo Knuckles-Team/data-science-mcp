@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent_utilities.core.exceptions import AuthError
+from agent_connector_sdk.exceptions import AuthError
 import data_science_mcp.auth as auth
 from data_science_mcp.ml_engine import MLEngine
 

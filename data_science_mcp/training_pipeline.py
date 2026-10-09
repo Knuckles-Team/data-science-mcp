@@ -27,7 +27,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from agent_utilities.core.transport_security import ResolvedTLSProfile
+from agent_connector_sdk.tls.profile import ResolvedTLSProfile
 
 from data_science_mcp import training_data as td
 from data_science_mcp.trainers import TrainConfig, get_trainer
@@ -136,11 +136,9 @@ def hot_load_adapter(
     if base_url.endswith("/v1"):
         base_url = base_url[: -len("/v1")]
     payload = {"lora_name": adapter_name, "lora_path": adapter_path}
-    from agent_utilities.core.transport_security import (  # noqa: PLC0415
-        resolve_configured_tls_profile,
-    )
+    from agent_connector_sdk.tls.resolve import resolve_tls_profile  # noqa: PLC0415
 
-    profile = tls_profile or resolve_configured_tls_profile("model")
+    profile = tls_profile or resolve_tls_profile("model")
     try:
         resp = httpx.post(
             f"{base_url}{_HOTLOAD_ENDPOINT}",

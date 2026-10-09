@@ -24,9 +24,17 @@ import logging
 import sys
 from typing import Any
 
-from agent_utilities.base_utilities import get_logger
-from agent_utilities.core.config import load_config
-from agent_utilities.mcp.server_factory import create_mcp_server
+from agent_connector_sdk.config import load_config
+from agent_connector_sdk.mcp.server import create_mcp_server
+
+# SDK gap (SDK-CONNECTOR-CONTROL-R009): agent_connector_sdk.mcp.tool_surface's
+# register_tool_surface silently ignores client_cls/get_client (R020 retired
+# verbose 1:1 auto-derivation). This connector's served tool surface genuinely
+# depends on that auto-derivation -- register_verbose_tools adds one real,
+# separately-invokable data_science_<method> tool per MLEngine public method
+# (see auth.py's docstring for the historical dispatch-mismatch bug this
+# guards against). Swapping to the SDK here would silently drop that whole
+# tool surface, so this import stays on agent_utilities.
 from agent_utilities.mcp.verbose_tools import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
@@ -34,7 +42,7 @@ from pydantic import Field
 __version__ = "2.1.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
-logger = get_logger(name="MCP_Server")
+logger = logging.getLogger("MCP_Server")
 logger.setLevel(logging.INFO)
 
 # ── Model Training Tools ─────────────────────────────────────────────
