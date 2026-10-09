@@ -23,12 +23,10 @@ this package's live call path uses it today.
 
 import requests
 
-from agent_utilities.core.config import setting
-from agent_utilities.core.exceptions import AuthError, UnauthorizedError
-from agent_utilities.core.transport_security import (
-    ResolvedTLSProfile,
-    resolve_configured_tls_profile,
-)
+from agent_connector_sdk.config import setting
+from agent_connector_sdk.exceptions import AuthError, UnauthorizedError
+from agent_connector_sdk.tls.profile import ResolvedTLSProfile
+from agent_connector_sdk.tls.resolve import resolve_tls_profile
 
 from data_science_mcp.ml_engine import MLEngine
 
@@ -75,7 +73,7 @@ def get_rest_client(tls_profile: ResolvedTLSProfile | None = None):
         token = setting("DATA_SCIENCE_MCP_TOKEN", "")
         if not base_url:
             raise RuntimeError("DATA_SCIENCE_MCP_URL is required")
-        profile = tls_profile or resolve_configured_tls_profile("data_science_mcp")
+        profile = tls_profile or resolve_tls_profile("data_science_mcp")
 
         try:
             if _rest_client is None:
