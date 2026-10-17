@@ -3,13 +3,8 @@
 
 The "modular specialization + routing" the SAI paper calls for, on the weight
 side: a registry of ``task_signature → trained LoRA adapter`` so *many* specialists
-coexist on one shared base model and are routed per task — instead of the prior
-``register_checkpoint`` behaviour that overwrote a single role binding (one
-specialist at a time). Each registered specialist becomes its own
-``ModelDefinition`` whose ``model_id`` is the served adapter name and whose
-``tags`` carry the routing key (``task:<sig>``, ``adapter:<id>``, ``base:<model>``),
-so the existing tag-based ``pick_for_task`` routes to it with no registry schema
-change.
+coexist on one shared base model and are routed per task, one specialist per task
+signature, each keyed to its served adapter name.
 
 :func:`served_generator` bridges a served adapter to the SAI factory (AHE-3.29):
 it returns a ``GenerateFn`` that produces candidates from a specific LoRA adapter
@@ -38,9 +33,8 @@ class SpecialistAdapter:
 class AdapterLibrary:
     """A growing registry of per-task LoRA specialists (one base, many adapters)."""
 
-    def __init__(self, registry: Any = None) -> None:
+    def __init__(self) -> None:
         self._by_task: dict[str, SpecialistAdapter] = {}
-        self.registry = registry  # optional agent_utilities ModelRegistry
 
     def register(
         self,
@@ -52,7 +46,7 @@ class AdapterLibrary:
         base_url: str | None = None,
         tier: str = "medium",
     ) -> SpecialistAdapter:
-        """Add (or replace) the specialist for ``task_signature`` and register a model def."""
+        """Add (or replace) the specialist for ``task_signature`` """
         spec = SpecialistAdapter(
             task_signature=task_signature,
             adapter_id=adapter_id,
@@ -60,30 +54,6 @@ class AdapterLibrary:
             checkpoint_path=checkpoint_path,
         )
         self._by_task[task_signature] = spec
-        if self.registry is not None:
-            from agent_utilities.models.model_registry import ModelDefinition
-
-            # Append (do NOT overwrite a shared role): each specialist is its own
-            # model, so N specialists on one base coexist and route by task tag.
-            # Adapter identity rides in model_id (the served LoRA name) + tags, the
-            # registry's sanctioned extension point — no schema change needed.
-            self.registry.models = [m for m in self.registry.models if m.id != adapter_id]
-            self.registry.models.append(
-                ModelDefinition(
-                    id=adapter_id,
-                    name=f"SAI specialist: {task_signature}",
-                    provider="vllm-lora",
-                    model_id=adapter_id,
-                    base_url=base_url,
-                    tier=tier,  # type: ignore[arg-type]
-                    tags=[
-                        "specialist",
-                        f"task:{task_signature}",
-                        f"adapter:{adapter_id}",
-                        f"base:{base_model}",
-                    ],
-                )
-            )
         return spec
 
     def resolve(self, task_signature: str) -> SpecialistAdapter | None:

@@ -2,7 +2,7 @@
 """Tests for the Wave-D fine-tune pipeline + deploy seam (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Exercises the whole flow on a toy model (CPU, no GPU/HF download) and the
-model-registry role-binding deploy seam against a real ModelRegistry.
+deploy seam.
 """
 
 from __future__ import annotations
@@ -11,10 +11,8 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from agent_utilities.models.model_registry import ModelRegistry  # noqa: E402
 from data_science_mcp.training_pipeline import (  # noqa: E402
     DeploymentTarget,
-    register_checkpoint,
     run_sft_pipeline,
 )
 from data_science_mcp.trainers import TrainConfig  # noqa: E402
@@ -60,33 +58,8 @@ class ToyModel(torch.nn.Module):
         return _Out(self.head(self.emb(input_ids)))
 
 
-# --- deploy seam ------------------------------------------------------------
-def test_register_checkpoint_binds_role():
-    reg = ModelRegistry()
-    target = DeploymentTarget(
-        role="generator",
-        served_model_name="qwen2.5-1.5b-openseeker",
-        base_url="http://localhost:8000/v1",
-        tier="medium",
-    )
-    register_checkpoint(reg, checkpoint_id="ckpt-1", target=target)
-    resolved = reg.pick_for_role("generator")
-    assert resolved is not None
-    assert resolved.id == "ckpt-1"
-    assert resolved.model_id == "qwen2.5-1.5b-openseeker"
-
-
-def test_register_checkpoint_is_idempotent():
-    reg = ModelRegistry()
-    target = DeploymentTarget(role="rlm-coder", served_model_name="m1")
-    register_checkpoint(reg, checkpoint_id="ckpt-x", target=target)
-    register_checkpoint(reg, checkpoint_id="ckpt-x", target=target)  # re-deploy
-    assert sum(1 for m in reg.models if m.id == "ckpt-x") == 1
-
-
 # --- end-to-end pipeline on a toy model -------------------------------------
 def test_run_sft_pipeline_end_to_end():
-    reg = ModelRegistry()
     config = TrainConfig(base_model="toy", lr=0.1, epochs=8, batch_size=2, seed=0)
     report = run_sft_pipeline(
         config,
@@ -106,7 +79,6 @@ def test_run_sft_pipeline_end_to_end():
                 },
             }
         ],
-        registry=reg,
         deploy=DeploymentTarget(role="generator", served_model_name="toy-served"),
         checkpoint_id="toy-ckpt",
     )
@@ -119,7 +91,6 @@ def test_run_sft_pipeline_end_to_end():
     assert report["eval"]["cases"] == 1
     # deployed + live via role resolution
     assert report["deployment"]["role"] == "generator"
-    assert reg.pick_for_role("generator").id == "toy-ckpt"
 
 
 def test_run_sft_pipeline_plan_only_without_deploy():

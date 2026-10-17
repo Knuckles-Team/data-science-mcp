@@ -30,14 +30,14 @@ repos:
   - id: no-commit-to-branch
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 1986670a8c4578a526ad3dddee3b35d9cfb9d7be # v0.3.4
+  rev: 38bfb07c0c64c304f47eb52090f8288150c77730  # frozen: v0.17.1
   hooks:
   - id: ruff
     exclude: ^(tests/|test/|scripts/|script/)
     types_or: [python, pyi, jupyter]
     args: ["--fix", "--ignore=E402"]
 - repo: https://github.com/codespell-project/codespell
-  rev: 63c8f8312b7559622c0d82815639671ae42132ac # v2.4.1
+  rev: 57b21406f092110c18776e39b0bda50d37c945c8  # frozen: v2.4.3
   hooks:
   - id: codespell
     args: ["-L", "ans,nam,tread,ot,"]
@@ -48,7 +48,7 @@ repos:
         data_science_mcp/skills/.*-docs/.*
       )$
 - repo: https://github.com/nbQA-dev/nbQA
-  rev: d31b7eae1767c43460afb3ba130e0a6602933abe # 1.9.1
+  rev: f96ec7f3b26a32619435686eb5813235f7e3327e  # frozen: 1.9.1
   hooks:
   - id: nbqa-ruff
     exclude: ^(tests/|test/|scripts/|script/)
@@ -61,29 +61,6 @@ repos:
     pass_filenames: false
     always_run: true
     stages: [manual, pre-push]
-  - id: okf-no-legacy-concepts
-    name: OKF-CIS — no legacy CONCEPT ids
-    entry: bash -c 'repo=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); root=${AGENT_UTILITIES_ROOT:-"$(dirname "$(dirname "$repo")")/agent-utilities"}; [ -d "$root" ] || root="$(dirname "$repo")/agent-utilities"; python3 "$root/scripts/check_no_legacy_markers.py" . "$@"' --
-    language: system
-    pass_filenames: false
-    always_run: true
-  - id: check-mermaid
-    name: Check Mermaid syntax
-    entry: bash -c 'repo=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); root=${AGENT_UTILITIES_ROOT:-"$(dirname "$(dirname "$repo")")/agent-utilities"}; [ -d "$root" ] || root="$(dirname "$repo")/agent-utilities"; python3 "$root/scripts/mermaid_linter.py" "$@"' --
-    language: system
-    files: \.md$
-    pass_filenames: true
-  - id: lane-guard
-    name: Lane guard — canonical checkout read-only + stray CARGO_TARGET_DIR (D-CP-3/D-CP-4 reach)
-    entry: bash -c 'repo=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); root=${AGENT_UTILITIES_ROOT:-"$(dirname "$(dirname "$repo")")/agent-utilities"}; [ -d "$root" ] || root="$(dirname "$repo")/agent-utilities"; python3 "$root/scripts/check_lane_guard.py"'
-    language: system
-    pass_filenames: false
-    always_run: true
-  - id: check-stubs
-    name: Check for Active Stubs and TODOs
-    entry: bash -c 'repo=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); root=${AGENT_UTILITIES_ROOT:-"$(dirname "$(dirname "$repo")")/agent-utilities"}; [ -d "$root" ] || root="$(dirname "$repo")/agent-utilities"; python3 "$root/scripts/check_stubs.py" "$@"' --
-    language: system
-    types: [python]
   - id: mermaid-validate
     name: mermaid-validate
     entry: mermaid-validate
@@ -105,30 +82,9 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
-  - id: mcp-readme-table
-    name: sync MCP tools table in README
-    entry: |-
-      bash -c 'if [ -f uv.lock ]; then uv run python -m agent_utilities.mcp.readme_tools; else python -m agent_utilities.mcp.readme_tools; fi'
-    language: system
-    files: ^(README\.md|.*/mcp_server\.py|.*/mcp/.*\.py)$
-    pass_filenames: false
-  - id: readme-env-vars
-    name: sync env-vars table in README
-    entry: |-
-      bash -c 'if [ -f uv.lock ]; then uv run python -m agent_utilities.mcp.readme_env_vars; else python -m agent_utilities.mcp.readme_env_vars; fi'
-    language: system
-    files: ^(README\.md|\.env\.example)$
-    pass_filenames: false
-  - id: readme-mcp-examples
-    name: sync mcp_config examples in README + env blocks
-    entry: |-
-      bash -c 'if [ -f uv.lock ]; then uv run python -m agent_utilities.mcp.readme_mcp_examples; else python -m agent_utilities.mcp.readme_mcp_examples; fi'
-    language: system
-    files: ^(README\.md|\.env\.example|mcp_config.*\.json|.*/mcp_config.*\.json|.*/mcp_server\.py)$
-    pass_filenames: false
   - id: env-var-drift
     name: check env-var/config drift
-    entry: bash -c 'if [ -f uv.lock ]; then uv run python -m agent_utilities.mcp.check_env_var_drift --check; else python -m agent_utilities.mcp.check_env_var_drift --check; fi'
+    entry: bash -c 'if [ -f uv.lock ]; then uv run python -m agent_connector_sdk.mcp.env_drift --check; else python -m agent_connector_sdk.mcp.env_drift --check; fi'
     language: system
     pass_filenames: false
     files: ^(README\.md|\.env\.example|mcp_config.*\.json|.*/mcp_config.*\.json|docker/.*compose.*\.ya?ml|.*/auth\.py|.*/mcp_server\.py)$
@@ -140,7 +96,7 @@ repos:
     pass_filenames: false
     always_run: true
 - repo: https://github.com/AleksaC/hadolint-py
-  rev: 458cb25edf664682e3e856a53a2f9af33e068297 # v2.14.0
+  rev: 6e7504451511eaeb62a3e7f14d63b0296cbf86eb  # frozen: v2.15.1
   hooks:
   - id: hadolint
     args:

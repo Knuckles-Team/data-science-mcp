@@ -10,7 +10,7 @@ training run):
 * ``wandb``  — Weights & Biases run (available, non-default).
 
 Independently, ``kg_log=True`` mirrors the run into the epistemic-graph as a
-``TrainingRun`` provenance node via the agent-utilities KG facade, so every run,
+``TrainingRun`` provenance node via the agent-connector-sdk KG facade, so every run,
 its hyper-parameters, and its metric trajectory are queryable as graph nodes
 alongside the datasets (:mod:`data_science_mcp.data_engine`) and checkpoints.
 
@@ -189,20 +189,12 @@ def _flat(d: dict[str, Any]) -> dict[str, Any]:
 def _kg_mirror(payload: dict[str, Any]) -> None:
     """Best-effort write of a ``TrainingRun`` node to the epistemic-graph KG.
 
-    Tries the agent-utilities KG facade; any failure (no engine, API drift) is
+    Pushes through the SDK knowledge-ingest path; any failure (no engine, API drift) is
     swallowed — provenance is telemetry, never a training blocker.
     """
-    try:  # pragma: no cover - requires a live KG facade/engine
-        from agent_utilities.knowledge_graph.facade import (  # noqa: PLC0415
-            KnowledgeGraph,
-        )
+    from data_science_mcp.kg_log import log_provenance  # noqa: PLC0415
 
-        kg = KnowledgeGraph()
-        writer = getattr(kg, "write", None) or getattr(kg, "add_node", None)
-        if writer is not None:
-            writer(payload)
-    except Exception as e:  # pragma: no cover - best-effort
-        logger.debug("Operation failed: error_type=%s", type(e).__name__)
+    log_provenance(payload)
 
 
 __all__ = ["RunTracker"]

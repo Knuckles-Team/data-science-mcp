@@ -8,7 +8,7 @@ and SGLang expose the **same OpenAI-compatible HTTP protocol**, so the backend
 is a thin client — there is no embedded engine and no GPU dependency here.
 
 ``InferenceBackend`` is the vendor-agnostic seam (mirrors the ``GraphBackend``
-ABC in ``agent_utilities.knowledge_graph.backends``). Concrete backends differ
+ABC in the reference implementation). Concrete backends differ
 only in how they name engine-specific request params (e.g. constrained-decoding:
 vLLM ``guided_json`` vs SGLang ``json_schema``); prefix-cache / RadixAttention is
 automatic server-side and needs no client support.

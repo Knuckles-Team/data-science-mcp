@@ -3,11 +3,11 @@
 
 Completes "PauseRec: Implicit Reasoning for LLM-based Generative Recommendation"
 (He et al., arXiv:2606.14142) for ``CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative``. Re-homed here from
-``agent_utilities.knowledge_graph.retrieval.pause_token_trainer`` so agent-utilities
+the reference implementation so the platform
 core stays torch-free (the serving plane must not import torch -- see
-agent-utilities/AGENTS.md "Dependency discipline"). The torch-free *inference*
+agent-connector-sdk/AGENTS.md "Dependency discipline"). The torch-free *inference*
 track stays in core: the sibling module
-``agent_utilities.knowledge_graph.retrieval.generative_recommender`` adapts
+the reference implementation adapts
 PauseRec's *idea* at inference time with a fixed budget of deterministic latent
 refinement steps. That captures the qualitative behaviour but **not** the actual
 mechanism the paper introduces: a small run of ``<pause>`` token embeddings that

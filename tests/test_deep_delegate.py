@@ -1,7 +1,7 @@
 """CONCEPT:AU-KG.mining.dsm-forecast-delegation — the Phase-6 deep-mining delegation target.
 
 Exercises the training functions in ``data_science_mcp.training.deep_delegate``
-and the ``deep_train_predict`` MCP tool they back — the delegate agent-utilities'
+and the ``deep_train_predict`` MCP tool they back — the delegate agent-connector-sdk'
 ``graph_mine_deep`` reaches over MCP for the deep-learning / heavy-Python mining
 family (LSTM forecasting, MLP/deep classification, autoencoder anomaly/embedding,
 a histogram-gradient-boosting classifier standing in for XGBoost). Skipped when

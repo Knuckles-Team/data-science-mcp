@@ -12,7 +12,7 @@ model *why* it picks each tool — not just which one.
 This module is the cache + augmentation half (pure Python, CPU-unit-testable with
 an injected fake executor); the reward half — token-level masking of injected
 observations and cache-tier-aware reward shaping — lives in the shared reward
-spine ``agent_utilities.graph.training_signals`` (concept AHE-3.49) so every
+spine the reference implementation (concept AHE-3.49) so every
 trainer consumes it. Together they let a small model reach high tool-calling
 accuracy at ~100x less rollout compute (the paper's headline).
 

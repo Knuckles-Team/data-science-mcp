@@ -59,20 +59,13 @@ def test_prompt_is_valid_structured_prompt():
     assert data["type"] == "prompt"
     assert data["schema_version"] == "1.0"
     assert data["source"] == "data-science-mcp"
-    assert data["extends"] == "agent-utilities:base"
+    assert data["extends"] == "agent-connector-sdk:base"
     assert data["compose"] == "append"
     assert data["identity"]["role"]
     assert data["instructions"]["core_directive"]
     # every referenced skill exists on disk
     for skill in data["skills"]:
         assert (SKILLS_DIR / skill / "SKILL.md").is_file(), skill
-
-
-def test_prompt_validate_canonical_strict():
-    structured = pytest.importorskip("agent_utilities.prompting.structured")
-    data = json.loads(PROMPT.read_text())
-    # returns None on success (or raises); either way must not raise
-    structured.validate_canonical(data, strict=True)
 
 
 def test_three_real_skills_present_and_prefixed():

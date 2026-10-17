@@ -1,7 +1,7 @@
 # In-House Model Training (Wave C)
 
 > **CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort** — Training Substrate · **CONCEPT:DS-ECO.mcp.model-training** — Model Training Operations
-> Part of the cross-repo [In-House Training Substrate](https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md).
+> Part of the cross-repo [In-House Training Substrate](https://github.com/Knuckles-Team/agent-connector-sdk/blob/main/docs/architecture/in_house_training_substrate.md).
 
 `data-science-mcp` owns the **corpus + gradient-trainer** half of the framework's
 self-training stack: it turns execution traces into SFT/DPO/GRPO datasets and
@@ -12,7 +12,7 @@ fine-tunes open-weight models against them. Everything except the GPU fine-tune
 
 ### 1. Deterministic data / reward engine (no GPU)
 `data_science_mcp/training_data.py` — pure-Python builders reusing the
-agent-utilities reward spine (`agent_utilities.graph.training_signals`):
+agent-connector-sdk reward spine (`agent_connector_sdk.graph.training_signals`):
 
 | Builder | Output | Source paper |
 |---|---|---|
@@ -41,7 +41,7 @@ bitsandbytes / httpx). Modules under `data_science_mcp/`:
 - **`rollout_buffer.py`** — prompt→generation→logprob→reward staging with an
   injected `InferenceBackend` + GRPO export.
 - **`trainers/eval_hooks.py`** — score a checkpoint with the **AHE-3.1 reliability
-  suite** (`agent_utilities.harness.reliability_scorers`).
+  suite** (`agent_connector_sdk.harness.reliability_scorers`).
 
 MCP tools: `train_sft`, `train_dpo`, `train_grpo`, `merge_adapters_ties`. They are
 **plan-by-default** — they return the training plan and only run when called with
@@ -84,7 +84,7 @@ traces → SFT corpus → plan → train → reliability-eval → save checkpoin
 from data_science_mcp.training_pipeline import run_sft_pipeline, DeploymentTarget
 from data_science_mcp.trainers import TrainConfig, peft_manager  # peft via [training]
 from data_science_mcp.peft_manager import LoraSpec
-from agent_utilities.models.model_registry import ModelRegistry
+from agent_connector_sdk.models.model_registry import ModelRegistry
 
 # OpenSeeker SFT on the GB10: Qwen2.5-1.5B + LoRA, served by the local vLLM.
 report = run_sft_pipeline(
@@ -226,7 +226,7 @@ MCP tools: `train_tokenizer`, `pretrain_model` (plan-first like the fine-tuners)
 ## Agent-driven training (CONCEPT:AU-AHE.trainer.concept-2)
 
 The whole loop is exposed as an agent workflow. Four agent personas (prompt JSONs in
-`agent-utilities/agent_utilities/prompts/`): `data_curator`, `training_engineer`,
+`agent-connector-sdk/agent_connector_sdk/prompts/`): `data_curator`, `training_engineer`,
 `eval_judge`, `ml_orchestrator`. They are bound into the `model_training_team`
 TeamConfig and driven by the `train_model` workflow skill
 (`universal-skills/.../workflows/ml/train_model/`):

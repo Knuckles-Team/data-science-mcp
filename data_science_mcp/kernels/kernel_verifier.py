@@ -1,13 +1,9 @@
 #!/usr/bin/python
-"""Machine-verifiable kernel reward for the SAI factory (AHE-3.28).
+"""Machine-verifiable kernel reward.
 
-:class:`KernelVerifier` satisfies the ``agent_utilities.harness.sai_task.Verifier``
-protocol: given a candidate kernel source string it returns a
-:class:`~agent_utilities.harness.sai_task.VerifierResult` whose ``reward`` is the
-correctness-gated speedup over the task reference (``reward = speedup`` when the
-output is correct, ``0.0`` otherwise) — a real, comparable signal the SAI factory
-both optimizes (adaptation-speed curve, AHE-3.27) and distills into training data
-(OS-5.34 / AHE-3.25).
+:class:`KernelVerifier` takes a candidate kernel source string and returns a
+:class:`VerifierResult` whose ``reward`` is the correctness-gated speedup over the
+task reference (``reward = speedup`` when the output is correct, ``0.0`` otherwise).
 
 Candidate code is default-deny unless an administrator configures an isolated
 no-shell runner (custom argv or a networkless, read-only container). A custom
@@ -29,9 +25,9 @@ import subprocess
 import tempfile
 import threading
 from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import Any
 from pathlib import Path
-
-from agent_utilities.harness.sai_task import VerifierResult
 
 from data_science_mcp.kernels._protocol import (
     AUTH_KEY_BYTES,
@@ -43,6 +39,15 @@ from data_science_mcp.kernels._protocol import (
     verify_signed_message,
 )
 from data_science_mcp.kernels.kernel_tasks import KernelTask
+
+@dataclass(frozen=True)
+class VerifierResult:
+    """Outcome of verifying one candidate: reward, pass flag and diagnostic detail."""
+
+    reward: float
+    passed: bool
+    detail: dict[str, Any] = field(default_factory=dict)
+
 
 _MAX_CANDIDATE_BYTES = 256 * 1024
 _MAX_SANDBOX_COMMAND_BYTES = 32 * 1024

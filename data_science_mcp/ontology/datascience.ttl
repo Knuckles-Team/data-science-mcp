@@ -13,7 +13,7 @@
 # (fit_model / cross_validate / evolve_model_class / run_interpretability_suite /
 # train_sft|dpo|grpo|reward|ppo / pretrain_model / curate_corpus / ds_specialize_kernel).
 #
-# REUSED shared classes (defined in agent-utilities core ontologies — NOT redefined
+# REUSED shared classes (defined in agent-connector-sdk core ontologies — NOT redefined
 # here): :Dataset, :Model, :LanguageModel, :OutcomeEvaluation, :Document, :Person.
 
 # --- classes (owl:Class) ---
@@ -301,7 +301,7 @@
     rdfs:comment """Data-science / ML-workflow model — experiments, training runs, fitted
     model artifacts, hyperparameters, evaluation metrics, cross-validation, the evolutionary
     Pareto frontier, interpretability suites, curated corpora, PEFT adapters, tokenizers,
-    reward models and specialized GPU kernels — federated into the agent-utilities
+    reward models and specialized GPU kernels — federated into the agent-connector-sdk
     knowledge-graph hub. Reuses the shared :Dataset/:Model/:LanguageModel/:OutcomeEvaluation/
     :Document/:Person classes rather than redefining them.""" ;
     owl:imports <http://knuckles.team/kg> .

@@ -544,17 +544,9 @@ def dataset_provenance(
 
 
 def _kg_write(payload: dict[str, Any]) -> None:
-    try:  # pragma: no cover - requires a live KG facade/engine
-        from agent_utilities.knowledge_graph.facade import (  # noqa: PLC0415
-            KnowledgeGraph,
-        )
+    from data_science_mcp.kg_log import log_provenance  # noqa: PLC0415
 
-        kg = KnowledgeGraph()
-        writer = getattr(kg, "write", None) or getattr(kg, "add_node", None)
-        if writer is not None:
-            writer(payload)
-    except Exception as e:  # pragma: no cover - best-effort
-        logger.debug("Operation failed: error_type=%s", type(e).__name__)
+    log_provenance(payload)
 
 
 __all__ = [

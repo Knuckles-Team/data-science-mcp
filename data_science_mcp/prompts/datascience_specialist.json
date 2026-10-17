@@ -4,7 +4,7 @@
   "schema_version": "1.0",
   "prompt_version": "0.1.0",
   "source": "data-science-mcp",
-  "extends": "agent-utilities:base",
+  "extends": "agent-connector-sdk:base",
   "compose": "append",
   "description": "Data-science / ML specialist: classical model training, LLM fine-tuning + corpus curation, and interpretability/reliability grading over the data-science-mcp compute server.",
   "metadata": {

@@ -1,17 +1,13 @@
 #!/usr/bin/python
-"""Checkpoint → reliability-suite evaluation bridge (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
+"""Checkpoint evaluation bridge.
 
-After a trainer produces a checkpoint, we want the same regression gate the rest
-of the framework uses — the **AHE-3.1 reliability suite**
-(:func:`agent_utilities.harness.reliability_scorers.build_reliability_suite`:
-faithfulness, safety, tool-necessity, deception, citation, Brier-skill, retrieval
-recall, trap-injection) — applied to the checkpoint's outputs. This closes the
-loop the papers care about: did fine-tuning *internalise* the behaviour without
-regressing grounding/safety (SDAR internalisation, ATLAS overhead, MedCausalX
-robustness)?
+After a trainer produces a checkpoint, apply a regression gate to the checkpoint's
+outputs: each eval case is scored by one or more scorers (the default scorer checks
+the output is grounded in the case's ``evidence`` / ``expected`` text), and the
+results are aggregated into an overall score and pass rate.
 
 The checkpoint is abstracted as a ``generate_fn(input_text) -> output_text`` so
-this works for an HF model, a vLLM endpoint, or an injected fake in tests — no GPU
+this works for an HF model, a vLLM endpoint, or an injected fake in tests - no GPU
 required to exercise the bridge.
 
 Concept: eval-hooks
@@ -27,43 +23,62 @@ from typing import Any, Callable
 GenerateFn = Callable[[str], str]
 
 
+#: A scorer maps ``(input, output, context)`` to ``(name, score in 0..1, passed)``.
+Scorer = Callable[[str, str, "dict[str, Any] | None"], "tuple[str, float, bool]"]
+
+
+def grounded_scorer(
+    inp: str, out: str, ctx: dict[str, Any] | None
+) -> tuple[str, float, bool]:
+    """Score 1.0 when the output contains every ``evidence``/``expected`` snippet."""
+    ctx = ctx or {}
+    needles: list[str] = []
+    for key in ("evidence", "expected"):
+        value = ctx.get(key)
+        if isinstance(value, str) and value:
+            needles.append(value)
+        elif isinstance(value, (list, tuple)):
+            needles.extend(str(v) for v in value if v)
+    if not needles:
+        ok = bool(out.strip())
+        return "grounded", 1.0 if ok else 0.0, ok
+    hits = sum(1 for n in needles if n.lower() in out.lower())
+    score = hits / len(needles)
+    return "grounded", score, hits == len(needles)
+
+
 def evaluate_checkpoint(
     generate_fn: GenerateFn,
     cases: list[dict[str, Any]],
     *,
-    scorers: list[Any] | None = None,
+    scorers: list[Scorer] | None = None,
 ) -> dict[str, Any]:
-    """Run the reliability suite over a checkpoint's generations.
+    """Run the eval scorers over a checkpoint's generations.
 
     Args:
         generate_fn: maps an input prompt to the checkpoint's output text.
-        cases: eval cases, each ``{"input": str, "context": {...}?}`` — ``context``
-            carries the per-scorer ground truth (evidence, gold set, etc.).
-        scorers: optional explicit scorer instances (defaults to the full suite).
+        cases: eval cases, each ``{"input": str, "context": {...}?}`` - ``context``
+            carries the per-scorer ground truth (evidence, expected text, etc.).
+        scorers: optional scorer callables (defaults to :func:`grounded_scorer`).
 
     Returns:
         ``{cases, overall_score, pass_rate, results:[...]}``.
     """
-    # Keep benchmark-only and launcher imports independent of the optional native
-    # numeric kernel. Reliability scoring loads the full harness only when used.
-    from agent_utilities.harness.reliability_scorers import (  # noqa: PLC0415
-        build_reliability_suite,
-    )
-
-    harness = build_reliability_suite(scorers)
+    active = list(scorers) if scorers else [grounded_scorer]
     results: list[dict[str, Any]] = []
     for case in cases:
         inp = str(case.get("input", ""))
         ctx = case.get("context")
         out = generate_fn(inp)
-        agg = harness.evaluate(inp, out, ctx)
+        scored = [sc(inp, out, ctx) for sc in active]
+        overall = sum(score for _, score, _ in scored) / len(scored)
         results.append(
             {
                 "input": inp,
                 "output": out,
-                "overall": agg.overall_score,
-                "passed": agg.all_passed,
-                "scores": {r.evaluator: r.score for r in agg.results},
+                "overall": overall,
+                "passed": all(passed for _, _, passed in scored),
+                "scores": {name: score for name, score, _ in scored},
             }
         )
     n = len(results) or 1
@@ -79,7 +94,7 @@ class ReliabilityEvalHook:
     """Reusable post-training hook that scores a checkpoint on fixed eval cases."""
 
     def __init__(
-        self, cases: list[dict[str, Any]], *, scorers: list[Any] | None = None
+        self, cases: list[dict[str, Any]], *, scorers: list[Scorer] | None = None
     ) -> None:
         self.cases = cases
         self.scorers = scorers

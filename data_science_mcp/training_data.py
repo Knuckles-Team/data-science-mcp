@@ -4,7 +4,7 @@
 The data-quality half of the in-house training substrate (Wave C). Pure Python —
 no torch, no GPU — it turns execution traces into the SFT / DPO / GRPO corpora and
 reward signals every training-gated research paper consumes, reusing the
-agent-utilities reward spine (`agent_utilities.graph.training_signals`).
+the platform reward spine (the reference implementation).
 
 Building this now makes the gradient trainers a thin follow-up: a :class:`Trainer`
 implementation (torch/PEFT, GPU) consumes these corpora unchanged. See the
@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from agent_utilities.graph.training_signals import (
+from data_science_mcp.reward_signals import (
     batch_normalized_advantage,
     composite_reward,
     difficulty_floor_filter,

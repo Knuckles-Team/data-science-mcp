@@ -1,9 +1,9 @@
-"""Torch-backed ML training that was re-homed out of ``agent-utilities`` core.
+"""Torch-backed ML training that was re-homed out of ``agent-connector-sdk`` core.
 
-agent-utilities core is the serving plane and must install/run torch-free
-(dependency-discipline rule in agent-utilities/AGENTS.md). The heavy ML training
-code that used to live in ``agent_utilities.domains.finance`` and
-``agent_utilities.knowledge_graph.retrieval`` now lives here, where torch is a
+agent-connector-sdk core is the serving plane and must install/run torch-free
+(dependency-discipline rule in agent-connector-sdk/AGENTS.md). The heavy ML training
+code that used to live in the reference implementation and
+the reference implementation now lives here, where torch is a
 first-class (optional ``[training]`` extra) dependency:
 
 * :mod:`data_science_mcp.training.trading_lstm` — the ``TradingLSTM`` (nn.Module),
