@@ -1,7 +1,7 @@
 # data-science-mcp
 
 Model training, evaluation, and evolution tools for agentic ML workflows — an
-**MCP Server + A2A Agent** for the Graph OS ecosystem, with compute delegated
+**MCP Server + A2A Agent** for the Arbora ecosystem, with compute delegated
 to the Rust **epistemic-graph** engine.
 
 !!! info "Official documentation"
