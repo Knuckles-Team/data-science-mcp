@@ -51,26 +51,17 @@ def _skip_if_unknown_variant(res: dict) -> None:
 
 @pytest.mark.asyncio
 async def test_quant_tools_registered():
-    """All five action-routed quant tools are registered and tagged 'quant'."""
+    """Every quant kernel is served as its own typed tool, tagged 'quant'."""
     mcp, _, _, registered_tags = get_mcp_instance()
     assert "quant" in registered_tags
     tools = await mcp.list_tools()
-    names = {t.name for t in tools}
-    assert QUANT_TOOLS <= names
-    for t in tools:
-        if t.name in QUANT_TOOLS:
-            assert "quant" in t.tags
-
-
-@pytest.mark.asyncio
-async def test_quant_unknown_action_errors(require_engine):
-    """An unrecognized action returns a clean error (no exception)."""
-    mcp, _, _, _ = get_mcp_instance()
-    tools = await mcp.list_tools()
-    mm = next(t for t in tools if t.name == "quant_market_making")
-    res = await mm.fn(action="does_not_exist", ctx=None)
-    assert "error" in res
-    assert "Unknown action" in res["error"]
+    quant = [t for t in tools if t.name.startswith("quant_")]
+    for group in QUANT_TOOLS:
+        assert any(t.name == group or t.name.startswith(group + "_") for t in quant), group
+    for t in quant:
+        assert "quant" in t.tags
+        assert "action" not in (t.parameters or {}).get("properties", {})
+        assert t.annotations.read_only_hint
 
 
 @pytest.mark.asyncio
@@ -81,8 +72,8 @@ async def test_quant_engine_unavailable_graceful(monkeypatch):
 
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    sizing = next(t for t in tools if t.name == "quant_sizing")
-    res = await sizing.fn(action="kelly_fraction", q=0.6, c=0.5, ctx=None)
+    sizing = {t.name: t for t in tools}
+    res = await sizing["quant_sizing_kelly_fraction"].fn(q=0.6, c=0.5, ctx=None)
     assert "error" in res
 
     # restore probe sentinel for subsequent tests
@@ -94,8 +85,8 @@ async def test_quant_invalid_json_errors(require_engine):
     """Malformed JSON list arguments surface a clean error."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    micro = next(t for t in tools if t.name == "quant_microstructure")
-    res = await micro.fn(action="vpin_pm", buy_vol_json="{bad", ctx=None)
+    micro = {t.name: t for t in tools}
+    res = await micro["quant_microstructure_vpin_pm"].fn(buy_vol_json="{bad", ctx=None)
     assert "error" in res
 
 
@@ -104,10 +95,9 @@ async def test_quant_market_making(require_engine):
     """Avellaneda-Stoikov, GLT, logit, and the scalar GM/PnL kernels run."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    mm = next(t for t in tools if t.name == "quant_market_making")
+    mm = {t.name: t for t in tools}
 
-    res_as = await mm.fn(
-        action="avellaneda_stoikov",
+    res_as = await mm["quant_market_making_avellaneda_stoikov"].fn(
         mid=0.5,
         inventory=0.0,
         sigma=0.1,
@@ -119,8 +109,7 @@ async def test_quant_market_making(require_engine):
     assert "error" not in res_as
     assert {"bid", "ask", "reservation", "half_spread", "withdraw"} <= set(res_as)
 
-    res_glt = await mm.fn(
-        action="glt_quotes",
+    res_glt = await mm["quant_market_making_glt_quotes"].fn(
         mid=0.5,
         inventory=0.0,
         sigma=0.1,
@@ -131,8 +120,7 @@ async def test_quant_market_making(require_engine):
     )
     assert "error" not in res_glt and "bid" in res_glt
 
-    res_logit = await mm.fn(
-        action="logit_quotes",
+    res_logit = await mm["quant_market_making_logit_quotes"].fn(
         p_mid=0.5,
         inventory=0.0,
         sigma=0.1,
@@ -144,11 +132,10 @@ async def test_quant_market_making(require_engine):
     )
     assert "error" not in res_logit and "withdraw" in res_logit
 
-    res_gm = await mm.fn(action="glosten_milgrom_spread", alpha=0.2, p=0.5, ctx=None)
+    res_gm = await mm["quant_market_making_glosten_milgrom_spread"].fn(alpha=0.2, p=0.5, ctx=None)
     assert "spread" in res_gm and isinstance(res_gm["spread"], (int, float))
 
-    res_pnl = await mm.fn(
-        action="expected_pnl_rate",
+    res_pnl = await mm["quant_market_making_expected_pnl_rate"].fn(
         delta=0.05,
         a=1.0,
         kappa=1.5,
@@ -160,8 +147,8 @@ async def test_quant_market_making(require_engine):
     )
     assert "pnl_rate" in res_pnl
 
-    res_be = await mm.fn(
-        action="breakeven_alpha", delta=0.05, p=0.5, v_h=1.0, v_l=0.0, ctx=None
+    res_be = await mm["quant_market_making_breakeven_alpha"].fn(
+        delta=0.05, p=0.5, v_h=1.0, v_l=0.0, ctx=None
     )
     assert "breakeven_alpha" in res_be
 
@@ -171,7 +158,7 @@ async def test_quant_microstructure(require_engine):
     """OFI / microprice / VPIN / Hawkes kernels run end-to-end."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    micro = next(t for t in tools if t.name == "quant_microstructure")
+    micro = {t.name: t for t in tools}
 
     ts = list(range(6))
     bid_px = [0.49, 0.49, 0.50, 0.50, 0.51, 0.51]
@@ -179,8 +166,7 @@ async def test_quant_microstructure(require_engine):
     ask_px = [0.51, 0.51, 0.52, 0.52, 0.53, 0.53]
     ask_sz = [100.0, 80.0, 95.0, 105.0, 90.0, 100.0]
 
-    res_ofi = await micro.fn(
-        action="ofi_series",
+    res_ofi = await micro["quant_microstructure_ofi_series"].fn(
         ts_json=json.dumps(ts),
         bid_px_json=json.dumps(bid_px),
         bid_sz_json=json.dumps(bid_sz),
@@ -191,8 +177,7 @@ async def test_quant_microstructure(require_engine):
     )
     assert "error" not in res_ofi and isinstance(res_ofi["ofi"], list)
 
-    res_mp = await micro.fn(
-        action="microprice_series",
+    res_mp = await micro["quant_microstructure_microprice_series"].fn(
         bid_px_json=json.dumps(bid_px),
         bid_sz_json=json.dumps(bid_sz),
         ask_px_json=json.dumps(ask_px),
@@ -201,8 +186,7 @@ async def test_quant_microstructure(require_engine):
     )
     assert "error" not in res_mp and isinstance(res_mp["microprice"], list)
 
-    res_vpin = await micro.fn(
-        action="vpin_pm",
+    res_vpin = await micro["quant_microstructure_vpin_pm"].fn(
         buy_vol_json=json.dumps([50.0, 60.0, 40.0]),
         sell_vol_json=json.dumps([50.0, 40.0, 60.0]),
         p_mean_json=json.dumps([0.5, 0.5, 0.5]),
@@ -211,8 +195,7 @@ async def test_quant_microstructure(require_engine):
     assert "vpin" in res_vpin
 
     times = [0.1, 0.3, 0.35, 0.9, 1.2, 1.25, 1.8, 2.4]
-    res_hawkes = await micro.fn(
-        action="hawkes_mle",
+    res_hawkes = await micro["quant_microstructure_hawkes_mle"].fn(
         times_json=json.dumps(times),
         t_horizon=3.0,
         max_iter=200,
@@ -221,8 +204,7 @@ async def test_quant_microstructure(require_engine):
     assert "error" not in res_hawkes
     assert "branching_ratio" in res_hawkes
 
-    res_hb = await micro.fn(
-        action="hardiman_bouchaud",
+    res_hb = await micro["quant_microstructure_hardiman_bouchaud"].fn(
         times_json=json.dumps(times),
         t_horizon=3.0,
         n_windows=10,
@@ -230,8 +212,7 @@ async def test_quant_microstructure(require_engine):
     )
     assert "branching_ratio" in res_hb
 
-    res_queue = await micro.fn(
-        action="queue_imbalance",
+    res_queue = await micro["quant_microstructure_queue_imbalance"].fn(
         bid_q_json=json.dumps([100.0, 50.0]),
         ask_q_json=json.dumps([100.0, 150.0]),
         bid_rate_json=json.dumps([10.0, 10.0]),
@@ -242,8 +223,7 @@ async def test_quant_microstructure(require_engine):
     assert "error" not in res_queue and isinstance(res_queue["skew"], list)
     assert res_queue["skew"][1] > 0  # ask queue heavier ⇒ positive skew
 
-    res_rv = await micro.fn(
-        action="realized_vol_tick",
+    res_rv = await micro["quant_microstructure_realized_vol_tick"].fn(
         mid_json=json.dumps([100.0, 101.0, 100.0, 102.0, 101.0]),
         window=3,
         ctx=None,
@@ -257,20 +237,20 @@ async def test_quant_sizing(require_engine):
     """Kelly / Bayesian-Kelly / credible-interval kernels run."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    sizing = next(t for t in tools if t.name == "quant_sizing")
+    sizing = {t.name: t for t in tools}
 
-    res_k = await sizing.fn(
-        action="kelly_fraction", q=0.6, c=0.5, fraction=0.25, ctx=None
+    res_k = await sizing["quant_sizing_kelly_fraction"].fn(
+        q=0.6, c=0.5, fraction=0.25, ctx=None
     )
     assert "fraction" in res_k
 
-    res_bk = await sizing.fn(
-        action="bayesian_kelly", alpha=6.0, beta=4.0, c=0.5, n_quadrature=50, ctx=None
+    res_bk = await sizing["quant_sizing_bayesian_kelly"].fn(
+        alpha=6.0, beta=4.0, c=0.5, n_quadrature=50, ctx=None
     )
     assert "fraction" in res_bk
 
-    res_ci = await sizing.fn(
-        action="posterior_credible_interval", alpha=6.0, beta=4.0, level=0.05, ctx=None
+    res_ci = await sizing["quant_sizing_posterior_credible_interval"].fn(
+        alpha=6.0, beta=4.0, level=0.05, ctx=None
     )
     assert "error" not in res_ci
     assert "lower" in res_ci and "upper" in res_ci
@@ -281,10 +261,9 @@ async def test_quant_validation(require_engine):
     """CPCV / deflated-Sharpe / PBO / Diebold-Mariano kernels run."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    val = next(t for t in tools if t.name == "quant_validation")
+    val = {t.name: t for t in tools}
 
-    res_cpcv = await val.fn(
-        action="purged_cpcv",
+    res_cpcv = await val["quant_validation_purged_cpcv"].fn(
         n_samples=60,
         n_groups=6,
         n_test_groups=2,
@@ -296,8 +275,7 @@ async def test_quant_validation(require_engine):
     assert isinstance(res_cpcv["splits"], list) and res_cpcv["splits"]
     assert {"train", "test"} <= set(res_cpcv["splits"][0])
 
-    res_dsr = await val.fn(
-        action="deflated_sharpe",
+    res_dsr = await val["quant_validation_deflated_sharpe"].fn(
         observed_sr=1.5,
         n_trials=20,
         sr_returns_json=json.dumps([0.01, -0.02, 0.03, 0.0, 0.015, -0.01] * 10),
@@ -305,16 +283,14 @@ async def test_quant_validation(require_engine):
     )
     assert "deflated_sharpe" in res_dsr
 
-    res_pbo = await val.fn(
-        action="probability_backtest_overfit",
+    res_pbo = await val["quant_validation_probability_backtest_overfit"].fn(
         insample_json=json.dumps([[0.1, 0.2], [0.15, 0.05], [0.2, 0.1], [0.05, 0.25]]),
         oos_json=json.dumps([[0.08, 0.18], [0.12, 0.04], [0.18, 0.09], [0.03, 0.2]]),
         ctx=None,
     )
     assert "pbo" in res_pbo
 
-    res_dm = await val.fn(
-        action="diebold_mariano",
+    res_dm = await val["quant_validation_diebold_mariano"].fn(
         losses_a_json=json.dumps([0.1, 0.2, 0.15, 0.12, 0.18, 0.11]),
         losses_b_json=json.dumps([0.12, 0.19, 0.17, 0.15, 0.2, 0.13]),
         h=1,
@@ -373,9 +349,8 @@ async def test_quant_sizing_empirical_kelly(require_engine):
     """Empirical (Monte-Carlo) Kelly fraction runs via the engine."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    sizing = next(t for t in tools if t.name == "quant_sizing")
-    res = await sizing.fn(
-        action="empirical_kelly",
+    sizing = {t.name: t for t in tools}
+    res = await sizing["quant_sizing_empirical_kelly"].fn(
         p=0.55,
         b=1.0,
         historical_returns_json=json.dumps([1.0, -1.0, 1.0, 1.0, -1.0, 1.0] * 5),
@@ -393,9 +368,8 @@ async def test_quant_validation_brier(require_engine):
     """Brier calibration score runs via the engine."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    val = next(t for t in tools if t.name == "quant_validation")
-    res = await val.fn(
-        action="brier_score",
+    val = {t.name: t for t in tools}
+    res = await val["quant_validation_brier_score"].fn(
         forecasts_json=json.dumps([0.9, 0.1, 0.8, 0.3, 0.6]),
         outcomes_json=json.dumps([1, 0, 1, 0, 1]),
         ctx=None,
@@ -410,11 +384,10 @@ async def test_quant_statespace(require_engine):
     """Kalman / ADF / OU / Markov state-space kernels run end-to-end."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    ss = next(t for t in tools if t.name == "quant_statespace")
+    ss = {t.name: t for t in tools}
 
     obs = [float(i) + (0.1 if i % 2 else -0.1) for i in range(30)]
-    res_kf = await ss.fn(
-        action="kalman_filter",
+    res_kf = await ss["quant_statespace_kalman_filter"].fn(
         observations_json=json.dumps(obs),
         f=1.0,
         q=1e-5,
@@ -430,8 +403,7 @@ async def test_quant_statespace(require_engine):
 
     mkt = [0.01, -0.02, 0.015, 0.005, -0.01, 0.02, -0.005, 0.012] * 4
     ast = [0.012, -0.025, 0.02, 0.004, -0.013, 0.025, -0.006, 0.015] * 4
-    res_kb = await ss.fn(
-        action="kalman_beta",
+    res_kb = await ss["quant_statespace_kalman_beta"].fn(
         market_returns_json=json.dumps(mkt),
         asset_returns_json=json.dumps(ast),
         q=1e-5,
@@ -443,8 +415,7 @@ async def test_quant_statespace(require_engine):
     _skip_if_unknown_variant(res_kb)
     assert "error" not in res_kb and "states" in res_kb
 
-    res_kv = await ss.fn(
-        action="kalman_volatility",
+    res_kv = await ss["quant_statespace_kalman_volatility"].fn(
         returns_json=json.dumps(mkt),
         q_vol=0.1,
         r_vol=1.0,
@@ -457,8 +428,8 @@ async def test_quant_statespace(require_engine):
     assert "error" not in res_kv and isinstance(res_kv["annualized_vol"], list)
 
     spread = [10.0 + (-1) ** i * 0.5 + 0.05 * i for i in range(40)]
-    res_adf = await ss.fn(
-        action="adf_test", series_json=json.dumps(spread), max_lag=1, ctx=None
+    res_adf = await ss["quant_statespace_adf_test"].fn(
+        series_json=json.dumps(spread), max_lag=1, ctx=None
     )
     _skip_if_unknown_variant(res_adf)
     assert "error" not in res_adf
@@ -469,15 +440,14 @@ async def test_quant_statespace(require_engine):
     for i in range(60):
         x = 0.8 * x + ((-1) ** i) * 0.2
         ou_spread.append(x)
-    res_ou = await ss.fn(
-        action="ou_calibrate", spread_json=json.dumps(ou_spread), dt=1.0, ctx=None
+    res_ou = await ss["quant_statespace_ou_calibrate"].fn(
+        spread_json=json.dumps(ou_spread), dt=1.0, ctx=None
     )
     _skip_if_unknown_variant(res_ou)
     assert "error" not in res_ou
     assert {"theta", "mu", "sigma", "half_life", "sigma_eq"} <= set(res_ou)
 
-    res_thr = await ss.fn(
-        action="ou_optimal_thresholds",
+    res_thr = await ss["quant_statespace_ou_optimal_thresholds"].fn(
         theta=float(res_ou["theta"]),
         mu=float(res_ou["mu"]),
         sigma=float(res_ou["sigma"]),
@@ -489,8 +459,7 @@ async def test_quant_statespace(require_engine):
     assert "error" not in res_thr
     assert {"entry_long", "entry_short", "exit"} <= set(res_thr)
 
-    res_mc = await ss.fn(
-        action="markov_transition",
+    res_mc = await ss["quant_statespace_markov_transition"].fn(
         states_json=json.dumps([0, 1, 1, 0, 1, 0, 0, 1, 1, 1]),
         n_states=2,
         ctx=None,
@@ -505,10 +474,9 @@ async def test_quant_signals(require_engine):
     """Signal-combination / breadth kernels run end-to-end."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    sig = next(t for t in tools if t.name == "quant_signals")
+    sig = {t.name: t for t in tools}
 
-    res_obi = await sig.fn(
-        action="order_book_imbalance",
+    res_obi = await sig["quant_signals_order_book_imbalance"].fn(
         v_bid_json=json.dumps([100.0, 120.0, 90.0]),
         v_ask_json=json.dumps([80.0, 110.0, 95.0]),
         ctx=None,
@@ -516,8 +484,8 @@ async def test_quant_signals(require_engine):
     _skip_if_unknown_variant(res_obi)
     assert "error" not in res_obi and isinstance(res_obi["imbalance"], list)
 
-    res_ir = await sig.fn(
-        action="information_ratio", ic=0.05, n_independent=100.0, ctx=None
+    res_ir = await sig["quant_signals_information_ratio"].fn(
+        ic=0.05, n_independent=100.0, ctx=None
     )
     _skip_if_unknown_variant(res_ir)
     assert "error" not in res_ir and "information_ratio" in res_ir
@@ -527,16 +495,14 @@ async def test_quant_signals(require_engine):
         [0.012, -0.018, 0.025, 0.002, 0.013, -0.012, 0.018, -0.004],
         [-0.01, 0.02, -0.03, 0.0, -0.015, 0.01, -0.02, 0.005],
     ]
-    res_en = await sig.fn(
-        action="effective_independent_n",
+    res_en = await sig["quant_signals_effective_independent_n"].fn(
         returns_matrix_json=json.dumps(matrix),
         ctx=None,
     )
     _skip_if_unknown_variant(res_en)
     assert "error" not in res_en and "effective_n" in res_en
 
-    res_ac = await sig.fn(
-        action="alpha_combination",
+    res_ac = await sig["quant_signals_alpha_combination"].fn(
         returns_matrix_json=json.dumps(matrix),
         lookback=4,
         ctx=None,
@@ -544,8 +510,7 @@ async def test_quant_signals(require_engine):
     _skip_if_unknown_variant(res_ac)
     assert "error" not in res_ac and isinstance(res_ac["weights"], list)
 
-    res_cg = await sig.fn(
-        action="convergence_gate",
+    res_cg = await sig["quant_signals_convergence_gate"].fn(
         strengths_json=json.dumps([0.7, 0.8, 0.65, 0.9, 0.72, -0.1]),
         strong_threshold=0.6,
         min_agree=5,
@@ -555,8 +520,7 @@ async def test_quant_signals(require_engine):
     assert "error" not in res_cg
     assert {"agree", "total", "fraction", "direction", "pass"} <= set(res_cg)
 
-    res_sr = await sig.fn(
-        action="spread_reversion",
+    res_sr = await sig["quant_signals_spread_reversion"].fn(
         bid_px_json=json.dumps([0.50, 0.50, 0.50, 0.50, 0.50, 0.50]),
         ask_px_json=json.dumps([0.52, 0.52, 0.52, 0.52, 0.52, 0.60]),
         window=5,
@@ -573,8 +537,8 @@ async def test_quant_statespace_invalid_json():
     """Malformed JSON to a state-space action returns a clean error (no engine)."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    ss = next(t for t in tools if t.name == "quant_statespace")
-    res = await ss.fn(action="adf_test", series_json="{bad", ctx=None)
+    ss = {t.name: t for t in tools}
+    res = await ss["quant_statespace_adf_test"].fn(series_json="{bad", ctx=None)
     assert "error" in res
 
 
@@ -593,8 +557,8 @@ async def test_quant_derivatives_unknown_action(require_engine):
     """An unrecognized SABR action returns a clean error (no exception)."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    deriv = next(t for t in tools if t.name == "quant_derivatives")
-    res = await deriv.fn(action="nope", ctx=None)
+    deriv = {t.name: t for t in tools}
+    res = await deriv["quant_derivatives_nope"].fn(ctx=None)
     assert "error" in res
 
 
@@ -603,8 +567,8 @@ async def test_quant_derivatives_invalid_json():
     """Malformed strikes JSON returns a clean error (no engine needed)."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    deriv = next(t for t in tools if t.name == "quant_derivatives")
-    res = await deriv.fn(action="smile", strikes_json="{bad", ctx=None)
+    deriv = {t.name: t for t in tools}
+    res = await deriv["quant_derivatives_smile"].fn(strikes_json="{bad", ctx=None)
     assert "error" in res
 
 
@@ -613,10 +577,9 @@ async def test_quant_derivatives_sabr(require_engine):
     """SABR implied_vol / smile / calibrate kernels run end-to-end."""
     mcp, _, _, _ = get_mcp_instance()
     tools = await mcp.list_tools()
-    deriv = next(t for t in tools if t.name == "quant_derivatives")
+    deriv = {t.name: t for t in tools}
 
-    iv = await deriv.fn(
-        action="implied_vol",
+    iv = await deriv["quant_derivatives_implied_vol"].fn(
         f=1.0,
         k=1.0,
         t=1.0,
@@ -630,8 +593,7 @@ async def test_quant_derivatives_sabr(require_engine):
     assert "error" not in iv
     assert iv["implied_vol"] > 0
 
-    sm = await deriv.fn(
-        action="smile",
+    sm = await deriv["quant_derivatives_smile"].fn(
         f=1.0,
         strikes_json="[0.8, 0.9, 1.0, 1.1, 1.2]",
         t=1.0,
@@ -645,8 +607,7 @@ async def test_quant_derivatives_sabr(require_engine):
     assert "error" not in sm
     assert len(sm["vols"]) == 5
 
-    cal = await deriv.fn(
-        action="calibrate",
+    cal = await deriv["quant_derivatives_calibrate"].fn(
         f=1.0,
         t=1.0,
         strikes_json="[0.8, 0.9, 1.0, 1.1, 1.2]",
