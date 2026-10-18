@@ -38,7 +38,7 @@ from agent_connector_sdk.mcp.tool_surface import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
@@ -609,7 +609,6 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         ("interpretability", "INTERPRETABILITYTOOL", register_interpretability_tools),
         ("data-management", "DATA_MANAGEMENTTOOL", register_data_management_tools),
         ("data-engine", "DATA_ENGINETOOL", register_data_engine_tools),
-        ("quant", "QUANTTOOL", register_quant_tools),
     ]
 
     registered_tags = register_tool_surface(
@@ -619,6 +618,13 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         service="data-science-mcp",
         tool_registry=tool_registry,
     )
+
+    # Quant kernels are computations, not MLEngine operations: one typed tool
+    # per kernel (the SDK would drop their action-routed form).
+    from data_science_mcp.action_tools import serve_action_tools
+
+    if serve_action_tools(mcp, [("quant", "QUANTTOOL", register_quant_tools)]):
+        registered_tags.append("quant")
 
     register_prompts(mcp)
 

@@ -16,7 +16,7 @@ from typing import Any
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-from data_science_mcp.ml_engine import MLEngine, _ENGINE_REQUIRED_ERR
+from data_science_mcp.ml_engine import _ENGINE_REQUIRED_ERR, MLEngine
 
 
 def _finance() -> Any | None:
@@ -32,7 +32,7 @@ def _loads(name: str, raw: str) -> Any:
     """Parse a JSON argument, raising ``ValueError`` with a tool-friendly message."""
     try:
         return json.loads(raw)
-    except Exception as exc:  # noqa: BLE001 — surfaced as an {"error": ...} dict
+    except Exception as exc:
         raise ValueError(f"Invalid {name}: {type(exc).__name__}") from exc
 
 
@@ -120,7 +120,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             if action == "breakeven_alpha":
                 return {"breakeven_alpha": fin.breakeven_alpha(delta, p, v_h, v_l)}
             return {"error": f"Unknown action: {action}"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -265,7 +265,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -353,7 +353,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -468,7 +468,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -625,7 +625,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -739,10 +739,13 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
-    @mcp.tool(tags={"quant"})
+    @mcp.tool(
+        tags={"quant"},
+        annotations={"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    )
     async def quant_forensic(
         this_year_json: str = Field(
             description=(
@@ -777,7 +780,7 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": "Operation failed"}
         try:
             return fin.forensic_report(this_year, prior_year)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
 
     @mcp.tool(tags={"quant"})
@@ -854,5 +857,5 @@ def register_quant_tools(mcp: FastMCP) -> None:
             return {"error": f"Unknown action: {action}"}
         except ValueError:
             return {"error": "Operation failed"}
-        except Exception:  # noqa: BLE001
+        except Exception:
             return {"error": "Operation failed"}
