@@ -21,7 +21,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Self
 
 import numpy as np
 
@@ -42,6 +42,8 @@ from data_science_mcp.kernels._protocol import (
 from data_science_mcp.kernels.kernel_tasks import get_kernel_task
 
 _REPEATS = 5
+#: One Linux pipe buffer; fewer wakeups when a candidate floods its output.
+_PIPE_CHUNK_BYTES = 64 * 1024
 _MAX_CANDIDATE_BYTES = 256 * 1024
 _SUPERVISOR_REQUEST_LIMIT_BYTES = 2048
 _MAX_WORKER_OUTPUT_BYTES = 32 * 1024 * 1024
@@ -94,8 +96,11 @@ class _WorkerLineReader:
         pending = bytearray()
         total = 0
         try:
-            while chunk := self._stream.read(8192):
+            # read1: return what the pipe holds now. read(8192) on a buffered pipe
+            # blocks until 8 KiB or EOF, so a short protocol line never arrived.
+            while chunk := self._stream.read1(_PIPE_CHUNK_BYTES):
                 total += len(chunk)
+                scan_from = len(pending)
                 pending.extend(chunk)
                 if (
                     total > _MAX_WORKER_OUTPUT_BYTES
@@ -105,11 +110,12 @@ class _WorkerLineReader:
                     self._terminate()
                     return
                 while True:
-                    newline = pending.find(b"\n")
+                    newline = pending.find(b"\n", scan_from)
                     if newline < 0:
                         break
                     self._items.put(bytes(pending[:newline]))
                     del pending[: newline + 1]
+                    scan_from = 0
             if pending:
                 self._failure = "worker protocol violation"
         except (OSError, ValueError):
@@ -357,7 +363,7 @@ class WorkerClient:
         self._stdout.close()
         self._stderr.close()
 
-    def __enter__(self) -> WorkerClient:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_exc: object) -> None:
@@ -506,7 +512,7 @@ def main() -> int:
         return 2
     try:
         result = _run(Path(sys.argv[1]), sys.argv[2], call_timeout_s)
-    except BaseException:  # noqa: BLE001 - supervisor always emits a signed failure
+    except BaseException:
         result = _failure("supervisor failed")
     body = {
         "request_id": request_id,

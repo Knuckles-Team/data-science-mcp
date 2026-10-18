@@ -42,6 +42,8 @@ _TYPE_ERROR_RE = re.compile(
     r"(?:compile/exec|runtime) failed: [A-Za-z_][A-Za-z0-9_]{0,63}"
 )
 _NONCE_RE = re.compile(r"[0-9a-f]{32}")
+#: One Linux pipe buffer; fewer wakeups when a candidate floods its output.
+_PIPE_CHUNK_BYTES = 64 * 1024
 _ALLOWED_ENV = (
     "CUDA_VISIBLE_DEVICES",
     "DYLD_LIBRARY_PATH",
@@ -79,18 +81,22 @@ class _LinePump:
         pending = bytearray()
         total = 0
         try:
-            while chunk := self._stream.read(8192):
+            # read1: return what the pipe holds now. read(8192) on a buffered pipe
+            # blocks until 8 KiB or EOF, so a short protocol line never arrived.
+            while chunk := self._stream.read1(_PIPE_CHUNK_BYTES):
                 total += len(chunk)
+                scan_from = len(pending)
                 pending.extend(chunk)
                 if total > self._total_limit or len(pending) > self._line_limit:
                     self._fail("candidate output limit exceeded")
                     return
                 while True:
-                    newline = pending.find(b"\n")
+                    newline = pending.find(b"\n", scan_from)
                     if newline < 0:
                         break
                     line = bytes(pending[:newline])
                     del pending[: newline + 1]
+                    scan_from = 0
                     if len(line) > self._line_limit:
                         self._fail("candidate output limit exceeded")
                         return
