@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# coding: utf-8
 """Data Science MCP Server.
 
 Provides model training, evaluation, and evolution tools for agentic ML
@@ -39,7 +38,7 @@ from agent_connector_sdk.mcp.tool_surface import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
@@ -47,8 +46,8 @@ logger.setLevel(logging.INFO)
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
-from data_science_mcp.auth import get_client  # noqa: E402
-from data_science_mcp.ml_engine import MLEngine  # noqa: E402
+from data_science_mcp.auth import get_client
+from data_science_mcp.ml_engine import MLEngine
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades
@@ -56,14 +55,14 @@ _graded_responses = {}  # In-memory store for interpretability tests and grades
 # Imported after the module-level stores above so the sibling tool modules in
 # data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
 # without a circular import.
-from data_science_mcp.mcp.mcp_deep_delegate import (  # noqa: E402
+from data_science_mcp.mcp.mcp_deep_delegate import (
     register_deep_delegate_tools,
 )
-from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
-from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
+from data_science_mcp.mcp.mcp_quant import register_quant_tools
+from data_science_mcp.mcp.mcp_trainers import (
     register_trainer_tools,
 )
-from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
+from data_science_mcp.mcp.mcp_training_data import (
     register_training_data_tools,
 )
 

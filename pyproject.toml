@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "2.1.0"
+version = "2.2.0"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Exposes training, evaluation and evolution as MCP tools."
 readme = "README.md"
 authors = [{ name = "Audel Rouhi", email = "knucklessg1@gmail.com" }]
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "agent-connector-sdk>=0.2.0,<1.0.0",
+    "agent-connector-sdk[mcp]>=0.2.1,<1.0.0",
     "requests>=2.34.2",
     "epistemic-graph[full]>=2.27.1",
     "polars>=2.0.0",
@@ -26,7 +26,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "agent-connector-sdk>=0.2.0,<1.0.0"]
+    "agent-connector-sdk[mcp]>=0.2.1,<1.0.0"]
 
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
@@ -51,7 +51,7 @@ training = [
     "datasets>=5.1.0",
     # CONCEPT:PHASE2-RECONCILE — capped under 0.23.1 (the modernize-bump floor
     # collided with the fleet's transformers/datasets pins).
-    "tokenizers<=0.23.0",
+    "tokenizers>=0.23.1",
     "httpx>=0.28.1",
     # CONCEPT:KG-2.6 — re-homed TradingLSTM walk-forward trainer
     # (data_science_mcp/training/trading_lstm.py) needs StandardScaler + metrics.
@@ -127,7 +127,7 @@ include-package-data = true
 data_science_mcp = [ "mcp_config.json", "skills/**", "prompts/**", "ontology/**", "connectors/**",]
 
 [tool.vulture]
-ignore_names = ["request", "config"]
+ignore_names = ["request", "config", "connector", "stream"]
 
 [tool.uv]
 # LightEval 0.13 unnecessarily pins the vulnerable NLTK 3.9.1 release. NLTK
