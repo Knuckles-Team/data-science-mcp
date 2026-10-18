@@ -2,7 +2,7 @@
 """Inference-backend factory (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
 
 Vendor-agnostic selection of a served-model client (vLLM / SGLang), mirroring
-``agent_utilities.knowledge_graph.backends.create_backend``: resolve config from
+the reference implementation: resolve config from
 explicit args first, then environment, then a sensible default. Both engines
 speak the OpenAI HTTP protocol, so the runtime dependency is ``httpx`` only —
 the inference server itself runs out-of-process.

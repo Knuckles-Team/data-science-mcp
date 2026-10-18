@@ -3,7 +3,7 @@
 
 The gradient half of the in-house training substrate (Wave C). Where
 :mod:`data_science_mcp.training_data` builds the *corpora* (deterministic, no GPU)
-and :mod:`agent_utilities.graph.training_signals` is the pure-Python *reference*
+and :mod:the reference implementation is the pure-Python *reference*
 math, this module is the torch implementation the trainers actually backprop
 through:
 

@@ -2,12 +2,12 @@
 name: data-science-mcp-operations
 skill_type: skill
 description: >-
-  Operate data-science-mcp through its governed MCP and GraphOS capabilities, including data science llm finetuning, data science model reliability, data science model training. Use when a request requires this provider's read, change, automation, ingestion, troubleshooting, or evidence workflows.
+  Operate data-science-mcp through its governed MCP and Arbora capabilities, including data science llm finetuning, data science model reliability, data science model training. Use when a request requires this provider's read, change, automation, ingestion, troubleshooting, or evidence workflows.
 ---
 
 # Data Science Mcp Operations
 
-Use the provider's governed MCP tools through GraphOS delegation.
+Use the provider's governed MCP tools through Arbora delegation.
 
 ## Workflow
 

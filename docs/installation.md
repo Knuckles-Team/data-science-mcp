@@ -41,15 +41,15 @@ pip install -e ".[training]"
 
 | Extra | Brings in | Weight |
 |---|---|---|
-| _(core)_ | `agent-utilities[mcp]`, `epistemic-graph[full]`, `polars`, `numpy` | full CPU engine, no GPU toolchain |
+| _(core)_ | `agent-connector-sdk[mcp]`, `epistemic-graph[full]`, `polars`, `numpy` | full CPU engine, no GPU toolchain |
 | `datasets` | `scikit-learn` | light — sample-dataset loaders only (iris/diabetes/…), **not** compute |
 | `training` | `torch`, `transformers`, `peft`, `bitsandbytes`, `accelerate`, `datasets` (HF), `tokenizers`, `httpx` | heavy, GPU-oriented (CPU-installable) |
 | `training-scale` | `deepspeed`, `flash-attn` | **GPU host only** — needs the CUDA toolchain (`nvcc`); **not** CI/CPU-installable |
 | `training-fast` | `liger-kernel` | fused Triton kernels (supported GPU archs) |
 | `eval` | `lighteval` | Hardened multi-backend benchmark harness |
 | `tracking` | `mlflow` | experiment-tracking dashboard (self-hostable). `wandb` is supported by `RunTracker` but install it the operator |
-| `agent` | `agent-utilities[agent-runtime,logfire]` | the bundled Pydantic-AI A2A agent runtime |
-| `all` | `agent-utilities[mcp,agent-runtime,logfire]`, `epistemic-graph[full]`, `scikit-learn` | everything **except** the GPU training extras |
+| `agent` | `agent-connector-sdk[agent-runtime,logfire]` | the bundled Pydantic-AI A2A agent runtime |
+| `all` | `agent-connector-sdk[mcp,agent-runtime,logfire]`, `epistemic-graph[full]`, `scikit-learn` | everything **except** the GPU training extras |
 
 All heavy deps are **lazily imported** — they load only when a capability that needs
 them actually runs, so the package installs and imports without them.
@@ -72,7 +72,7 @@ them actually runs, so the package installs and imports without them.
 | FlashAttention-2 | `TrainConfig(attn_impl="flash_attention_2")` | `[training-scale]` (GPU host) |
 | Fused kernels | `TrainConfig(use_liger=True)` | `[training-fast]` |
 | Benchmark eval (hellaswag/arc/gsm8k…) | `evaluate_benchmarks` (CONCEPT:DS-AHE.trainer.concept-5) | `[eval]` |
-| Experiment tracking | `TrainConfig(tracker="mlflow", kg_log=True)` | `[tracking]` (KG mirror needs the agent-utilities KG facade) |
+| Experiment tracking | `TrainConfig(tracker="mlflow", kg_log=True)` | `[tracking]` (KG mirror needs the agent-connector-sdk KG facade) |
 | A2A agent / Web UI | `data-science-agent` | `[agent]` |
 
 ## Prebuilt Docker image

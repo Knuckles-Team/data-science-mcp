@@ -1,9 +1,8 @@
 #!/usr/bin/python
-# coding: utf-8
 """Data Science MCP Server.
 
 Provides model training, evaluation, and evolution tools for agentic ML
-workflows. Designed as the MCP delegation target for agent-utilities'
+workflows. Designed as the MCP delegation target for agent-connector-sdk'
 IModelEvolver and InterpretabilityTestSuite.
 
 Tool tags:
@@ -34,12 +33,12 @@ from agent_connector_sdk.mcp.server import create_mcp_server
 # separately-invokable data_science_<method> tool per MLEngine public method
 # (see auth.py's docstring for the historical dispatch-mismatch bug this
 # guards against). Swapping to the SDK here would silently drop that whole
-# tool surface, so this import stays on agent_utilities.
-from agent_utilities.mcp.verbose_tools import register_tool_surface
+# tool surface, so this import stays on agent_connector_sdk.
+from agent_connector_sdk.mcp.tool_surface import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
@@ -47,8 +46,8 @@ logger.setLevel(logging.INFO)
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
-from data_science_mcp.auth import get_client  # noqa: E402
-from data_science_mcp.ml_engine import MLEngine  # noqa: E402
+from data_science_mcp.auth import get_client
+from data_science_mcp.ml_engine import MLEngine
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
 _graded_responses = {}  # In-memory store for interpretability tests and grades
@@ -56,17 +55,14 @@ _graded_responses = {}  # In-memory store for interpretability tests and grades
 # Imported after the module-level stores above so the sibling tool modules in
 # data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
 # without a circular import.
-from data_science_mcp.mcp.mcp_deep_delegate import (  # noqa: E402
+from data_science_mcp.mcp.mcp_deep_delegate import (
     register_deep_delegate_tools,
 )
-from data_science_mcp.mcp.mcp_kernel_specialize import (  # noqa: E402
-    register_kernel_specialize_tools,
-)
-from data_science_mcp.mcp.mcp_quant import register_quant_tools  # noqa: E402
-from data_science_mcp.mcp.mcp_trainers import (  # noqa: E402
+from data_science_mcp.mcp.mcp_quant import register_quant_tools
+from data_science_mcp.mcp.mcp_trainers import (
     register_trainer_tools,
 )
-from data_science_mcp.mcp.mcp_training_data import (  # noqa: E402
+from data_science_mcp.mcp.mcp_training_data import (
     register_training_data_tools,
 )
 
@@ -591,7 +587,7 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         version=__version__,
         instructions=(
             "Data Science MCP Server for model training, evaluation, and "
-            "evolution. Integrates with agent-utilities IModelEvolver "
+            "evolution. Integrates with agent-connector-sdk IModelEvolver "
             " for Agentic-iModels workflows."
         ),
     )
@@ -609,7 +605,6 @@ def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
         ("training-data", "MODEL_TRAININGTOOL", register_training_data_tools),
         ("trainer", "MODEL_TRAININGTOOL", register_trainer_tools),
         ("deep-delegate", "MODEL_TRAININGTOOL", register_deep_delegate_tools),
-        ("kernel-specialize", "MODEL_TRAININGTOOL", register_kernel_specialize_tools),
         ("model-evolution", "MODEL_EVOLUTIONTOOL", register_model_evolution_tools),
         ("interpretability", "INTERPRETABILITYTOOL", register_interpretability_tools),
         ("data-management", "DATA_MANAGEMENTTOOL", register_data_management_tools),

@@ -1,11 +1,11 @@
 """Generic torch-backed delegation targets for the AU-KG mining "deep" family.
 
-CONCEPT:AU-KG.mining.dsm-forecast-delegation — agent-utilities' engine core stays
+CONCEPT:AU-KG.mining.dsm-forecast-delegation — agent-connector-sdk' engine core stays
 pure-Rust (no torch/GPU deps); the deep-learning / heavy-Python family the
 data-mining plan marks out of scope for the engine (LSTM/RNN sequence
 forecasting, MLP/deep classifiers, autoencoders, a histogram-gradient-boosting
 classifier) is trained/served HERE, reached over MCP by
-``agent_utilities.mcp.tools.engine_surface_tools.graph_mine_deep`` (the
+the reference implementation (the
 ``call_tool_once`` delegation adapter). This module is the thin, reusable
 implementation those MCP tool bodies call into — small, seeded, CPU-friendly
 models; NOT a general training framework.

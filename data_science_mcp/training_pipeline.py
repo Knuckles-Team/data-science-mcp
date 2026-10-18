@@ -1,10 +1,10 @@
 #!/usr/bin/python
-"""End-to-end fine-tune pipeline + deploy seam (Wave D, CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort).
+"""End-to-end fine-tune pipeline + deploy seam (Wave D).
 
 Ties the in-house training substrate into one runnable flow:
 
-    traces → SFT corpus → plan → train → reliability-eval → save checkpoint
-           → register as a ModelDefinition bound to a role (goes live)
+    traces → SFT corpus → plan → train → eval → save checkpoint
+           → hot-load the adapter onto the serving endpoint
 
 Everything except the GPU fine-tune *run* is deterministic and CPU-testable on a
 toy model (dependency-injected). On the GB10 the only changes are: a real base
@@ -12,10 +12,7 @@ model id, the ``data-science-mcp[training]`` extra, and a GPU — the orchestrat
 evaluation, and deploy seam are identical. First target: **OpenSeeker SFT**
 (Qwen2.5-1.5B LoRA).
 
-The deploy seam is the existing model-registry role resolution
-(``model_registry.resolve_role ← rlm/roles ← create_model(role=…)``): once a
-checkpoint is registered and a role bound to it, every consumer that asks for that
-role resolves to the new model with **no hot-path edit**.
+The deploy seam hot-loads the trained LoRA adapter onto the serving endpoint.
 
 Concept: training-pipeline
 """
@@ -70,7 +67,7 @@ def _resolve_eval_generate_fn(
 
 @dataclass
 class DeploymentTarget:
-    """How to publish a trained checkpoint into the model registry."""
+    """How to publish a trained checkpoint to a serving endpoint."""
 
     role: str  # functional role to bind (e.g. "generator", "rlm-coder")
     served_model_name: str  # the model id the serving endpoint exposes
@@ -173,60 +170,21 @@ def hot_load_adapter(
             profile.cleanup()
 
 
-def register_checkpoint(
-    registry: Any,
-    *,
-    checkpoint_id: str,
-    target: DeploymentTarget,
-) -> Any:
-    """Register a checkpoint as a ``ModelDefinition`` and bind ``target.role`` to it.
-
-    Returns the created ``ModelDefinition``. After this call,
-    ``registry.pick_for_role(target.role)`` selects the checkpoint (its role binding
-    resolves via ``resolve_role`` → ``pick_for_task`` on a unique tag), so
-    ``create_model(role=target.role)`` serves it — no hot-path change.
-    """
-    from agent_utilities.models.model_registry import ModelDefinition, RoleSpec
-
-    # A unique tag binds the role to *this* checkpoint via tier+tag resolution.
-    bind_tag = f"trained:{checkpoint_id}"
-    tags = list(dict.fromkeys([*target.tags, "trained", bind_tag]))
-    definition = ModelDefinition(
-        id=checkpoint_id,
-        name=f"Fine-tuned: {checkpoint_id}",
-        provider=target.provider,
-        model_id=target.served_model_name,
-        base_url=target.base_url,
-        api_key_env=target.api_key_env,
-        tier=target.tier,  # type: ignore[arg-type]
-        tags=tags,
-    )
-    # Drop any prior definition with the same id (idempotent re-deploy).
-    registry.models = [m for m in registry.models if m.id != checkpoint_id]
-    registry.models.append(definition)
-    registry.role_routing[target.role] = RoleSpec(tier=target.tier, tags=[bind_tag])  # type: ignore[arg-type]
-    return definition
-
-
 def _deploy_checkpoint(
-    registry: Any, deploy: DeploymentTarget, cid: str, adapter_path: str
+    deploy: DeploymentTarget, cid: str, adapter_path: str
 ) -> dict[str, Any]:
-    """Deploy seam shared by all three pipelines: role-bind + best-effort hot-load.
+    """Deploy seam shared by all three pipelines: best-effort dynamic-LoRA hot-load.
 
-    Registers the checkpoint (:func:`register_checkpoint` — the existing
-    role-resolution deploy seam) and then attempts the dynamic-LoRA hot-load
-    (:func:`hot_load_adapter`) onto the same ``deploy`` serving endpoint using
-    whatever local checkpoint path the run produced. The hot-load is
-    best-effort — its ``status`` (``loaded``/``skipped``/``error``) rides along
-    in the returned ``deployment`` report and never aborts the run.
+    Attempts :func:`hot_load_adapter` onto the ``deploy`` serving endpoint using
+    whatever local checkpoint path the run produced. The hot-load is best-effort -
+    its ``status`` (``loaded``/``skipped``/``error``) rides along in the returned
+    ``deployment`` report and never aborts the run.
     """
-    definition = register_checkpoint(registry, checkpoint_id=cid, target=deploy)
     hotload = hot_load_adapter(deploy, adapter_name=cid, adapter_path=adapter_path)
     return {
         "checkpoint_id": cid,
         "role": deploy.role,
-        "model_id": definition.model_id,
-        "resolved": registry.pick_for_role(deploy.role).model_dump(),
+        "model_id": deploy.served_model_name,
         "hotload": hotload,
     }
 
@@ -240,7 +198,6 @@ def run_sft_pipeline(
     tokenizer: Any = None,
     generate_fn: Callable[[str], str] | None = None,
     eval_cases: list[dict[str, Any]] | None = None,
-    registry: Any = None,
     deploy: DeploymentTarget | None = None,
     checkpoint_id: str | None = None,
 ) -> dict[str, Any]:
@@ -254,8 +211,7 @@ def run_sft_pipeline(
             the HF base via ``PeftManager``.
         generate_fn: post-train inference fn for the reliability eval (defaults to a
             no-op echo when omitted so the pipeline still completes on CPU).
-        eval_cases: reliability-suite cases (see ``trainers.eval_hooks``).
-        registry: a ``ModelRegistry`` to deploy into (with ``deploy``).
+        eval_cases: eval cases (see ``trainers.eval_hooks``).
         deploy: where/how to publish the checkpoint (role binding).
         checkpoint_id: stable id for the checkpoint (defaults from ``config``).
 
@@ -295,11 +251,11 @@ def run_sft_pipeline(
 
     # 6) Deploy seam — register + bind a role (goes live with no hot-path edit),
     #    then best-effort hot-load the adapter onto the serving vLLM/SGLang.
-    if registry is not None and deploy is not None:
+    if deploy is not None:
         adapter_path = str(
             report.get("checkpoint", {}).get("path") or config.output_dir or ""
         )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+        report["deployment"] = _deploy_checkpoint(deploy, cid, adapter_path)
 
     return report
 
@@ -315,14 +271,13 @@ def run_pretrain_pipeline(
     train_tokenizer_first: bool = False,
     eval_cases: list[dict[str, Any]] | None = None,
     generate_fn: Callable[[str], str] | None = None,
-    registry: Any = None,
     deploy: DeploymentTarget | None = None,
     checkpoint_id: str | None = None,
 ) -> dict[str, Any]:
     """Pretrain-from-random-init pipeline (CONCEPT:DS-AHE.trainer.concept-2), mirroring the SFT one.
 
     Flow: (optional) train a tokenizer from the corpus → build the random-init model
-    → pretrain over packed sequences → (optional) reliability-eval → save checkpoint
+    → pretrain over packed sequences → (optional) eval → save checkpoint
     → register/bind a role (live with no hot-path edit). Everything but the GPU run
     is deterministic and CPU-testable with an injected toy model/tokenizer.
 
@@ -374,11 +329,11 @@ def run_pretrain_pipeline(
     cid = (
         checkpoint_id or f"pretrain-{(config.base_model or 'model').replace('/', '-')}"
     )
-    if registry is not None and deploy is not None:
+    if deploy is not None:
         adapter_path = str(
             report.get("checkpoint", {}).get("path") or config.output_dir or ""
         )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+        report["deployment"] = _deploy_checkpoint(deploy, cid, adapter_path)
 
     return report
 
@@ -398,7 +353,6 @@ def run_rlhf_pipeline(
     eval_cases: list[dict[str, Any]] | None = None,
     gsm8k_cases: list[dict[str, Any]] | None = None,
     generate_fn: Callable[[str], str] | None = None,
-    registry: Any = None,
     deploy: DeploymentTarget | None = None,
     checkpoint_id: str | None = None,
 ) -> dict[str, Any]:
@@ -462,18 +416,17 @@ def run_rlhf_pipeline(
 
     # 5) Deploy seam — identical to the SFT/pretrain pipelines.
     cid = checkpoint_id or f"ppo-{(config.base_model or 'model').replace('/', '-')}"
-    if registry is not None and deploy is not None:
+    if deploy is not None:
         adapter_path = str(
             report.get("checkpoint", {}).get("path") or config.output_dir or ""
         )
-        report["deployment"] = _deploy_checkpoint(registry, deploy, cid, adapter_path)
+        report["deployment"] = _deploy_checkpoint(deploy, cid, adapter_path)
 
     return report
 
 
 __all__ = [
     "DeploymentTarget",
-    "register_checkpoint",
     "hot_load_adapter",
     "run_sft_pipeline",
     "run_pretrain_pipeline",

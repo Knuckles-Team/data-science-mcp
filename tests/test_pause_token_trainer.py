@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """Tests for the trainable ``<pause>``-token recommender (CONCEPT:AU-KG.retrieval.pauserec-implicit-reasoning-generative, PauseRec).
 
-Re-homed from agent-utilities (the training track moved to data-science-mcp so
+Re-homed from agent-connector-sdk (the training track moved to data-science-mcp so
 core stays torch-free). Validates the *real* PauseRec mechanism: pause tokens that
 are trained by gradient descent on the next-item objective, and that they HELP
 (the paper's core claim), reproduced at tiny / CPU scale. The whole module is

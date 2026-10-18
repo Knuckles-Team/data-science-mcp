@@ -221,20 +221,15 @@ def test_hotload_degrades_on_connection_error(monkeypatch):
 # --------------------------------------------------------------------------- #
 # Wired into the shared deploy seam (_deploy_checkpoint)                      #
 # --------------------------------------------------------------------------- #
-def test_deploy_checkpoint_registers_role_and_hotloads(fake_httpx):
-    from agent_utilities.models.model_registry import ModelRegistry
-
-    reg = ModelRegistry()
+def test_deploy_checkpoint_hotloads(fake_httpx):
     target = DeploymentTarget(
         role="generator",
         served_model_name="qwen2.5-1.5b-openseeker",
         base_url="http://vllm:8000",
     )
-    deployment = _deploy_checkpoint(reg, target, "ckpt-1", "/models/lora/ckpt-1")
+    deployment = _deploy_checkpoint(target, "ckpt-1", "/models/lora/ckpt-1")
 
-    # Role-bind side (existing deploy seam) is unaffected.
     assert deployment["role"] == "generator"
-    assert reg.pick_for_role("generator").id == "ckpt-1"
     # Hot-load side rides along in the same report, best-effort.
     assert deployment["hotload"]["status"] == "loaded"
     assert fake_httpx.calls[0]["json"] == {
@@ -244,12 +239,8 @@ def test_deploy_checkpoint_registers_role_and_hotloads(fake_httpx):
 
 
 def test_deploy_checkpoint_hotload_skips_without_base_url(fake_httpx):
-    from agent_utilities.models.model_registry import ModelRegistry
-
-    reg = ModelRegistry()
     target = DeploymentTarget(role="rlm-coder", served_model_name="m1")  # no base_url
-    deployment = _deploy_checkpoint(reg, target, "ckpt-x", "/local/ckpt-x")
+    deployment = _deploy_checkpoint(target, "ckpt-x", "/local/ckpt-x")
 
-    assert reg.pick_for_role("rlm-coder").id == "ckpt-x"  # role bind still happened
     assert deployment["hotload"]["status"] == "skipped"
     assert fake_httpx.calls == []  # never attempted the POST

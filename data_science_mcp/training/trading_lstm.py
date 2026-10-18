@@ -1,9 +1,9 @@
 """LSTM trading model + walk-forward training (CONCEPT:AU-KG.research.research-pipeline-runner).
 
-Re-homed from ``agent_utilities.domains.finance.models`` /
-``agent_utilities.domains.finance.evaluation`` so agent-utilities core stays
+Re-homed from the reference implementation /
+the reference implementation so the platform core stays
 torch-free (the serving plane must not import torch — see
-agent-utilities/AGENTS.md "Dependency discipline"). Heavy ML training belongs in
+agent-connector-sdk/AGENTS.md "Dependency discipline"). Heavy ML training belongs in
 data-science-mcp, reached over MCP, not imported into core.
 
 Contents:
