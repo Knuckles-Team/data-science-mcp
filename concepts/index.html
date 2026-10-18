@@ -711,10 +711,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cross-project-references-from-agent-utilities" class="md-nav__link">
+  <a href="#cross-project-references-from-agent-connector-sdk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cross-Project References (from agent-utilities)
+        Cross-Project References (from agent-connector-sdk)
       
     </span>
   </a>
@@ -722,10 +722,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synergy-with-agent-utilities" class="md-nav__link">
+  <a href="#synergy-with-agent-connector-sdk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synergy with agent-utilities
+        Synergy with agent-connector-sdk
       
     </span>
   </a>
@@ -789,10 +789,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cross-project-references-from-agent-utilities" class="md-nav__link">
+  <a href="#cross-project-references-from-agent-connector-sdk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cross-Project References (from agent-utilities)
+        Cross-Project References (from agent-connector-sdk)
       
     </span>
   </a>
@@ -800,10 +800,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synergy-with-agent-utilities" class="md-nav__link">
+  <a href="#synergy-with-agent-connector-sdk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synergy with agent-utilities
+        Synergy with agent-connector-sdk
       
     </span>
   </a>
@@ -834,7 +834,7 @@
 <blockquote>
 <p><strong>Prefixes</strong>: <code>CONCEPT:DSCI-*</code> (this project) · <code>CONCEPT:ML-*</code> (cross-repo LLM trainer)
 <strong>Version</strong>: 0.9.0
-<strong>Bridge</strong>: <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/concepts.md"><code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code></a> (Unified Toolkit Ingestion)</p>
+<strong>Bridge</strong>: <a href="https://github.com/Knuckles-Team/agent-connector-sdk/blob/main/docs/concepts.md"><code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code></a> (Unified Toolkit Ingestion)</p>
 </blockquote>
 <hr />
 <h2 id="project-specific-concepts">Project-Specific Concepts<a class="headerlink" href="#project-specific-concepts" title="Permanent link">&para;</a></h2>
@@ -887,9 +887,9 @@
 <h2 id="llm-trainer-concepts-conceptml-">LLM Trainer Concepts (<code>CONCEPT:ML-*</code>)<a class="headerlink" href="#llm-trainer-concepts-conceptml-" title="Permanent link">&para;</a></h2>
 <p>The high-caliber LLM trainer — create, <strong>pretrain from random init</strong>, and fine-tune
 models, driven by AI agents. This is a deliberate <strong>cross-repo family</strong> (it spans
-<code>data-science-mcp</code> + <code>agent-utilities</code> + <code>universal-skills</code>), so it uses a repo-neutral
+<code>data-science-mcp</code> + <code>agent-connector-sdk</code> + <code>universal-skills</code>), so it uses a repo-neutral
 <code>ML-*</code> prefix rather than <code>DSCI-*</code>. It expands <a href="#project-specific-concepts"><code>CONCEPT:DS-ECO.mcp.model-training</code></a>
-(Model Training Operations) and bridges <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md"><code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code></a>
+(Model Training Operations) and bridges <a href="https://github.com/Knuckles-Team/agent-connector-sdk/blob/main/docs/architecture/in_house_training_substrate.md"><code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code></a>
 (the in-house training substrate). See <a href="../training/">Model Training</a>, <a href="../installation/">Installation</a>,
 and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <table>
@@ -934,7 +934,7 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <tr>
 <td><code>CONCEPT:AU-AHE.trainer.concept-2</code></td>
 <td>Agent-Driven Training</td>
-<td>Personas <code>data_curator</code>/<code>training_engineer</code>/<code>eval_judge</code>/<code>ml_orchestrator</code> (agent-utilities) + the <code>ml/train_model</code> workflow + <code>model_training_team</code> (universal-skills)</td>
+<td>Personas <code>data_curator</code>/<code>training_engineer</code>/<code>eval_judge</code>/<code>ml_orchestrator</code> (agent-connector-sdk) + the <code>ml/train_model</code> workflow + <code>model_training_team</code> (universal-skills)</td>
 </tr>
 <tr>
 <td><code>CONCEPT:DS-AHE.reward.one-sequence-level-score</code></td>
@@ -954,7 +954,7 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <tr>
 <td><code>CONCEPT:AU-AHE.trainer.join-inference</code></td>
 <td>Training-Job Dispatch</td>
-<td><code>training_job_runner.py</code> runs a trainer as a <code>JobRunner</code> on the agent-utilities GPU-slot scheduler (KG-2.65): checkpoint on <code>should_pause</code>, auto-resume on backfill; the <code>train_model</code> workflow submits to a GPU host or falls back to <code>accelerate launch</code></td>
+<td><code>training_job_runner.py</code> runs a trainer as a <code>JobRunner</code> on the agent-connector-sdk GPU-slot scheduler (KG-2.65): checkpoint on <code>should_pause</code>, auto-resume on backfill; the <code>train_model</code> workflow submits to a GPU host or falls back to <code>accelerate launch</code></td>
 </tr>
 <tr>
 <td><code>CONCEPT:DS-AHE.trainer.chat-format</code></td>
@@ -964,11 +964,11 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <tr>
 <td><code>CONCEPT:DS-AHE.optimization.cache-agent-loop</code></td>
 <td>CacheRL Cached Rollouts + Hybrid Thinking</td>
-<td><code>cache_agent_loop.py</code> — three-tier fuzzy tool-call cache (<code>ThreeTierToolCache</code> exact→fuzzy→semantic) wrapped by <code>CacheAgentLoop</code> so multi-turn RL rollouts serve repeated tool calls from cache (live-execution cost ↓, <code>calls_saved</code>/<code>hit_rate</code> measure it) + <code>ThinkingTraceAugmenter</code> interleaving model "why-this-tool" rationale and per-segment provenance labels; reward half (token-mask + cache-tier-aware reward) in agent-utilities AHE-3.49. Distils arXiv:2606.14179</td>
+<td><code>cache_agent_loop.py</code> — three-tier fuzzy tool-call cache (<code>ThreeTierToolCache</code> exact→fuzzy→semantic) wrapped by <code>CacheAgentLoop</code> so multi-turn RL rollouts serve repeated tool calls from cache (live-execution cost ↓, <code>calls_saved</code>/<code>hit_rate</code> measure it) + <code>ThinkingTraceAugmenter</code> interleaving model "why-this-tool" rationale and per-segment provenance labels; reward half (token-mask + cache-tier-aware reward) in agent-connector-sdk AHE-3.49. Distils arXiv:2606.14179</td>
 </tr>
 </tbody>
 </table>
-<h2 id="cross-project-references-from-agent-utilities">Cross-Project References (from agent-utilities)<a class="headerlink" href="#cross-project-references-from-agent-utilities" title="Permanent link">&para;</a></h2>
+<h2 id="cross-project-references-from-agent-connector-sdk">Cross-Project References (from agent-connector-sdk)<a class="headerlink" href="#cross-project-references-from-agent-connector-sdk" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -981,47 +981,47 @@ and the SDD spec at <code>.specify/specs/llm-model-trainer/</code>.</p>
 <tr>
 <td><code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code></td>
 <td>Unified Toolkit Ingestion</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-ORCH.adapter.hot-cache-invalidation</code></td>
 <td>Confidence-Gated Router</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-OS.config.secrets-authentication</code></td>
 <td>Prompt Injection Defense</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-OS.state.cognitive-scheduler-preemption</code></td>
 <td>Cognitive Scheduler</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-OS.governance.reactive-multi-axis-budget</code></td>
 <td>Guardrail Engine</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox</code></td>
 <td>Audit Logging</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-KG.query.object-graph-mapper</code></td>
 <td>Knowledge Graph Core</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 <tr>
 <td><code>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</code></td>
 <td>Training Substrate (reward decomposition / distillation)</td>
-<td>agent-utilities</td>
+<td>agent-connector-sdk</td>
 </tr>
 </tbody>
 </table>
-<h2 id="synergy-with-agent-utilities">Synergy with agent-utilities<a class="headerlink" href="#synergy-with-agent-utilities" title="Permanent link">&para;</a></h2>
-<p>This project integrates with <code>agent-utilities</code> via <code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code> (Unified Toolkit Ingestion). The <code>data_science_mcp</code> MCP server registers its tools with the agent-utilities FastMCP middleware, enabling automatic discovery, telemetry, and Knowledge Graph ingestion of all DSCI-* concepts.</p>
+<h2 id="synergy-with-agent-connector-sdk">Synergy with agent-connector-sdk<a class="headerlink" href="#synergy-with-agent-connector-sdk" title="Permanent link">&para;</a></h2>
+<p>This project integrates with <code>agent-connector-sdk</code> via <code>CONCEPT:AU-ECO.messaging.native-backend-abstraction</code> (Unified Toolkit Ingestion). The <code>data_science_mcp</code> MCP server registers its tools with the agent-connector-sdk FastMCP middleware, enabling automatic discovery, telemetry, and Knowledge Graph ingestion of all DSCI-* concepts.</p>
 
 
 

@@ -964,7 +964,7 @@ sample-dataset deps (<code>agent</code>, <code>datasets</code>) but <strong>not<
 <tbody>
 <tr>
 <td><em>(core)</em></td>
-<td><code>agent-utilities[mcp]</code>, <code>epistemic-graph[full]</code>, <code>polars</code>, <code>numpy</code></td>
+<td><code>agent-connector-sdk[mcp]</code>, <code>epistemic-graph[full]</code>, <code>polars</code>, <code>numpy</code></td>
 <td>full CPU engine, no GPU toolchain</td>
 </tr>
 <tr>
@@ -999,12 +999,12 @@ sample-dataset deps (<code>agent</code>, <code>datasets</code>) but <strong>not<
 </tr>
 <tr>
 <td><code>agent</code></td>
-<td><code>agent-utilities[agent-runtime,logfire]</code></td>
+<td><code>agent-connector-sdk[agent-runtime,logfire]</code></td>
 <td>the bundled Pydantic-AI A2A agent runtime</td>
 </tr>
 <tr>
 <td><code>all</code></td>
-<td><code>agent-utilities[mcp,agent-runtime,logfire]</code>, <code>epistemic-graph[full]</code>, <code>scikit-learn</code></td>
+<td><code>agent-connector-sdk[mcp,agent-runtime,logfire]</code>, <code>epistemic-graph[full]</code>, <code>scikit-learn</code></td>
 <td>everything <strong>except</strong> the GPU training extras</td>
 </tr>
 </tbody>
@@ -1094,7 +1094,7 @@ them actually runs, so the package installs and imports without them.</p>
 <tr>
 <td>Experiment tracking</td>
 <td><code>TrainConfig(tracker="mlflow", kg_log=True)</code></td>
-<td><code>[tracking]</code> (KG mirror needs the agent-utilities KG facade)</td>
+<td><code>[tracking]</code> (KG mirror needs the agent-connector-sdk KG facade)</td>
 </tr>
 <tr>
 <td>A2A agent / Web UI</td>

@@ -969,7 +969,7 @@
 <h1 id="in-house-model-training-wave-c">In-House Model Training (Wave C)<a class="headerlink" href="#in-house-model-training-wave-c" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p><strong>CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort</strong> — Training Substrate · <strong>CONCEPT:DS-ECO.mcp.model-training</strong> — Model Training Operations
-Part of the cross-repo <a href="https://github.com/Knuckles-Team/agent-utilities/blob/main/docs/architecture/in_house_training_substrate.md">In-House Training Substrate</a>.</p>
+Part of the cross-repo <a href="https://github.com/Knuckles-Team/agent-connector-sdk/blob/main/docs/architecture/in_house_training_substrate.md">In-House Training Substrate</a>.</p>
 </blockquote>
 <p><code>data-science-mcp</code> owns the <strong>corpus + gradient-trainer</strong> half of the framework's
 self-training stack: it turns execution traces into SFT/DPO/GRPO datasets and
@@ -978,7 +978,7 @@ fine-tunes open-weight models against them. Everything except the GPU fine-tune
 <h2 id="layers">Layers<a class="headerlink" href="#layers" title="Permanent link">&para;</a></h2>
 <h3 id="1-deterministic-data-reward-engine-no-gpu">1. Deterministic data / reward engine (no GPU)<a class="headerlink" href="#1-deterministic-data-reward-engine-no-gpu" title="Permanent link">&para;</a></h3>
 <p><code>data_science_mcp/training_data.py</code> — pure-Python builders reusing the
-agent-utilities reward spine (<code>agent_utilities.graph.training_signals</code>):</p>
+agent-connector-sdk reward spine (<code>agent_connector_sdk.graph.training_signals</code>):</p>
 <table>
 <thead>
 <tr>
@@ -1029,7 +1029,7 @@ bitsandbytes / httpx). Modules under <code>data_science_mcp/</code>:</p>
 <li><strong><code>rollout_buffer.py</code></strong> — prompt→generation→logprob→reward staging with an
   injected <code>InferenceBackend</code> + GRPO export.</li>
 <li><strong><code>trainers/eval_hooks.py</code></strong> — score a checkpoint with the <strong>AHE-3.1 reliability
-  suite</strong> (<code>agent_utilities.harness.reliability_scorers</code>).</li>
+  suite</strong> (<code>agent_connector_sdk.harness.reliability_scorers</code>).</li>
 </ul>
 <p>MCP tools: <code>train_sft</code>, <code>train_dpo</code>, <code>train_grpo</code>, <code>merge_adapters_ties</code>. They are
 <strong>plan-by-default</strong> — they return the training plan and only run when called with
@@ -1062,7 +1062,7 @@ so a trainer can batch a step over the wire in one round-trip. Same math as
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">data_science_mcp.training_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_sft_pipeline</span><span class="p">,</span> <span class="n">DeploymentTarget</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">data_science_mcp.trainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainConfig</span><span class="p">,</span> <span class="n">peft_manager</span>  <span class="c1"># peft via [training]</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">data_science_mcp.peft_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraSpec</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">agent_utilities.models.model_registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelRegistry</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">agent_connector_sdk.models.model_registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelRegistry</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># OpenSeeker SFT on the GB10: Qwen2.5-1.5B + LoRA, served by the local vLLM.</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">report</span> <span class="o">=</span> <span class="n">run_sft_pipeline</span><span class="p">(</span>
@@ -1231,7 +1231,7 @@ CUDA toolchain) — not CI/CPU-installable.</p>
 MCP tools: <code>train_tokenizer</code>, <code>pretrain_model</code> (plan-first like the fine-tuners).</p>
 <h2 id="agent-driven-training-conceptau-ahetrainerconcept-2">Agent-driven training (CONCEPT:AU-AHE.trainer.concept-2)<a class="headerlink" href="#agent-driven-training-conceptau-ahetrainerconcept-2" title="Permanent link">&para;</a></h2>
 <p>The whole loop is exposed as an agent workflow. Four agent personas (prompt JSONs in
-<code>agent-utilities/agent_utilities/prompts/</code>): <code>data_curator</code>, <code>training_engineer</code>,
+<code>agent-connector-sdk/agent_connector_sdk/prompts/</code>): <code>data_curator</code>, <code>training_engineer</code>,
 <code>eval_judge</code>, <code>ml_orchestrator</code>. They are bound into the <code>model_training_team</code>
 TeamConfig and driven by the <code>train_model</code> workflow skill
 (<code>universal-skills/.../workflows/ml/train_model/</code>):</p>
