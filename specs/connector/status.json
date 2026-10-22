@@ -4,15 +4,29 @@
   "owner_repo": "data-science-mcp",
   "delivery_state": "SPECIFIED",
   "requirement_ids": [
-    "CONN-DATA-SCIENCE-MCP-R001"
+    "CONN-DATA-SCIENCE-MCP-R001",
+    "CONN-DATA-SCIENCE-MCP-R002"
   ],
   "requirements": [
     {
       "id": "CONN-DATA-SCIENCE-MCP-R001",
       "title": "Signed engine compute connection",
+      "delivery_state": "VERIFIED",
+      "landed_in": [
+        "eac7c320be33"
+      ],
+      "verified_by": [
+        "tests/test_engine_connection.py:8"
+      ]
+    },
+    {
+      "id": "CONN-DATA-SCIENCE-MCP-R002",
+      "title": "Engine audience from the deployment",
       "delivery_state": "SPECIFIED",
       "landed_in": [],
-      "verified_by": []
+      "verified_by": [
+        "tests/test_engine_audience.py:6"
+      ]
     }
   ]
 }
