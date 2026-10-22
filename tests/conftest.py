@@ -3,7 +3,7 @@
 Compute runs in the Rust epistemic-graph engine, so the engine-backed tests need
 a live server. The session-scoped `epistemic_graph_engine` fixture best-effort
 launches one (installed `epistemic-graph-server` console script, or a sibling
-source build) and points `EPISTEMIC_GRAPH_SOCKET` at it. The per-test
+source build) and points `EPISTEMIC_GRAPH_ENDPOINT` at it. The per-test
 `require_engine` fixture depends on it and skips only if no engine could be
 started/reached — so coverage runs whenever the binary is available, and degrades
 to a clean skip when it is not.
@@ -64,9 +64,7 @@ def epistemic_graph_engine():
     no binary is available — in which case `require_engine` tests skip.
     """
     # Respect an externally provided engine (e.g. a CI service container).
-    if os.environ.get("EPISTEMIC_GRAPH_SOCKET") or os.environ.get(
-        "EPISTEMIC_GRAPH_TCP"
-    ):
+    if os.environ.get("EPISTEMIC_GRAPH_ENDPOINT"):
         yield None
         return
 
@@ -88,7 +86,7 @@ def epistemic_graph_engine():
         time.sleep(0.5)
 
     if os.path.exists(sock):
-        os.environ["EPISTEMIC_GRAPH_SOCKET"] = sock
+        os.environ["EPISTEMIC_GRAPH_ENDPOINT"] = f"unix://{sock}"
 
     try:
         yield proc
@@ -103,7 +101,7 @@ def epistemic_graph_engine():
                 os.remove(sock)
             except OSError:
                 pass
-        os.environ.pop("EPISTEMIC_GRAPH_SOCKET", None)
+        os.environ.pop("EPISTEMIC_GRAPH_ENDPOINT", None)
 
 
 @pytest.fixture

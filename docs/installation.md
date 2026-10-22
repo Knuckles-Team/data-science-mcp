@@ -58,7 +58,7 @@ them actually runs, so the package installs and imports without them.
 
 | Capability | Tools / API | Needs |
 |---|---|---|
-| Engine-backed ML (fit/predict/evaluate/cross-validate) | `fit_model`, `predict`, `evaluate_model`, `cross_validate`, `MLEngine` | core + a running **epistemic-graph** engine (`EPISTEMIC_GRAPH_SOCKET`/`_TCP`) |
+| Engine-backed ML (fit/predict/evaluate/cross-validate) | `fit_model`, `predict`, `evaluate_model`, `cross_validate`, `MLEngine` | core + a running **epistemic-graph** engine (`EPISTEMIC_GRAPH_ENDPOINT`) |
 | Sample datasets (iris/diabetes/…) | `load_dataset` | `[datasets]` (CSV needs nothing extra — uses polars) |
 | Quant / finance kernels | `quant_*` | core + epistemic-graph engine |
 | **Corpus curation** (dedup/decontaminate/quality-filter/pack/lineage) | `curate_corpus`, `dedup_corpus`, `decontaminate_corpus`, `dataset_lineage` (CONCEPT:DS-AHE.trainer.data-engine) | **core only** (pure-Python; epistemic-graph HNSW accelerates near-dup search when present) |
