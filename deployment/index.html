@@ -1152,14 +1152,19 @@ runtime settings:</p>
 <td>Register the quantitative-finance tool domain</td>
 </tr>
 <tr>
-<td><code>EPISTEMIC_GRAPH_SOCKET</code></td>
+<td><code>EPISTEMIC_GRAPH_ENDPOINT</code></td>
 <td>—</td>
-<td>UDS path to the <code>epistemic-graph</code> compute engine</td>
+<td>Compute engine endpoint (<code>tls://host:port</code> or <code>unix:///path</code>)</td>
 </tr>
 <tr>
-<td><code>EPISTEMIC_GRAPH_TCP</code></td>
+<td><code>EPISTEMIC_GRAPH_AUTH_SECRET_REF</code></td>
 <td>—</td>
-<td>TCP endpoint to the compute engine (alternative to the socket)</td>
+<td>Secret reference to the engine auth secret</td>
+</tr>
+<tr>
+<td><code>EPISTEMIC_GRAPH_TENANT</code> / <code>EPISTEMIC_GRAPH_GRAPH</code></td>
+<td>—</td>
+<td>Tenant and graph the compute session signs for</td>
 </tr>
 </tbody>
 </table>
