@@ -33,7 +33,8 @@ import json
 import logging
 import os
 import re
-from typing import Any, Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
+from typing import Any
 
 import numpy as np
 
@@ -83,9 +84,9 @@ def _open_text(path: str) -> Any:
     """
     if path.endswith(".zst"):
         try:
-            import io  # noqa: PLC0415
+            import io
 
-            import zstandard  # noqa: PLC0415
+            import zstandard
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "zstandard is required to stream .zst corpora; install "
@@ -99,13 +100,13 @@ def _open_text(path: str) -> Any:
 
 def _stream_hf(spec: dict[str, Any], default_split: str) -> Iterator[dict[str, Any]]:
     try:
-        from datasets import load_dataset  # noqa: PLC0415
+        from datasets import load_dataset
     except ImportError as e:  # pragma: no cover - without the extra
         raise RuntimeError(
             "huggingface `datasets` is required for hf corpus specs; install "
             "`data-science-mcp[training]`"
         ) from e
-    from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+    from data_science_mcp.hf_security import require_pinned_revision
 
     revision = require_pinned_revision(spec["hf"], spec.get("revision"))
     ds = load_dataset(
@@ -168,7 +169,7 @@ def _near_pairs_engine(
     ``SyncEpistemicGraphClient.connect()`` here leaked one of each on every dedup.
     """
     try:  # pragma: no cover - requires a live engine + matching client
-        from .ml_engine import MLEngine  # noqa: PLC0415 — lazy to avoid import cycle
+        from .ml_engine import MLEngine
 
         client = MLEngine._rust_client()
         if client is None:
@@ -222,13 +223,13 @@ def near_duplicate_pairs(
             raise RuntimeError(
                 f"near_duplicate_pairs: epistemic-graph engine unavailable and "
                 f"n={n} exceeds the local O(n^2) cap ({_NEAR_PAIRS_LOCAL_MAX}). "
-                f"Start the engine (EPISTEMIC_GRAPH_SOCKET / EPISTEMIC_GRAPH_TCP) "
+                f"Start the engine (EPISTEMIC_GRAPH_ENDPOINT) "
                 f"for the Rust LSH/HNSW path, raise DSM_NEAR_PAIRS_LOCAL_MAX, or "
                 f"call with use_engine=False to force the local path."
             )
         logger.warning(
             "near_duplicate_pairs: engine unavailable; falling back to local "
-            "O(n^2) cosine for n=%d (set EPISTEMIC_GRAPH_SOCKET/TCP for the Rust "
+            "O(n^2) cosine for n=%d (set EPISTEMIC_GRAPH_ENDPOINT for the Rust "
             "LSH/HNSW path)",
             n,
         )
@@ -410,7 +411,7 @@ def prepare_pretrain_data(
     try:
         if is_h5:
             try:
-                import h5py  # noqa: PLC0415
+                import h5py
             except ImportError as e:  # pragma: no cover - without the extra
                 raise RuntimeError(
                     "h5py is required for HDF5 token output; install "
@@ -479,7 +480,7 @@ def prepare_pretrain_data(
 def load_token_array(path: str) -> np.ndarray:
     """Load the flat token array written by :func:`prepare_pretrain_data`."""
     if path.endswith((".h5", ".hdf5")):
-        import h5py  # noqa: PLC0415
+        import h5py
 
         with h5py.File(path, "r") as f:
             return f["tokens"][:]
@@ -544,21 +545,21 @@ def dataset_provenance(
 
 
 def _kg_write(payload: dict[str, Any]) -> None:
-    from data_science_mcp.kg_log import log_provenance  # noqa: PLC0415
+    from data_science_mcp.kg_log import log_provenance
 
     log_provenance(payload)
 
 
 __all__ = [
-    "stream_corpus",
-    "feature_vector",
-    "near_duplicate_pairs",
-    "dedup",
+    "dataset_provenance",
     "decontaminate",
-    "quality_filter",
+    "dedup",
+    "feature_vector",
+    "load_token_array",
+    "near_duplicate_pairs",
     "pack_sequences",
     "prepare_pretrain_data",
-    "load_token_array",
+    "quality_filter",
     "read_token_blocks",
-    "dataset_provenance",
+    "stream_corpus",
 ]

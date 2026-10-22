@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from typing import Any
+from typing import Any, ClassVar, Self
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +63,13 @@ _RUST_PARAM_KEYS = {
 }
 
 _ENGINE_REQUIRED_ERR = (
-    "epistemic-graph engine unavailable. Set EPISTEMIC_GRAPH_SOCKET or "
-    "EPISTEMIC_GRAPH_TCP and ensure the engine is running."
+    "epistemic-graph engine unavailable. Set EPISTEMIC_GRAPH_ENDPOINT, "
+    "EPISTEMIC_GRAPH_AUTH_SECRET_REF, EPISTEMIC_GRAPH_TENANT and "
+    "EPISTEMIC_GRAPH_GRAPH, and ensure the engine is running."
 )
+
+#: Engine scopes the compute session signs: data-science and finance compute.
+ENGINE_SCOPES = ("compute:datascience", "compute:finance", "sparql:read")
 
 # Sentinel so a cached None ("engine not reachable") is distinct from "unprobed".
 _UNPROBED = object()
@@ -79,11 +83,11 @@ class MLEngine:
     """
 
     _instance: MLEngine | None = None
-    _datasets: dict[str, dict[str, Any]] = {}
-    _models: dict[str, dict[str, Any]] = {}
+    _datasets: ClassVar[dict[str, dict[str, Any]]] = {}
+    _models: ClassVar[dict[str, dict[str, Any]]] = {}
     _rust_client_cache: Any = _UNPROBED
 
-    def __new__(cls) -> MLEngine:
+    def __new__(cls) -> Self:
         """Singleton pattern for cross-tool state sharing."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -92,34 +96,32 @@ class MLEngine:
     # ── Rust epistemic-graph engine integration (CONCEPT:EG-KG.compute.rust-native-training-loss) ──────
     @classmethod
     def _rust_client(cls) -> Any:
-        """Return a cached SyncEpistemicGraphClient, or None if unreachable.
+        """Return a cached connected engine client, or None if unreachable.
 
-        Connects when an endpoint is configured via ``EPISTEMIC_GRAPH_SOCKET``
-        (UDS) or ``EPISTEMIC_GRAPH_TCP`` (host:port), and
-        otherwise tries the client's own default socket. The result (including a
-        failed probe) is cached so we never re-probe a dead endpoint per call.
-        Compute methods surface a clear error when this returns None.
+        Connects through the connector SDK's compute adapter from
+        ``EPISTEMIC_GRAPH_ENDPOINT`` (``tls://host:port`` or ``unix:///path``),
+        ``EPISTEMIC_GRAPH_AUTH_SECRET_REF``, ``EPISTEMIC_GRAPH_TENANT`` and
+        ``EPISTEMIC_GRAPH_GRAPH``, signing a verified request context with the
+        data-science and finance compute scopes. The result (including a failed
+        probe) is cached so a dead endpoint is never re-probed per call. The
+        failure cause is logged by type only; it never carries a secret.
         """
         if cls._rust_client_cache is not _UNPROBED:
             return cls._rust_client_cache
 
         client = None
-        primary_socket = os.environ.get("EPISTEMIC_GRAPH_SOCKET")
-        legacy_socket = os.environ.get("GRAPH_SERVICE_SOCKET")
-        socket_path = primary_socket or legacy_socket
-        tcp_addr = os.environ.get("EPISTEMIC_GRAPH_TCP")
         try:
-            from epistemic_graph.client import SyncEpistemicGraphClient
+            from agent_connector_sdk.compute.engine import connect_compute
 
-            if tcp_addr:
-                client = SyncEpistemicGraphClient.connect(tcp_addr=tcp_addr)
-            elif socket_path:
-                client = SyncEpistemicGraphClient.connect(socket_path=socket_path)
-            else:
-                client = SyncEpistemicGraphClient.connect()
+            client = connect_compute(scopes=ENGINE_SCOPES).client
             logger.info("epistemic-graph engine connected; Rust compute enabled")
-        except Exception as exc:  # noqa: BLE001 — surfaced by compute methods
-            logger.warning("Operation failed: error_type=%s", type(exc).__name__)
+        except Exception as exc:
+            cause = exc.__cause__ or exc
+            logger.warning(
+                "epistemic-graph engine unavailable: error_type=%s cause_type=%s",
+                type(exc).__name__,
+                type(cause).__name__,
+            )
             client = None
         cls._rust_client_cache = client
         return client
@@ -465,7 +467,7 @@ class MLEngine:
                 "feature_names": data["feature_names"],
                 "backend": "rust",
             }
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.error("Rust OLS fit failed: error_type=%s", type(exc).__name__)
             return None
 
@@ -535,7 +537,7 @@ class MLEngine:
                 "feature_names": data["feature_names"],
                 "backend": "rust_estimator",
             }
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.error(
                 "Rust estimator fit failed: error_type=%s", type(exc).__name__
             )
@@ -716,7 +718,7 @@ class MLEngine:
             current = 0
             for fs in fold_sizes:
                 test_idx = list(range(current, current + int(fs)))
-                train_idx = list(range(0, current)) + list(range(current + int(fs), n))
+                train_idx = list(range(current)) + list(range(current + int(fs), n))
                 current += int(fs)
 
                 reg = client.datascience.linear_regression(
@@ -730,7 +732,7 @@ class MLEngine:
             return self._cv_summary(
                 model_class, dataset_name, n_folds, rmse_scores, "rust"
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.error(
                 "Rust OLS cross-validation failed: error_type=%s",
                 type(exc).__name__,
@@ -765,7 +767,7 @@ class MLEngine:
             current = 0
             for fs in fold_sizes:
                 test_idx = list(range(current, current + int(fs)))
-                train_idx = list(range(0, current)) + list(range(current + int(fs), n))
+                train_idx = list(range(current)) + list(range(current + int(fs), n))
                 current += int(fs)
 
                 blob = client.datascience.fit_estimator(
@@ -779,7 +781,7 @@ class MLEngine:
             return self._cv_summary(
                 model_class, dataset_name, n_folds, rmse_scores, "rust_estimator"
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.error(
                 "Rust estimator cross-validation failed: error_type=%s",
                 type(exc).__name__,
@@ -884,7 +886,7 @@ class MLEngine:
                 },
                 "backend": "rust",
             }
-        except Exception as exc:  # noqa: BLE001 — degrade to numpy
+        except Exception as exc:
             logger.warning("Operation failed: error_type=%s", type(exc).__name__)
             return None
 
@@ -956,7 +958,7 @@ class MLEngine:
             result["total"] = total
             result["backend"] = "rust"
             return result
-        except Exception as exc:  # noqa: BLE001 — degrade to numpy
+        except Exception as exc:
             logger.warning("Operation failed: error_type=%s", type(exc).__name__)
             return None
 

@@ -20,7 +20,7 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 2.3.1*
+*Version: 2.3.2*
 
 > **Documentation** — Installation, deployment, usage across the MCP, Python API, and
 > CLI interfaces, and the in-house model-training substrate are maintained in the
@@ -340,9 +340,9 @@ the detailed transport contract.
 | `INFERENCE_BASE_URL` | — | Base URL of the running inference server, e.g. http://host:30000 |
 | `INFERENCE_MODEL` | — | Served model id exposed by the inference server. |
 | `INFERENCE_API_KEY` | secret-injected | Bearer token for the inference server (default "EMPTY" for local servers). |
-| `EPISTEMIC_GRAPH_SOCKET` | — | Unix domain socket path to the epistemic-graph engine. |
-| `GRAPH_SERVICE_SOCKET` | — | Alternate UDS env var honored by the engine client. |
-| `EPISTEMIC_GRAPH_TCP` | — | TCP host:port for the epistemic-graph engine (takes precedence over the socket). |
+| `EPISTEMIC_GRAPH_ENDPOINT` | — | Engine endpoint: `tls://host:port` or `unix:///path`. |
+| `EPISTEMIC_GRAPH_AUTH_SECRET_REF` | — | Secret reference to the engine auth secret (e.g. `env://GRAPH_SERVICE_AUTH_SECRET`). |
+| `EPISTEMIC_GRAPH_TENANT` / `EPISTEMIC_GRAPH_GRAPH` | — | Tenant and graph the compute session signs for. |
 | `DSM_NEAR_PAIRS_LOCAL_MAX` | `20000` | Cap on local O(n^2) near-pair fallback before requiring the Rust path (0 disables the cap). |
 | `MODEL_TRAININGTOOL` | `True` |  |
 | `MODEL_EVOLUTIONTOOL` | `True` |  |

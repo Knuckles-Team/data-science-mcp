@@ -35,7 +35,7 @@ engine is a **required** dependency and there is **no scikit-learn compute path*
 - `scikit-learn` is an **optional** extra (`data-science-mcp[datasets]`) used
   ONLY by the built-in sample-dataset loaders (iris/diabetes/...). CSV loading
   prefers polars (with a stdlib-csv fallback when polars is unavailable). `numpy` remains for array marshalling and light local math.
-- Configure the engine endpoint via `EPISTEMIC_GRAPH_SOCKET` / `EPISTEMIC_GRAPH_TCP`.
+- Configure the engine through `EPISTEMIC_GRAPH_ENDPOINT`, `EPISTEMIC_GRAPH_AUTH_SECRET_REF`, `EPISTEMIC_GRAPH_TENANT` and `EPISTEMIC_GRAPH_GRAPH`.
   Compute tests are gated by the `require_engine` fixture; sklearn-parity for the
   estimators is validated out-of-tree.
 
