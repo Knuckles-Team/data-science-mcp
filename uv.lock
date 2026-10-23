@@ -825,7 +825,7 @@ wheels = [
 
 [[package]]
 name = "data-science-mcp"
-version = "2.3.3"
+version = "2.3.4"
 source = { editable = "." }
 dependencies = [
     { name = "agent-connector-sdk", extra = ["mcp"] },
