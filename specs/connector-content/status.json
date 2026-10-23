@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "spec_id": "CONN-DATA-SCIENCE-MCP-CONNECTOR-CONTENT",
+  "owner_repo": "data-science-mcp",
+  "delivery_state": "VERIFIED",
+  "requirement_ids": [
+    "CONN-DATA-SCIENCE-MCP-CONNECTOR-CONTENT-R001"
+  ],
+  "requirements": [
+    {
+      "id": "CONN-DATA-SCIENCE-MCP-CONNECTOR-CONTENT-R001",
+      "title": "Default content",
+      "delivery_state": "VERIFIED",
+      "landed_in": [
+        "6cd237c7e2eb"
+      ],
+      "verified_by": [
+        "tests/test_default_content_surfaces.py:15"
+      ]
+    }
+  ]
+}
