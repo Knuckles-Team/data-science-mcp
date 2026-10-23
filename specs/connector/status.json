@@ -2,7 +2,7 @@
   "schema_version": 2,
   "spec_id": "CONN-DATA-SCIENCE-MCP",
   "owner_repo": "data-science-mcp",
-  "delivery_state": "SPECIFIED",
+  "delivery_state": "VERIFIED",
   "requirement_ids": [
     "CONN-DATA-SCIENCE-MCP-R001",
     "CONN-DATA-SCIENCE-MCP-R002"
@@ -22,8 +22,10 @@
     {
       "id": "CONN-DATA-SCIENCE-MCP-R002",
       "title": "Engine audience from the deployment",
-      "delivery_state": "SPECIFIED",
-      "landed_in": [],
+      "delivery_state": "VERIFIED",
+      "landed_in": [
+        "2ced84cbb1a1"
+      ],
       "verified_by": [
         "tests/test_engine_audience.py:6"
       ]
