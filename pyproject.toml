@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "2.3.4"
+version = "2.3.5"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Exposes training, evaluation and evolution as MCP tools."
 readme = "README.md"
 authors = [{ name = "Audel Rouhi", email = "knucklessg1@gmail.com" }]
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "agent-connector-sdk[mcp]>=0.3.18,<1.0.0",
+    "agent-connector-sdk[mcp]>=0.4.1,<1.0.0",
     "requests>=2.34.2",
     "epistemic-graph[full]>=2.27.1",
     "polars>=2.0.0",
@@ -26,7 +26,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "agent-connector-sdk[mcp]>=0.3.18,<1.0.0"]
+    "agent-connector-sdk[mcp]>=0.4.1,<1.0.0"]
 
 
 # scikit-learn is no longer used for compute (that runs in the epistemic-graph
@@ -120,9 +120,6 @@ data-science-mcp = "data_science_mcp.skills"
 
 [project.entry-points."agent_connector_sdk.ontology_providers"]
 data-science-mcp = "data_science_mcp.ontology"
-
-[project.entry-points."agent_connector_sdk.source_connector_providers"]
-data-science-mcp = "data_science_mcp.connectors"
 
 [project.entry-points."agent_connector_sdk.prompt_providers"]
 data-science-mcp = "data_science_mcp.prompts"

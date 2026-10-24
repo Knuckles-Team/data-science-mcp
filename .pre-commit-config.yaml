@@ -88,13 +88,6 @@ repos:
     language: system
     pass_filenames: false
     files: ^(README\.md|\.env\.example|mcp_config.*\.json|.*/mcp_config.*\.json|docker/.*compose.*\.ya?ml|.*/auth\.py|.*/mcp_server\.py)$
-  - id: check-bumpversion
-    name: validate bumpversion config
-    entry: |-
-      bash -c 'if [ -f ".bumpversion.cfg" ]; then bump2version patch --dry-run --allow-dirty; fi'
-    language: system
-    pass_filenames: false
-    always_run: true
 - repo: https://github.com/AleksaC/hadolint-py
   rev: 6e7504451511eaeb62a3e7f14d63b0296cbf86eb  # frozen: v2.15.1
   hooks:

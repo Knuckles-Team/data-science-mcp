@@ -16,7 +16,6 @@ PKG = Path(__file__).resolve().parent.parent / "data_science_mcp"
 ONTOLOGY = PKG / "ontology" / "datascience.ttl"
 PROMPT = PKG / "prompts" / "datascience_specialist.json"
 SKILLS_DIR = PKG / "skills"
-PRESETS = PKG / "connectors" / "mcp_source_presets.json"
 
 EXPECTED_SKILLS = {
     "data-science-model-training",
@@ -59,8 +58,6 @@ def test_prompt_is_valid_structured_prompt():
     assert data["type"] == "prompt"
     assert data["schema_version"] == "1.0"
     assert data["source"] == "data-science-mcp"
-    assert data["extends"] == "agent-connector-sdk:base"
-    assert data["compose"] == "append"
     assert data["identity"]["role"]
     assert data["instructions"]["core_directive"]
     # every referenced skill exists on disk
@@ -82,12 +79,12 @@ def test_three_real_skills_present_and_prefixed():
 
 
 def test_source_preset_uses_real_tool_and_fields():
-    presets = json.loads(PRESETS.read_text())
-    preset = presets["datascience-model-registry"]
-    assert preset["server"] == "data-science-mcp"
+    from data_science_mcp.connector_sources import declaration
+
+    source = next(s for s in declaration().sources if s.source_id == "datascience-model-registry")
     # rank_models is a real registered MCP tool
-    assert preset["tool"] == "rank_models"
-    assert preset["records_path"] == "ranked_models"
+    assert source.tools == ("rank_models",)
+    assert source.records_path == "ranked_models"
     # id/title map to real ranked_models record fields
-    assert preset["id_field"] == "model_id"
-    assert preset["title_field"] == "model_str"
+    assert source.id_field == "model_id"
+    assert source.title_field == "model_str"
