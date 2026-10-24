@@ -111,19 +111,6 @@ def test_trainer_protocol_is_structural_interface():
 # --- MCP tool registration --------------------------------------------------
 
 
-@pytest.mark.asyncio
-async def test_training_data_tools_registered():
-    import sys
-
-    sys.argv = ["mcp_server.py"]  # avoid create_mcp_server parsing the pytest CLI
-    from data_science_mcp.mcp_server import get_mcp_instance
-
-    mcp, _, _, registered_tags = get_mcp_instance()
-    assert "model-training" in registered_tags
-    names = {t.name for t in await mcp.list_tools()}
-    assert TRAINING_DATA_TOOLS <= names
-
-
 def test_register_training_data_tools_on_fresh_server():
     from fastmcp import FastMCP
 

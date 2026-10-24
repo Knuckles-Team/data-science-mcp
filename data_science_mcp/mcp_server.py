@@ -20,11 +20,8 @@ Tool tags:
 
 import json
 import logging
-import sys
-from typing import Any
 
-from agent_connector_sdk.config import load_config
-from agent_connector_sdk.mcp.server import create_mcp_server
+from agent_connector_sdk.connector_hooks import RegistrationContext
 
 # SDK gap (SDK-CONNECTOR-CONTROL-R009): agent_connector_sdk.mcp.tool_surface's
 # register_tool_surface silently ignores client_cls/get_client (R020 retired
@@ -34,11 +31,8 @@ from agent_connector_sdk.mcp.server import create_mcp_server
 # (see auth.py's docstring for the historical dispatch-mismatch bug this
 # guards against). Swapping to the SDK here would silently drop that whole
 # tool surface, so this import stays on agent_connector_sdk.
-from agent_connector_sdk.mcp.tool_surface import register_tool_surface
 from fastmcp import Context, FastMCP
 from pydantic import Field
-
-__version__ = "2.3.5"
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
@@ -46,7 +40,6 @@ logger.setLevel(logging.INFO)
 
 # ── Model Training Tools ─────────────────────────────────────────────
 
-from data_science_mcp.auth import get_client
 from data_science_mcp.ml_engine import MLEngine
 
 _pareto_models = {}  # In-memory store for model classes submitted to Pareto frontier
@@ -55,16 +48,6 @@ _graded_responses = {}  # In-memory store for interpretability tests and grades
 # Imported after the module-level stores above so the sibling tool modules in
 # data_science_mcp.mcp (which back-import _pareto_models/_graded_responses) load
 # without a circular import.
-from data_science_mcp.mcp.mcp_deep_delegate import (
-    register_deep_delegate_tools,
-)
-from data_science_mcp.mcp.mcp_quant import register_quant_tools
-from data_science_mcp.mcp.mcp_trainers import (
-    register_trainer_tools,
-)
-from data_science_mcp.mcp.mcp_training_data import (
-    register_training_data_tools,
-)
 
 # mcp_data_engine is imported lazily inside get_mcp_instance (see below) rather than
 # at module top: a top-level import here perturbs the package's lazy OPTIONAL_MODULES
@@ -463,8 +446,7 @@ def register_data_management_tools(mcp: FastMCP) -> None:
     async def load_dataset(
         name: str = Field(
             description=(
-                "Built-in dataset name or CSV path confined to "
-                "DATA_SCIENCE_DATA_ROOT"
+                "Built-in dataset name or CSV path confined to DATA_SCIENCE_DATA_ROOT"
             )
         ),
         target_column: str = Field(
@@ -525,8 +507,9 @@ def register_data_management_tools(mcp: FastMCP) -> None:
 # ── Prompts ──────────────────────────────────────────────────────────
 
 
-def register_prompts(mcp: FastMCP) -> None:
+def register_prompts(context: RegistrationContext) -> None:
     """Register MCP prompts for guided workflows."""
+    mcp = context.server
 
     @mcp.prompt(
         name="model_evolution_workflow",
@@ -576,84 +559,3 @@ def register_prompts(mcp: FastMCP) -> None:
 
 
 # ── MCP Initialization ──────────────────────────────────────────────
-
-
-def get_mcp_instance() -> tuple[Any, Any, Any, Any]:
-    """Initialize and return the Data Science MCP instance."""
-    load_config()
-
-    args, mcp, middlewares = create_mcp_server(
-        name="Data Science MCP",
-        version=__version__,
-        instructions=(
-            "Data Science MCP Server for model training, evaluation, and "
-            "evolution. Integrates with agent-connector-sdk IModelEvolver "
-            " for Agentic-iModels workflows."
-        ),
-    )
-
-    # mcp_data_engine is imported lazily (see module-top note) so the package's
-    # OPTIONAL_MODULES loader does not swallow a transient partial-init error.
-    from data_science_mcp.mcp.mcp_data_engine import register_data_engine_tools
-
-    # Explicit registry preserves the original per-domain toggle grouping: several
-    # register_*_tools share one <TAG>TOOL env var (e.g. all training surfaces are
-    # gated by MODEL_TRAININGTOOL). register_tool_surface gates each via
-    # setting(env_var, True) per MCP_TOOL_MODE.
-    tool_registry = [
-        ("model-training", "MODEL_TRAININGTOOL", register_model_training_tools),
-        ("training-data", "MODEL_TRAININGTOOL", register_training_data_tools),
-        ("trainer", "MODEL_TRAININGTOOL", register_trainer_tools),
-        ("deep-delegate", "MODEL_TRAININGTOOL", register_deep_delegate_tools),
-        ("model-evolution", "MODEL_EVOLUTIONTOOL", register_model_evolution_tools),
-        ("interpretability", "INTERPRETABILITYTOOL", register_interpretability_tools),
-        ("data-management", "DATA_MANAGEMENTTOOL", register_data_management_tools),
-        ("data-engine", "DATA_ENGINETOOL", register_data_engine_tools),
-    ]
-
-    registered_tags = register_tool_surface(
-        mcp,
-        client_cls=MLEngine,
-        get_client=get_client,
-        service="data-science-mcp",
-        tool_registry=tool_registry,
-    )
-
-    # Quant kernels are computations, not MLEngine operations: one typed tool
-    # per kernel (the SDK would drop their action-routed form).
-    from data_science_mcp.action_tools import serve_action_tools
-
-    if serve_action_tools(mcp, [("quant", "QUANTTOOL", register_quant_tools)]):
-        registered_tags.append("quant")
-
-    register_prompts(mcp)
-
-    for mw in middlewares:
-        mcp.add_middleware(mw)
-
-    return mcp, args, middlewares, registered_tags
-
-
-def mcp_server():
-    """Entry point for the MCP server."""
-    mcp, args, middlewares, registered_tags = get_mcp_instance()
-
-    print(f"Data Science MCP v{__version__}", file=sys.stderr)
-    print("\nStarting MCP Server", file=sys.stderr)
-    print(f"  Transport: {args.transport.upper()}", file=sys.stderr)
-    print(f"  Auth: {args.auth_type}", file=sys.stderr)
-    print(f"  Tags: {', '.join(registered_tags)}", file=sys.stderr)
-
-    if args.transport == "stdio":
-        mcp.run(transport="stdio")
-    elif args.transport == "streamable-http":
-        mcp.run(transport="streamable-http", host=args.host, port=args.port)
-    elif args.transport == "sse":
-        mcp.run(transport="sse", host=args.host, port=args.port)
-    else:
-        logger.error(f"Invalid transport: {args.transport}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    mcp_server()

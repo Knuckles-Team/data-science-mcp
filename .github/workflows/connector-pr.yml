@@ -14,4 +14,4 @@ jobs:
     uses: Knuckles-Team/pipelines/.github/workflows/connector_pr_pipeline.yml@main
     with:
       # the GPU extras (training, training-scale, training-fast) do not install on a CPU runner (flash-attn needs torch at build time).
-      sync-args: --all-groups --extra mcp --extra datasets --extra test
+      sync-args: --all-groups --extra datasets --extra test
