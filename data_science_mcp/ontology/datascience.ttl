@@ -303,5 +303,11 @@
     Pareto frontier, interpretability suites, curated corpora, PEFT adapters, tokenizers,
     reward models and specialized GPU kernels — federated into the agent-connector-sdk
     knowledge-graph hub. Reuses the shared :Dataset/:Model/:LanguageModel/:OutcomeEvaluation/
-    :Document/:Person classes rather than redefining them.""" ;
-    owl:imports <http://knuckles.team/kg> .
+    :Document/:Person classes rather than redefining them.""" .
+
+# ontology-codemod R3
+<http://knuckles.team/kg#EvaluationMetric> rdfs:subClassOf <http://knuckles.team/kg#Metric> .
+
+# ontology-codemod R4
+<http://knuckles.team/kg#DatasetSplit> rdfs:subClassOf <http://knuckles.team/kg#Dataset> .
+<http://knuckles.team/kg#ModelArtifact> rdfs:subClassOf <http://knuckles.team/kg#Model> .
