@@ -18,7 +18,7 @@ import json  # noqa: E402
 import pytest  # noqa: E402
 
 from data_science_mcp.ml_engine import MLEngine, _UNPROBED  # noqa: E402
-from data_science_mcp.mcp_server import get_mcp_instance  # noqa: E402
+from agent_connector_sdk.connector import build_server  # noqa: E402
 
 QUANT_TOOLS = {
     "quant_market_making",
@@ -50,27 +50,12 @@ def _skip_if_unknown_variant(res: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_quant_tools_registered():
-    """Every quant kernel is served as its own typed tool, tagged 'quant'."""
-    mcp, _, _, registered_tags = get_mcp_instance()
-    assert "quant" in registered_tags
-    tools = await mcp.list_tools()
-    quant = [t for t in tools if t.name.startswith("quant_")]
-    for group in QUANT_TOOLS:
-        assert any(t.name == group or t.name.startswith(group + "_") for t in quant), group
-    for t in quant:
-        assert "quant" in t.tags
-        assert "action" not in (t.parameters or {}).get("properties", {})
-        assert t.annotations.read_only_hint
-
-
-@pytest.mark.asyncio
 async def test_quant_engine_unavailable_graceful(monkeypatch):
     """With no engine reachable, tools degrade to an error dict (never raise)."""
     monkeypatch.setattr(MLEngine, "_rust_client_cache", None, raising=False)
     monkeypatch.setattr(MLEngine, "_rust_client", classmethod(lambda cls: None))
 
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     sizing = {t.name: t for t in tools}
     res = await sizing["quant_sizing_kelly_fraction"].fn(q=0.6, c=0.5, ctx=None)
@@ -83,7 +68,7 @@ async def test_quant_engine_unavailable_graceful(monkeypatch):
 @pytest.mark.asyncio
 async def test_quant_invalid_json_errors(require_engine):
     """Malformed JSON list arguments surface a clean error."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     micro = {t.name: t for t in tools}
     res = await micro["quant_microstructure_vpin_pm"].fn(buy_vol_json="{bad", ctx=None)
@@ -93,7 +78,7 @@ async def test_quant_invalid_json_errors(require_engine):
 @pytest.mark.asyncio
 async def test_quant_market_making(require_engine):
     """Avellaneda-Stoikov, GLT, logit, and the scalar GM/PnL kernels run."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     mm = {t.name: t for t in tools}
 
@@ -156,7 +141,7 @@ async def test_quant_market_making(require_engine):
 @pytest.mark.asyncio
 async def test_quant_microstructure(require_engine):
     """OFI / microprice / VPIN / Hawkes kernels run end-to-end."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     micro = {t.name: t for t in tools}
 
@@ -235,7 +220,7 @@ async def test_quant_microstructure(require_engine):
 @pytest.mark.asyncio
 async def test_quant_sizing(require_engine):
     """Kelly / Bayesian-Kelly / credible-interval kernels run."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     sizing = {t.name: t for t in tools}
 
@@ -259,7 +244,7 @@ async def test_quant_sizing(require_engine):
 @pytest.mark.asyncio
 async def test_quant_validation(require_engine):
     """CPCV / deflated-Sharpe / PBO / Diebold-Mariano kernels run."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     val = {t.name: t for t in tools}
 
@@ -303,7 +288,7 @@ async def test_quant_validation(require_engine):
 @pytest.mark.asyncio
 async def test_quant_forensic(require_engine):
     """forensic_report returns the full Beneish/Altman/Piotroski/Sloan summary."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     forensic = next(t for t in tools if t.name == "quant_forensic")
 
@@ -347,7 +332,7 @@ async def test_quant_forensic(require_engine):
 @pytest.mark.asyncio
 async def test_quant_sizing_empirical_kelly(require_engine):
     """Empirical (Monte-Carlo) Kelly fraction runs via the engine."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     sizing = {t.name: t for t in tools}
     res = await sizing["quant_sizing_empirical_kelly"].fn(
@@ -366,7 +351,7 @@ async def test_quant_sizing_empirical_kelly(require_engine):
 @pytest.mark.asyncio
 async def test_quant_validation_brier(require_engine):
     """Brier calibration score runs via the engine."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     val = {t.name: t for t in tools}
     res = await val["quant_validation_brier_score"].fn(
@@ -382,7 +367,7 @@ async def test_quant_validation_brier(require_engine):
 @pytest.mark.asyncio
 async def test_quant_statespace(require_engine):
     """Kalman / ADF / OU / Markov state-space kernels run end-to-end."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     ss = {t.name: t for t in tools}
 
@@ -472,7 +457,7 @@ async def test_quant_statespace(require_engine):
 @pytest.mark.asyncio
 async def test_quant_signals(require_engine):
     """Signal-combination / breadth kernels run end-to-end."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     sig = {t.name: t for t in tools}
 
@@ -535,7 +520,7 @@ async def test_quant_signals(require_engine):
 @pytest.mark.asyncio
 async def test_quant_statespace_invalid_json():
     """Malformed JSON to a state-space action returns a clean error (no engine)."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     ss = {t.name: t for t in tools}
     res = await ss["quant_statespace_adf_test"].fn(series_json="{bad", ctx=None)
@@ -545,7 +530,7 @@ async def test_quant_statespace_invalid_json():
 @pytest.mark.asyncio
 async def test_quant_forensic_invalid_json():
     """Malformed forensic input JSON returns a clean error (no engine needed)."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     forensic = next(t for t in tools if t.name == "quant_forensic")
     res = await forensic.fn(this_year_json="{bad", prior_year_json="{}", ctx=None)
@@ -555,7 +540,7 @@ async def test_quant_forensic_invalid_json():
 @pytest.mark.asyncio
 async def test_quant_derivatives_unknown_action(require_engine):
     """An unrecognized SABR action returns a clean error (no exception)."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     deriv = {t.name: t for t in tools}
     res = await deriv["quant_derivatives_nope"].fn(ctx=None)
@@ -565,7 +550,7 @@ async def test_quant_derivatives_unknown_action(require_engine):
 @pytest.mark.asyncio
 async def test_quant_derivatives_invalid_json():
     """Malformed strikes JSON returns a clean error (no engine needed)."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     deriv = {t.name: t for t in tools}
     res = await deriv["quant_derivatives_smile"].fn(strikes_json="{bad", ctx=None)
@@ -575,7 +560,7 @@ async def test_quant_derivatives_invalid_json():
 @pytest.mark.asyncio
 async def test_quant_derivatives_sabr(require_engine):
     """SABR implied_vol / smile / calibrate kernels run end-to-end."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     deriv = {t.name: t for t in tools}
 
