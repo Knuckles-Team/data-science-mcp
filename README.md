@@ -20,8 +20,6 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-*Version: 2.3.5*
-
 > **Documentation** — Installation, deployment, usage across the MCP, Python API, and
 > CLI interfaces, and the in-house model-training substrate are maintained in the
 > [official documentation](https://knuckles-team.github.io/data-science-mcp/).

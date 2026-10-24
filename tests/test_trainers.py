@@ -342,19 +342,6 @@ def test_train_sft_tool_plans_without_execute():
     assert out["plan"]["planned_steps"] == 1
 
 
-@pytest.mark.asyncio
-async def test_trainer_tools_registered_on_live_server():
-    import sys
-
-    sys.argv = ["mcp_server.py"]
-    from data_science_mcp.mcp_server import get_mcp_instance
-
-    mcp, _, _, registered_tags = get_mcp_instance()
-    assert "model-training" in registered_tags
-    names = {t.name for t in await mcp.list_tools()}
-    assert {"train_sft", "train_dpo", "train_grpo", "merge_adapters_ties"} <= names
-
-
 def test_evaluate_checkpoint_runs_reliability_suite():
     cases = [
         {

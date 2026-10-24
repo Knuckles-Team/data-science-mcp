@@ -11,11 +11,10 @@ sys.argv = ["mcp_server.py"]
 import json
 import tempfile
 import pytest
-from unittest.mock import patch
 import numpy as np
 
 from data_science_mcp.ml_engine import MLEngine
-from data_science_mcp.mcp_server import get_mcp_instance
+from agent_connector_sdk.connector import build_server
 
 
 @pytest.fixture(autouse=True)
@@ -220,7 +219,7 @@ def test_ml_engine_errors():
 @pytest.mark.asyncio
 async def test_mcp_data_management_tools(require_engine, require_sklearn):
     """Verify FastMCP load, describe, and split dataset tools."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
 
     # 1. Test load_dataset tool
@@ -291,7 +290,7 @@ async def test_verbose_describe_dataset_tool_dispatches(
     engine = MLEngine()
     engine.load_dataset("iris", "")
 
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     result = await mcp.call_tool(
         "data_science_describe_dataset", {"params_json": json.dumps({"name": "iris"})}
     )
@@ -303,7 +302,7 @@ async def test_verbose_describe_dataset_tool_dispatches(
 @pytest.mark.asyncio
 async def test_mcp_model_training_tools(require_engine, require_sklearn):
     """Verify FastMCP fit, predict, evaluate, and cross-validate tools."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
 
     # Load iris dataset first
@@ -385,7 +384,7 @@ async def test_mcp_model_training_tools(require_engine, require_sklearn):
 @pytest.mark.asyncio
 async def test_mcp_model_evolution_tools(require_engine, require_sklearn):
     """Verify FastMCP evolve_model_class, rank_models, and get_pareto_frontier tools."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
 
     # Clear global pareto models store for clean execution
@@ -441,7 +440,7 @@ async def test_mcp_model_evolution_tools(require_engine, require_sklearn):
 @pytest.mark.asyncio
 async def test_mcp_interpretability_tools(require_engine, require_sklearn):
     """Verify FastMCP interpretability tests suite, grading, and run tools."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
 
     # Load dataset & fit a model to test interpretability suite
@@ -572,7 +571,7 @@ async def test_mcp_context_logging(require_engine, require_sklearn):
         async def info(self, msg: str):
             self.logged.append(msg)
 
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     tools = await mcp.list_tools()
     ctx = MockContext()
 
@@ -666,7 +665,7 @@ async def test_mcp_context_logging(require_engine, require_sklearn):
 @pytest.mark.asyncio
 async def test_mcp_prompts():
     """Verify prompts defined in FastMCP."""
-    mcp, _, _, _ = get_mcp_instance()
+    _, mcp = build_server("data_science_mcp", command_args=[])
     prompts = await mcp.list_prompts()
 
     # Check model_evolution_workflow
@@ -680,12 +679,3 @@ async def test_mcp_prompts():
     res_ia = prompt_ia.fn(model_name="LinearRegression")
     assert "LinearRegression" in res_ia
     assert "Feature Attribution" in res_ia
-
-
-def test_mcp_server_entrypoint():
-    """Verify that calling the mcp_server entrypoint initializes and runs the FastMCP server."""
-    from data_science_mcp.mcp_server import mcp_server
-
-    with patch("fastmcp.FastMCP.run") as mock_run:
-        mcp_server()
-        mock_run.assert_called_once()

@@ -79,9 +79,9 @@ def test_three_real_skills_present_and_prefixed():
 
 
 def test_source_preset_uses_real_tool_and_fields():
-    from data_science_mcp.connector_sources import declaration
+    from agent_connector_sdk.ingest import load_declaration
 
-    source = next(s for s in declaration().sources if s.source_id == "datascience-model-registry")
+    source = next(s for s in load_declaration("data_science_mcp").sources if s.source_id == "datascience-model-registry")
     # rank_models is a real registered MCP tool
     assert source.tools == ("rank_models",)
     assert source.records_path == "ranked_models"
