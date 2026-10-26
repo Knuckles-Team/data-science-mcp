@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "2.3.6"
+version = "2.3.7"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Exposes training, evaluation and evolution as MCP tools."
 readme = "README.md"
 authors = [{ name = "Repository Maintainers", email = "maintainers@knuckles.team" }]
