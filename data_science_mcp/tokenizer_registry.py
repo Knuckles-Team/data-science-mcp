@@ -46,7 +46,7 @@ class TokenizerRegistry:
         self._special: list[str] = []
         self._functional: list[str] = []
 
-    def register(self, *tokens: str, functional: bool = False) -> "TokenizerRegistry":
+    def register(self, *tokens: str, functional: bool = False) -> TokenizerRegistry:
         """Register one or more tokens (deduped, order-preserving). Chainable.
 
         ``functional=True`` marks reward-bearing action tokens (ATLAS LA-GRPO); they
@@ -107,4 +107,4 @@ class TokenizerRegistry:
         return ids
 
 
-__all__ = ["TokenizerRegistry", "ResizePlan"]
+__all__ = ["ResizePlan", "TokenizerRegistry"]

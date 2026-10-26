@@ -21,8 +21,9 @@ Concept: rollout-buffer
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from data_science_mcp.training_data import build_grpo_groups
 
@@ -123,5 +124,6 @@ class RolloutBuffer:
                 [o["text"] for o in outs],
                 logprobs=[o.get("logprobs", []) for o in outs],
             )
+
 
 __all__ = ["Rollout", "RolloutBuffer"]

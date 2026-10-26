@@ -60,7 +60,7 @@ except ImportError:  # pragma: no cover - exercised only in torch-free installs
     nn = None  # type: ignore[assignment]
     _TORCH_AVAILABLE = False
 
-__all__ = ["is_available", "TrainResult", "PauseTokenRecommender"]
+__all__ = ["PauseTokenRecommender", "TrainResult", "is_available"]
 
 
 def is_available() -> bool:

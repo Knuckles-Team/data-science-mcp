@@ -174,10 +174,12 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default=100, description="Count windows (hardiman_bouchaud)."
         ),
         bid_q_json: str = Field(
-            default="[]", description="JSON list of best-bid queue sizes (queue_imbalance)."
+            default="[]",
+            description="JSON list of best-bid queue sizes (queue_imbalance).",
         ),
         ask_q_json: str = Field(
-            default="[]", description="JSON list of best-ask queue sizes (queue_imbalance)."
+            default="[]",
+            description="JSON list of best-ask queue sizes (queue_imbalance).",
         ),
         bid_rate_json: str = Field(
             default="[]",
@@ -652,7 +654,8 @@ def register_quant_tools(mcp: FastMCP) -> None:
             default="[]", description="JSON list of ask prices (spread_reversion)."
         ),
         window: int = Field(
-            default=20, description="Rolling window for the spread z-score (spread_reversion)."
+            default=20,
+            description="Rolling window for the spread z-score (spread_reversion).",
         ),
         ic: float = Field(
             default=0.0,
@@ -744,7 +747,11 @@ def register_quant_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         tags={"quant"},
-        annotations={"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+        annotations={
+            "readOnlyHint": True,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
     )
     async def quant_forensic(
         this_year_json: str = Field(

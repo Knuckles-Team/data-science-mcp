@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import statistics
 from collections import defaultdict
-from collections.abc import Iterable
 from typing import Any
 
 _TRAINABLE_SOURCES = frozenset({"model", "action"})

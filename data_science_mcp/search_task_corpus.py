@@ -26,13 +26,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from data_science_mcp import training_data as td
 from data_science_mcp.reward_signals import (
     answer_hit_time,
     prior_shortcut_rate,
     solving_cost,
 )
-
-from data_science_mcp import training_data as td
 
 # Reference scales that normalize raw signatures into a 0..1 reward band. A
 # trajectory at/above the reference solving cost / hit time earns full credit.

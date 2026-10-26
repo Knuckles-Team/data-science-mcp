@@ -29,14 +29,18 @@ class RewardTrainer(TrainerBase):
     name = "reward"
     kind = "dpo"  # consumes the chosen/rejected (preference) corpus
 
-    def _resolve_reward(self, model: Any | None, tokenizer: Any | None) -> tuple[Any, Any]:
+    def _resolve_reward(
+        self, model: Any | None, tokenizer: Any | None
+    ) -> tuple[Any, Any]:
         """Return ``(reward_model, tokenizer)`` — injected if given, else HF + head."""
         if model is not None and tokenizer is not None:
             return model, tokenizer
-        from transformers import AutoTokenizer  # noqa: PLC0415
-        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+        from transformers import AutoTokenizer
 
-        from data_science_mcp.trainers.value_head import (  # noqa: PLC0415
+        from data_science_mcp.hf_security import (
+            require_pinned_revision,
+        )
+        from data_science_mcp.trainers.value_head import (
             attach_scalar_head,
         )
 
@@ -65,9 +69,9 @@ class RewardTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Train the reward head on ``{prompt, chosen, rejected}`` pairs."""
-        import math  # noqa: PLC0415
+        import math
 
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+        from data_science_mcp.trainers.loop import run_loop
 
         torch = _torch()
         pairs = [p for p in dataset if p.get("chosen") and p.get("rejected")]

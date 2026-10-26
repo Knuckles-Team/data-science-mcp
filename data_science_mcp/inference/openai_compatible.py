@@ -89,7 +89,7 @@ class OpenAICompatibleBackend(InferenceBackend):
         specialist by name for this request; ``None`` serves the base ``model``.
         """
         try:
-            import httpx  # noqa: PLC0415
+            import httpx
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "httpx is required for served-model inference; install "

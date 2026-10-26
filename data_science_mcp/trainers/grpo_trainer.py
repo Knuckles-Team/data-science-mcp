@@ -60,7 +60,7 @@ class GrpoTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Optimise the GRPO surrogate over advantage-tagged groups."""
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+        from data_science_mcp.trainers.loop import run_loop
 
         torch = _torch()
         groups = [g for g in dataset if g.get("samples")]

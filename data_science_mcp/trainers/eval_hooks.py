@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import re
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 GenerateFn = Callable[[str], str]
 
@@ -126,13 +127,13 @@ def evaluate_benchmarks(
     optional evaluator is absent or the input is unsafe.
     """
     try:
-        from lighteval.logging.evaluation_tracker import (  # noqa: PLC0415
+        from lighteval.logging.evaluation_tracker import (
             EvaluationTracker,
         )
-        from lighteval.models.transformers.transformers_model import (  # noqa: PLC0415
+        from lighteval.models.transformers.transformers_model import (
             TransformersModelConfig,
         )
-        from lighteval.pipeline import (  # noqa: PLC0415
+        from lighteval.pipeline import (
             ParallelismManager,
             Pipeline,
             PipelineParameters,
@@ -140,7 +141,9 @@ def evaluate_benchmarks(
     except ImportError:  # pragma: no cover - without the extra
         return {"error": "LightEval not installed — install data-science-mcp[eval]"}
 
-    if not tasks or any(not isinstance(task, str) or not task.strip() for task in tasks):
+    if not tasks or any(
+        not isinstance(task, str) or not task.strip() for task in tasks
+    ):
         return {"error": "at least one non-empty benchmark task is required"}
     if limit is not None and limit < 1:
         return {"error": "limit must be positive"}
@@ -174,7 +177,9 @@ def evaluate_benchmarks(
             max_samples=limit,
         )
         model = TransformersModelConfig(
-            model_name=str(Path(model_path).expanduser()) if local_checkpoint else model_path,
+            model_name=str(Path(model_path).expanduser())
+            if local_checkpoint
+            else model_path,
             revision=revision or "main",  # ignored by Transformers for local paths
             batch_size=configured_batch,
             device=device or "cuda",
@@ -199,7 +204,7 @@ def gsm8k_reward(prompt: str, completion: str, gold: Any) -> float:
     needed. ``prompt`` is unused but kept for the ``reward_fn(prompt, completion)``
     signature the trainers expect; bind ``gold`` per prompt via a closure.
     """
-    from data_science_mcp.chat_template import answer_matches  # noqa: PLC0415
+    from data_science_mcp.chat_template import answer_matches
 
     return 1.0 if answer_matches(completion, gold) else 0.0
 
@@ -214,7 +219,10 @@ def evaluate_gsm8k(
     ``{cases, accuracy, results:[{question, output, gold, correct}]}`` — the
     per-stage metric the post-training eval table reports.
     """
-    from data_science_mcp.chat_template import answer_matches, gsm8k_gold  # noqa: PLC0415
+    from data_science_mcp.chat_template import (
+        answer_matches,
+        gsm8k_gold,
+    )
 
     rows = cases[:limit] if limit is not None else cases
     results: list[dict[str, Any]] = []
@@ -239,10 +247,10 @@ def evaluate_gsm8k(
 
 
 __all__ = [
-    "evaluate_checkpoint",
+    "GenerateFn",
+    "ReliabilityEvalHook",
     "evaluate_benchmarks",
+    "evaluate_checkpoint",
     "evaluate_gsm8k",
     "gsm8k_reward",
-    "ReliabilityEvalHook",
-    "GenerateFn",
 ]

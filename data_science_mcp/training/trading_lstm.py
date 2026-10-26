@@ -28,9 +28,9 @@ import numpy as np
 
 try:
     import torch
-    import torch.nn as nn
     from sklearn.metrics import accuracy_score, roc_auc_score
     from sklearn.preprocessing import StandardScaler
+    from torch import nn
 except ImportError as e:  # pragma: no cover - exercised only in training-free installs
     raise ImportError(
         "Trading-LSTM training dependencies missing. "

@@ -538,9 +538,7 @@ class MLEngine:
                 "backend": "rust_estimator",
             }
         except Exception as exc:
-            logger.error(
-                "Rust estimator fit failed: error_type=%s", type(exc).__name__
-            )
+            logger.error("Rust estimator fit failed: error_type=%s", type(exc).__name__)
             return None
 
     def predict(

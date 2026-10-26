@@ -32,7 +32,8 @@ Concept: ppo-trainer
 from __future__ import annotations
 
 import copy
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from data_science_mcp.trainers.base import TrainConfig, TrainerBase, _torch
 from data_science_mcp.trainers.objectives import (
@@ -64,7 +65,7 @@ class PpoTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Optimise the PPO objective over ``{prompt, completion, reward?}`` records."""
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+        from data_science_mcp.trainers.loop import run_loop
 
         torch = _torch()
         items = [d for d in dataset if d.get("prompt") and d.get("completion")]
@@ -79,7 +80,7 @@ class PpoTrainer(TrainerBase):
 
         # Value function: injected toy module, or a scalar head on a fresh backbone.
         if value_model is None:
-            from data_science_mcp.trainers.value_head import (  # noqa: PLC0415
+            from data_science_mcp.trainers.value_head import (
                 attach_scalar_head,
             )
 
@@ -105,8 +106,10 @@ class PpoTrainer(TrainerBase):
         params = [p for p in model.parameters() if p.requires_grad] + [
             p for p in value_model.parameters() if p.requires_grad
         ]
-        opt = optimizer if optimizer is not None else torch.optim.AdamW(
-            params, lr=self.config.lr
+        opt = (
+            optimizer
+            if optimizer is not None
+            else torch.optim.AdamW(params, lr=self.config.lr)
         )
         accel, model, opt = self._prepare(model, opt)
         total = self._total_opt_steps(
@@ -176,7 +179,11 @@ class PpoTrainer(TrainerBase):
             # standard PPO shaping term), terminal scalar reward at the last response.
             kl_tok = logp.detach() - ref_logp
             token_rewards = -self.config.kl_coef * kl_tok
-            last = int(resp_mask[0].nonzero().max().item()) if resp_mask.sum() > 0 else length - 2
+            last = (
+                int(resp_mask[0].nonzero().max().item())
+                if resp_mask.sum() > 0
+                else length - 2
+            )
             token_rewards[0, last] = token_rewards[0, last] + r
             # Reported KL = non-negative Schulman k3 estimate over response tokens.
             log_r = ref_logp - logp.detach()
@@ -200,7 +207,9 @@ class PpoTrainer(TrainerBase):
             return policy_loss + self.config.vf_coef * v_loss
 
         def compute_loss(batch: list[dict[str, Any]]) -> Any:
-            losses = [loss for loss in (_item_loss(it) for it in batch) if loss is not None]
+            losses = [
+                loss for loss in (_item_loss(it) for it in batch) if loss is not None
+            ]
             if not losses:
                 return torch.zeros((), device=device, requires_grad=True)
             return torch.stack(losses).mean()
@@ -225,7 +234,9 @@ class PpoTrainer(TrainerBase):
             "steps": out["steps"],
             "losses": losses,
             "final_loss": losses[-1] if losses else None,
-            "mean_reward": (sum(rewards_seen) / len(rewards_seen)) if rewards_seen else None,
+            "mean_reward": (sum(rewards_seen) / len(rewards_seen))
+            if rewards_seen
+            else None,
             "mean_kl": (sum(kls) / len(kls)) if kls else None,
             "clip_eps": self.config.clip_eps,
             "kl_coef": self.config.kl_coef,

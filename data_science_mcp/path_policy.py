@@ -39,13 +39,7 @@ def data_root() -> Path:
 def resolve_data_path(value: str, *, must_exist: bool = False) -> Path:
     """Resolve ``value`` beneath :func:`data_root`, rejecting traversal/symlinks."""
     raw = str(value or "").strip()
-    if (
-        not raw
-        or len(raw) > 4096
-        or "\x00" in raw
-        or "\r" in raw
-        or "\n" in raw
-    ):
+    if not raw or len(raw) > 4096 or "\x00" in raw or "\r" in raw or "\n" in raw:
         raise ValueError("Invalid data path")
     if PureWindowsPath(raw).is_absolute() and not Path(raw).is_absolute():
         raise ValueError("Data path uses a foreign absolute path")

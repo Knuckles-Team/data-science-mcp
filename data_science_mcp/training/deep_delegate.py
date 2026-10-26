@@ -26,7 +26,7 @@ import numpy as np
 
 try:
     import torch
-    import torch.nn as nn
+    from torch import nn
 except ImportError as e:  # pragma: no cover - exercised only in training-free installs
     raise ImportError(
         "Deep-delegation dependencies missing. Install data-science-mcp[training]."

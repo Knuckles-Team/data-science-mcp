@@ -19,7 +19,7 @@ from fastmcp import FastMCP
 
 def _has_torch() -> bool:
     try:
-        import torch  # noqa: F401, PLC0415
+        import torch  # noqa: F401
 
         return True
     except ImportError:
@@ -181,9 +181,9 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             JSON ``{params, merged}`` mapping each param to its merged values.
         """
         try:
-            import numpy as np  # noqa: PLC0415
+            import numpy as np
 
-            from data_science_mcp.peft_manager import ties_merge  # noqa: PLC0415
+            from data_science_mcp.peft_manager import ties_merge
 
             base = {
                 k: np.asarray(v, dtype=float) for k, v in json.loads(base_json).items()
@@ -241,9 +241,11 @@ def register_trainer_tools(mcp: FastMCP) -> None:
             JSON ``{plan, executed, output_dir?, vocab_size?}`` (or ``{type(error).__name__}``).
         """
         try:
-            from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
+            from data_science_mcp.tokenizer_trainer import (
                 TokenizerSpec,
                 plan_tokenizer,
+            )
+            from data_science_mcp.tokenizer_trainer import (
                 train_tokenizer as _train_tok,
             )
 
@@ -291,7 +293,7 @@ def register_trainer_tools(mcp: FastMCP) -> None:
 
 def _run_pretrain(kind: str, dataset: list, options: dict) -> dict[str, Any]:
     """Plan-first runner for the random-init pretrain trainer (CONCEPT:DS-AHE.trainer.concept-2)."""
-    from data_science_mcp.trainers import (  # noqa: PLC0415
+    from data_science_mcp.trainers import (
         PretrainSpec,
         PretrainTrainer,
         TrainConfig,

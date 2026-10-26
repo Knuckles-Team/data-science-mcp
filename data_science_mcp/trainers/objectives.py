@@ -36,7 +36,7 @@ if TYPE_CHECKING:  # keep torch out of import time for callers that only need ty
 
 def _torch():
     try:
-        import torch  # noqa: PLC0415
+        import torch
 
         return torch
     except ImportError as e:  # pragma: no cover - exercised only without the extra
@@ -47,8 +47,8 @@ def _torch():
 
 
 def sft_cross_entropy(
-    logits: "torch.Tensor", labels: "torch.Tensor", *, ignore_index: int = -100
-) -> "torch.Tensor":
+    logits: torch.Tensor, labels: torch.Tensor, *, ignore_index: int = -100
+) -> torch.Tensor:
     """Causal next-token cross-entropy.
 
     ``logits`` is ``(batch, seq, vocab)`` and ``labels`` is ``(batch, seq)``; both
@@ -66,11 +66,11 @@ def sft_cross_entropy(
 
 
 def sequence_logprob(
-    logits: "torch.Tensor",
-    labels: "torch.Tensor",
+    logits: torch.Tensor,
+    labels: torch.Tensor,
     *,
     ignore_index: int = -100,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Summed log-prob of each sequence's (non-masked) tokens → ``(batch,)``.
 
     The DPO building block: ``log π(y|x)`` for a completion. Shifts like
@@ -87,9 +87,9 @@ def sequence_logprob(
 
 
 def token_logprob(
-    logits: "torch.Tensor",
-    labels: "torch.Tensor",
-) -> "torch.Tensor":
+    logits: torch.Tensor,
+    labels: torch.Tensor,
+) -> torch.Tensor:
     """Per-token log-prob of the realised next token → ``(batch, seq-1)``.
 
     The PPO building block: unlike :func:`sequence_logprob` (which sums to one
@@ -105,11 +105,11 @@ def token_logprob(
 
 
 def bradley_terry_loss(
-    chosen_scores: "torch.Tensor",
-    rejected_scores: "torch.Tensor",
+    chosen_scores: torch.Tensor,
+    rejected_scores: torch.Tensor,
     *,
     margin: float = 0.0,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Pairwise reward-model loss ``-logσ(s_chosen − s_rejected − margin)`` (CONCEPT:DS-AHE.reward.one-sequence-level-score).
 
     ``chosen_scores`` / ``rejected_scores`` are ``(batch,)`` scalar rewards read off
@@ -124,13 +124,13 @@ def bradley_terry_loss(
 
 
 def dpo_loss(
-    policy_chosen_logp: "torch.Tensor",
-    policy_rejected_logp: "torch.Tensor",
-    ref_chosen_logp: "torch.Tensor",
-    ref_rejected_logp: "torch.Tensor",
+    policy_chosen_logp: torch.Tensor,
+    policy_rejected_logp: torch.Tensor,
+    ref_chosen_logp: torch.Tensor,
+    ref_rejected_logp: torch.Tensor,
     *,
     beta: float = 0.1,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Bradley-Terry DPO loss (mean over the batch).
 
     ``-log σ(β · ((logπ_c − logπ_r) − (logπ_ref,c − logπ_ref,r)))``. The reference
@@ -144,13 +144,13 @@ def dpo_loss(
 
 
 def grpo_surrogate(
-    logprob: "torch.Tensor",
-    old_logprob: "torch.Tensor",
-    advantage: "torch.Tensor",
+    logprob: torch.Tensor,
+    old_logprob: torch.Tensor,
+    advantage: torch.Tensor,
     *,
     clip_eps: float = 0.2,
-    mask: "torch.Tensor | None" = None,
-) -> "torch.Tensor":
+    mask: torch.Tensor | None = None,
+) -> torch.Tensor:
     """PPO/GRPO clipped surrogate (loss to *minimise*, mean over valid tokens).
 
     ``ratio = exp(logprob − old_logprob)``; the objective is
@@ -171,13 +171,13 @@ def grpo_surrogate(
 
 
 def token_masked_surrogate(
-    logprob: "torch.Tensor",
-    old_logprob: "torch.Tensor",
-    advantage: "torch.Tensor",
-    functional_mask: "torch.Tensor",
+    logprob: torch.Tensor,
+    old_logprob: torch.Tensor,
+    advantage: torch.Tensor,
+    functional_mask: torch.Tensor,
     *,
     clip_eps: float = 0.2,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """ATLAS LA-GRPO: clipped surrogate credited only on *functional* tokens.
 
     ``functional_mask`` marks the special/functional tokens (tool calls, learned
@@ -189,7 +189,7 @@ def token_masked_surrogate(
     )
 
 
-def whiten(x: "torch.Tensor", mask: "torch.Tensor | None" = None) -> "torch.Tensor":
+def whiten(x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
     """Mean-0 / unit-variance normalise ``x`` (over the masked elements).
 
     PPO whitens advantages before the surrogate to stabilise the policy-gradient
@@ -208,13 +208,13 @@ def whiten(x: "torch.Tensor", mask: "torch.Tensor | None" = None) -> "torch.Tens
 
 
 def gae(
-    rewards: "torch.Tensor",
-    values: "torch.Tensor",
+    rewards: torch.Tensor,
+    values: torch.Tensor,
     *,
-    mask: "torch.Tensor | None" = None,
+    mask: torch.Tensor | None = None,
     gamma: float = 1.0,
     lam: float = 0.95,
-) -> "tuple[torch.Tensor, torch.Tensor]":
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Generalized Advantage Estimation over per-token rewards/values (CONCEPT:DS-AHE.trainer.per-token-value).
 
     ``rewards`` / ``values`` are ``(batch, seq)`` per-token tensors (``values`` from
@@ -231,7 +231,9 @@ def gae(
     last = torch.zeros(values.size(0), dtype=values.dtype, device=values.device)
     seq = values.size(1)
     for t in range(seq - 1, -1, -1):
-        next_v = values[:, t + 1] * m[:, t + 1] if t + 1 < seq else torch.zeros_like(last)
+        next_v = (
+            values[:, t + 1] * m[:, t + 1] if t + 1 < seq else torch.zeros_like(last)
+        )
         delta = rewards[:, t] + gamma * next_v - values[:, t]
         last = delta + gamma * lam * last
         adv[:, t] = last * m[:, t]
@@ -240,13 +242,13 @@ def gae(
 
 
 def value_function_loss(
-    values: "torch.Tensor",
-    returns: "torch.Tensor",
+    values: torch.Tensor,
+    returns: torch.Tensor,
     *,
-    old_values: "torch.Tensor | None" = None,
+    old_values: torch.Tensor | None = None,
     clip: float | None = None,
-    mask: "torch.Tensor | None" = None,
-) -> "torch.Tensor":
+    mask: torch.Tensor | None = None,
+) -> torch.Tensor:
     """Value-head regression loss to the GAE returns (CONCEPT:DS-AHE.trainer.per-token-value PPO).
 
     Mean squared error ``(V − R)²`` over the valid tokens. When ``old_values`` and
@@ -266,7 +268,7 @@ def value_function_loss(
     return 0.5 * sq.mean()
 
 
-def approx_kl(logprob: "torch.Tensor", ref_logprob: "torch.Tensor") -> "torch.Tensor":
+def approx_kl(logprob: torch.Tensor, ref_logprob: torch.Tensor) -> torch.Tensor:
     """Schulman k3 low-variance KL estimate ``E[ (r−1) − log r ]`` (≥0, mean).
 
     ``r = exp(ref_logprob − logprob)``. Used as the GRPO/SDAR KL-to-reference

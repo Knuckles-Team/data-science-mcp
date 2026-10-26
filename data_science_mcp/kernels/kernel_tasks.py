@@ -120,7 +120,9 @@ MATMUL = KernelTask(
     ),
 )
 
-KERNEL_TASKS: dict[str, KernelTask] = {t.name: t for t in (FUSED_SOFTMAX, LAYERNORM, MATMUL)}
+KERNEL_TASKS: dict[str, KernelTask] = {
+    t.name: t for t in (FUSED_SOFTMAX, LAYERNORM, MATMUL)
+}
 
 
 def get_kernel_task(name: str) -> KernelTask:

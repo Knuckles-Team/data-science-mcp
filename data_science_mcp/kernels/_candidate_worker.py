@@ -56,7 +56,9 @@ def _apply_resource_limits() -> None:
     for kind, requested in limits:
         try:
             _soft, hard = resource.getrlimit(kind)
-            target = requested if hard == resource.RLIM_INFINITY else min(requested, hard)
+            target = (
+                requested if hard == resource.RLIM_INFINITY else min(requested, hard)
+            )
             resource.setrlimit(kind, (target, target))
         except (OSError, ValueError):
             continue
@@ -85,7 +87,9 @@ def _response(
     }
 
 
-def _load_candidate(candidate_path: Path, entrypoint: str) -> tuple[Any | None, str | None]:
+def _load_candidate(
+    candidate_path: Path, entrypoint: str
+) -> tuple[Any | None, str | None]:
     try:
         if candidate_path.is_symlink() or not candidate_path.is_file():
             raise ValueError("candidate path")
@@ -98,7 +102,7 @@ def _load_candidate(candidate_path: Path, entrypoint: str) -> tuple[Any | None, 
             "__name__": "__candidate__",
         }
         exec(compile(text, "<candidate>", "exec"), namespace)  # noqa: S102
-    except BaseException as exc:  # noqa: BLE001 - untrusted source fails closed
+    except BaseException as exc:
         return None, f"compile/exec failed: {_bounded_type_name(exc)}"
     function = namespace.get(entrypoint)
     if not callable(function):
@@ -126,9 +130,7 @@ def _decode_request(raw: bytes) -> tuple[int, str, list[Any]]:
         or len(request["args"]) > 16
     ):
         raise ProtocolError("invalid candidate request")
-    return sequence, request["nonce"], [
-        decode_array(item) for item in request["args"]
-    ]
+    return sequence, request["nonce"], [decode_array(item) for item in request["args"]]
 
 
 def main() -> int:
@@ -150,7 +152,7 @@ def main() -> int:
         try:
             output = function(*args)
             encoded = encode_array(output, force_float64=True)
-        except BaseException as exc:  # noqa: BLE001 - candidate failures are data
+        except BaseException as exc:
             _send(
                 _response(
                     sequence,

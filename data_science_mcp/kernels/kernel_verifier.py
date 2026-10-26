@@ -19,15 +19,15 @@ import math
 import os
 import re
 import secrets
-import signal
 import shutil
+import signal
 import subprocess
 import tempfile
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from data_science_mcp.kernels._protocol import (
     AUTH_KEY_BYTES,
@@ -39,6 +39,7 @@ from data_science_mcp.kernels._protocol import (
     verify_signed_message,
 )
 from data_science_mcp.kernels.kernel_tasks import KernelTask
+
 
 @dataclass(frozen=True)
 class VerifierResult:
@@ -54,9 +55,7 @@ _MAX_SANDBOX_COMMAND_BYTES = 32 * 1024
 _MAX_SANDBOX_OUTPUT_BYTES = 128 * 1024
 _MAX_SUPERVISOR_REQUEST_BYTES = 2048
 _SANDBOX_PLACEHOLDERS = ("{candidate}", "{task}")
-_PINNED_IMAGE_RE = re.compile(
-    r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,446}@sha256:[0-9a-f]{64}"
-)
+_PINNED_IMAGE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,446}@sha256:[0-9a-f]{64}")
 _CONTAINER_RUNTIMES = frozenset({"docker", "podman"})
 
 
@@ -128,7 +127,9 @@ def _validate_sandbox_command(value: object) -> tuple[str, ...]:
         raise ValueError("Kernel sandbox command contains invalid characters")
     rendered = "\n".join(parsed)
     if any(placeholder not in rendered for placeholder in _SANDBOX_PLACEHOLDERS):
-        raise ValueError("Kernel sandbox command must include candidate and task placeholders")
+        raise ValueError(
+            "Kernel sandbox command must include candidate and task placeholders"
+        )
     return parsed
 
 
@@ -163,8 +164,7 @@ def kernel_sandbox_configured() -> bool:
     """Return whether candidate execution has an explicit isolation boundary."""
     try:
         return bool(
-            configured_kernel_sandbox_command()
-            or configured_kernel_sandbox_image()
+            configured_kernel_sandbox_command() or configured_kernel_sandbox_image()
         )
     except ValueError:
         return False
@@ -401,7 +401,10 @@ class KernelVerifier:
             return VerifierResult(
                 reward=0.0,
                 passed=False,
-                detail={"task": self.task.name, "error": "candidate size limit exceeded"},
+                detail={
+                    "task": self.task.name,
+                    "error": "candidate size limit exceeded",
+                },
             )
         with tempfile.TemporaryDirectory(prefix="sai-kernel-") as tmp:
             cand_path = Path(tmp) / "candidate.py"
@@ -471,7 +474,10 @@ class KernelVerifier:
                 return VerifierResult(
                     reward=0.0,
                     passed=False,
-                    detail={"task": self.task.name, "error": "sandbox output limit exceeded"},
+                    detail={
+                        "task": self.task.name,
+                        "error": "sandbox output limit exceeded",
+                    },
                 )
             except (OSError, ValueError):
                 self._cleanup_container(cand_path, child_env)
@@ -484,7 +490,8 @@ class KernelVerifier:
         raw = (proc.stdout or "").strip().splitlines()
         if proc.returncode != 0 or len(raw) != 1:
             return VerifierResult(
-                reward=0.0, passed=False,
+                reward=0.0,
+                passed=False,
                 detail={"task": self.task.name, "error": "invalid runner protocol"},
             )
         try:
@@ -514,12 +521,8 @@ class KernelVerifier:
                 raise ValueError("Invalid runner pass flag")
             passed = data["passed"]
             speedup = _protocol_number(data["speedup"], positive=passed)
-            candidate_time = _protocol_number(
-                data["candidate_time"], positive=passed
-            )
-            reference_time = _protocol_number(
-                data["reference_time"], positive=passed
-            )
+            candidate_time = _protocol_number(data["candidate_time"], positive=passed)
+            reference_time = _protocol_number(data["reference_time"], positive=passed)
             if passed:
                 if data["error"] is not None or not math.isclose(
                     speedup,
@@ -537,7 +540,8 @@ class KernelVerifier:
                 raise ValueError("Invalid failed runner result")
         except (ProtocolError, TypeError, ValueError, ZeroDivisionError):
             return VerifierResult(
-                reward=0.0, passed=False,
+                reward=0.0,
+                passed=False,
                 detail={"task": self.task.name, "error": "invalid runner protocol"},
             )
 
