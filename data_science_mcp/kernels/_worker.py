@@ -152,7 +152,9 @@ class _DrainPump:
 
 
 def _candidate_environment() -> dict[str, str]:
-    environment = {name: os.environ[name] for name in _ALLOWED_ENV if name in os.environ}
+    environment = {
+        name: os.environ[name] for name in _ALLOWED_ENV if name in os.environ
+    }
     environment.update(
         {
             "HOME": os.devnull,

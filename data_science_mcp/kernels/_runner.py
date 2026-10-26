@@ -166,7 +166,9 @@ class _WorkerStderrReader:
 
 
 def _worker_environment() -> dict[str, str]:
-    environment = {name: os.environ[name] for name in _ALLOWED_ENV if name in os.environ}
+    environment = {
+        name: os.environ[name] for name in _ALLOWED_ENV if name in os.environ
+    }
     environment.update(
         {
             "HOME": os.devnull,
@@ -380,7 +382,9 @@ def _failure(error: str) -> dict[str, object]:
     }
 
 
-def _run(candidate_path: Path, task_name: str, call_timeout_s: float) -> dict[str, object]:
+def _run(
+    candidate_path: Path, task_name: str, call_timeout_s: float
+) -> dict[str, object]:
     if (
         candidate_path.is_symlink()
         or not candidate_path.is_file()
@@ -391,9 +395,7 @@ def _run(candidate_path: Path, task_name: str, call_timeout_s: float) -> dict[st
     generator = np.random.default_rng(secrets.randbits(128))
     candidate_best = math.inf
     reference_best = math.inf
-    challenges: list[
-        tuple[list[dict[str, object]], np.ndarray]
-    ] = []
+    challenges: list[tuple[list[dict[str, object]], np.ndarray]] = []
 
     try:
         # Freeze every reference result and baseline before candidate startup.
@@ -436,14 +438,11 @@ def _run(candidate_path: Path, task_name: str, call_timeout_s: float) -> dict[st
                     candidate_best,
                     candidate_elapsed / 1_000_000_000,
                 )
-                if (
-                    candidate_array.shape != expected_array.shape
-                    or not np.allclose(
-                        candidate_array,
-                        expected_array,
-                        atol=task.atol,
-                        rtol=task.rtol,
-                    )
+                if candidate_array.shape != expected_array.shape or not np.allclose(
+                    candidate_array,
+                    expected_array,
+                    atol=task.atol,
+                    rtol=task.rtol,
                 ):
                     return _failure("incorrect output")
     except WorkerFailure as exc:

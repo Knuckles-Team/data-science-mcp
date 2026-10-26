@@ -98,8 +98,8 @@ def inference_backend_configured() -> bool:
 __all__ = [
     "InferenceBackend",
     "OpenAICompatibleBackend",
-    "VLLMBackend",
     "SGLangBackend",
+    "VLLMBackend",
     "create_inference_backend",
     "inference_backend_configured",
 ]

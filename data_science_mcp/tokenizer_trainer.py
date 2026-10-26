@@ -20,8 +20,9 @@ Concept: tokenizer-trainer
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 # Conventional LM control tokens reserved in every trained vocab.
 DEFAULT_SPECIAL_TOKENS = ("<pad>", "<unk>", "<s>", "</s>", "<mask>")
@@ -84,9 +85,14 @@ def train_tokenizer(
     """
     spec = spec or TokenizerSpec()
     try:
-        from tokenizers import Tokenizer, decoders, pre_tokenizers, trainers  # noqa: PLC0415
-        from tokenizers.models import BPE  # noqa: PLC0415
-        from transformers import PreTrainedTokenizerFast  # noqa: PLC0415
+        from tokenizers import (
+            Tokenizer,
+            decoders,
+            pre_tokenizers,
+            trainers,
+        )
+        from tokenizers.models import BPE
+        from transformers import PreTrainedTokenizerFast
     except ImportError as e:  # pragma: no cover - without the extra
         raise RuntimeError(
             "training a tokenizer needs `tokenizers` + `transformers`; install "
@@ -125,9 +131,9 @@ def _as_iterator(corpus: Iterable[str], lowercase: bool):
 
 
 __all__ = [
-    "TokenizerSpec",
-    "TokenizerPlan",
     "DEFAULT_SPECIAL_TOKENS",
+    "TokenizerPlan",
+    "TokenizerSpec",
     "plan_tokenizer",
     "train_tokenizer",
 ]

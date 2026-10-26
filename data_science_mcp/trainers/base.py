@@ -19,15 +19,16 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any, Iterator
+from typing import Any
 
 from data_science_mcp.peft_manager import LoraSpec, PeftManager
 
 
 def _torch():
     try:
-        import torch  # noqa: PLC0415
+        import torch
 
         return torch
     except ImportError as e:  # pragma: no cover - without the extra
@@ -144,7 +145,7 @@ class TrainerBase(ABC):
         if model is not None and tokenizer is not None:
             return model, tokenizer
         try:
-            from transformers import AutoTokenizer  # noqa: PLC0415
+            from transformers import AutoTokenizer
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "transformers is required to load a tokenizer; install "
@@ -206,19 +207,19 @@ class TrainerBase(ABC):
 
     def _scheduler(self, optimizer: Any, total_steps: int) -> Any | None:
         """Build the LR scheduler (``None`` for the constant-LR default)."""
-        from data_science_mcp.trainers.loop import build_scheduler  # noqa: PLC0415
+        from data_science_mcp.trainers.loop import build_scheduler
 
         return build_scheduler(optimizer, self.config, total_steps)
 
     def _prepare(self, model: Any, optimizer: Any) -> tuple[Any, Any, Any]:
         """Prepare for FSDP/DeepSpeed; returns ``(accelerator|None, model, optimizer)``."""
-        from data_science_mcp.trainers.accelerate_launch import prepare  # noqa: PLC0415
+        from data_science_mcp.trainers.accelerate_launch import prepare
 
         return prepare(self.config, model, optimizer)
 
     def _tracker(self, params: dict[str, Any] | None = None) -> Any:
         """Build + start the experiment tracker (no-op at ``tracker='none'``)."""
-        from data_science_mcp.tracking import RunTracker  # noqa: PLC0415
+        from data_science_mcp.tracking import RunTracker
 
         return RunTracker.from_config(self.config, params=params).start()
 

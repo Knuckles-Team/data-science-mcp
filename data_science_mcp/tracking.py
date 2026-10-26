@@ -59,7 +59,7 @@ class RunTracker:
     @classmethod
     def from_config(
         cls, config: Any, *, params: dict[str, Any] | None = None
-    ) -> "RunTracker":
+    ) -> RunTracker:
         """Build a tracker from a ``TrainConfig`` (``tracker``/``run_name``/``kg_log``)."""
         return cls(
             getattr(config, "tracker", "none"),
@@ -71,12 +71,12 @@ class RunTracker:
         )
 
     # --- lifecycle ----------------------------------------------------------
-    def start(self) -> "RunTracker":
+    def start(self) -> RunTracker:
         """Open the run on the selected backend (best-effort)."""
         self._active = True
         if self.backend == "mlflow":
             try:
-                import mlflow  # noqa: PLC0415
+                import mlflow
 
                 self._mlflow = mlflow
                 mlflow.start_run(run_name=self.run_name)
@@ -87,7 +87,7 @@ class RunTracker:
                 self._mlflow = None
         elif self.backend == "wandb":
             try:
-                import wandb  # noqa: PLC0415
+                import wandb
 
                 self._wandb = wandb
                 wandb.init(name=self.run_name, config=_flat(self.params))
@@ -192,7 +192,7 @@ def _kg_mirror(payload: dict[str, Any]) -> None:
     Pushes through the SDK knowledge-ingest path; any failure (no engine, API drift) is
     swallowed — provenance is telemetry, never a training blocker.
     """
-    from data_science_mcp.kg_log import log_provenance  # noqa: PLC0415
+    from data_science_mcp.kg_log import log_provenance
 
     log_provenance(payload)
 

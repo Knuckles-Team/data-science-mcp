@@ -81,7 +81,7 @@ def write_config(config: dict[str, Any], path: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
     if path.endswith((".yaml", ".yml")):
         try:
-            import yaml  # noqa: PLC0415
+            import yaml
 
             with open(path, "w", encoding="utf-8") as f:
                 yaml.safe_dump(config, f, sort_keys=False)
@@ -142,8 +142,8 @@ def build_launch_command(
 
 
 __all__ = [
-    "fsdp_accelerate_config",
-    "deepspeed_zero3_config",
-    "write_config",
     "build_launch_command",
+    "deepspeed_zero3_config",
+    "fsdp_accelerate_config",
+    "write_config",
 ]

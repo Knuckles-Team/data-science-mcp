@@ -46,7 +46,7 @@ class LoraSpec:
     def to_peft_config(self) -> Any:
         """Build a ``peft.LoraConfig`` (lazy import)."""
         try:
-            from peft import LoraConfig  # noqa: PLC0415
+            from peft import LoraConfig
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "peft is required to attach LoRA adapters; install "
@@ -66,8 +66,8 @@ class LoraSpec:
         if not self.quant_4bit:
             return None
         try:
-            import torch  # noqa: PLC0415
-            from transformers import BitsAndBytesConfig  # noqa: PLC0415
+            import torch
+            from transformers import BitsAndBytesConfig
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "transformers + bitsandbytes are required for QLoRA; install "
@@ -101,13 +101,15 @@ class PeftManager:
     def load_base(self) -> Any:
         """Load the HF causal-LM base (4-bit if the spec requests QLoRA)."""
         try:
-            from transformers import AutoModelForCausalLM  # noqa: PLC0415
+            from transformers import AutoModelForCausalLM
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "transformers is required to load a base model; install "
                 "`data-science-mcp[training]`"
             ) from e
-        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+        from data_science_mcp.hf_security import (
+            require_pinned_revision,
+        )
 
         revision = require_pinned_revision(self.base_model, self.revision)
         kwargs: dict[str, Any] = {}
@@ -127,7 +129,10 @@ class PeftManager:
     def attach(self, model: Any | None = None) -> Any:
         """Wrap ``model`` (or the loaded base) with the LoRA adapter."""
         try:
-            from peft import get_peft_model, prepare_model_for_kbit_training  # noqa: PLC0415
+            from peft import (
+                get_peft_model,
+                prepare_model_for_kbit_training,
+            )
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "peft is required to attach LoRA adapters; install "

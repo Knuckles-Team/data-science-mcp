@@ -91,7 +91,7 @@ def attach_scalar_head(
     Used by the reward-model trainer (CONCEPT:DS-AHE.reward.one-sequence-level-score) and as the default PPO value
     function (CONCEPT:DS-AHE.trainer.per-token-value) when one is not dependency-injected.
     """
-    from data_science_mcp.peft_manager import PeftManager  # noqa: PLC0415
+    from data_science_mcp.peft_manager import PeftManager
 
     pm = PeftManager(base_model, lora, revision=revision)
     backbone = pm.attach() if lora is not None else pm.load_base()
@@ -103,4 +103,4 @@ def attach_scalar_head(
     return build_scalar_head_model(backbone, int(hidden))
 
 
-__all__ = ["build_scalar_head_model", "attach_scalar_head"]
+__all__ = ["attach_scalar_head", "build_scalar_head_model"]

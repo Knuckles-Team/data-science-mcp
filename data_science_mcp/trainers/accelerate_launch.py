@@ -42,7 +42,7 @@ def build_accelerator(config: Any) -> Any:
     """
     distributed = (getattr(config, "distributed", "none") or "none").lower()
     try:
-        from accelerate import Accelerator  # noqa: PLC0415
+        from accelerate import Accelerator
     except ImportError as e:  # pragma: no cover - without the extra
         raise RuntimeError(
             "accelerate is required for distributed training; install "
@@ -57,7 +57,7 @@ def build_accelerator(config: Any) -> Any:
 
     if distributed == "fsdp":
         try:
-            from accelerate import FullyShardedDataParallelPlugin  # noqa: PLC0415
+            from accelerate import FullyShardedDataParallelPlugin
         except ImportError as e:  # pragma: no cover
             raise RuntimeError("accelerate too old for FSDP plugin") from e
         kwargs["fsdp_plugin"] = FullyShardedDataParallelPlugin(
@@ -66,7 +66,7 @@ def build_accelerator(config: Any) -> Any:
         )
     elif distributed == "deepspeed":
         try:
-            from accelerate.utils import DeepSpeedPlugin  # noqa: PLC0415
+            from accelerate.utils import DeepSpeedPlugin
         except ImportError as e:  # pragma: no cover - needs deepspeed
             raise RuntimeError(
                 "deepspeed is required for ZeRO; install "
@@ -98,4 +98,4 @@ def prepare(config: Any, model: Any, optimizer: Any) -> tuple[Any, Any, Any]:
     return acc, model, optimizer
 
 
-__all__ = ["wants_accelerate", "build_accelerator", "prepare"]
+__all__ = ["build_accelerator", "prepare", "wants_accelerate"]

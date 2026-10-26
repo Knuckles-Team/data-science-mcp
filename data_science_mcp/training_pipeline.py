@@ -21,8 +21,9 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from agent_connector_sdk.tls.profile import ResolvedTLSProfile
 
@@ -55,7 +56,7 @@ def _resolve_eval_generate_fn(
     """
     if generate_fn is not None:
         return generate_fn
-    from data_science_mcp.inference import (  # noqa: PLC0415
+    from data_science_mcp.inference import (
         create_inference_backend,
         inference_backend_configured,
     )
@@ -120,7 +121,7 @@ def hot_load_adapter(
     if not adapter_path:
         return {"status": "skipped", "detail": "no adapter_path to load"}
     try:
-        import httpx  # noqa: PLC0415
+        import httpx
     except ImportError:
         return {"status": "skipped", "detail": "httpx not installed"}
 
@@ -130,10 +131,9 @@ def hot_load_adapter(
     # (``http://host:8000``). Normalize to the server root before appending the
     # dynamic-LoRA endpoint so both conventions resolve to the SAME, correct URL.
     base_url = target.base_url.rstrip("/")
-    if base_url.endswith("/v1"):
-        base_url = base_url[: -len("/v1")]
+    base_url = base_url.removesuffix("/v1")
     payload = {"lora_name": adapter_name, "lora_path": adapter_path}
-    from agent_connector_sdk.tls.resolve import resolve_tls_profile  # noqa: PLC0415
+    from agent_connector_sdk.tls.resolve import resolve_tls_profile
 
     profile = tls_profile or resolve_tls_profile("model")
     try:
@@ -151,7 +151,7 @@ def hot_load_adapter(
             "adapter_name": adapter_name,
             "adapter_path": adapter_path,
         }
-    except Exception as e:  # noqa: BLE001 — best-effort, never abort the run
+    except Exception as e:
         logger.warning(
             "[lora-hotload] dynamic LoRA load failed (%s @ %s%s): %s",
             target.provider,
@@ -289,7 +289,7 @@ def run_pretrain_pipeline(
         model/tokenizer: inject a toy pair for a CPU smoke; omit for the live build.
         train_tokenizer_first: train a BPE tokenizer over the corpus before building.
     """
-    from data_science_mcp.trainers import PretrainSpec, PretrainTrainer  # noqa: PLC0415
+    from data_science_mcp.trainers import PretrainSpec, PretrainTrainer
 
     report: dict[str, Any] = {}
     records = [r if isinstance(r, dict) else {"text": r} for r in corpus]
@@ -297,7 +297,7 @@ def run_pretrain_pipeline(
 
     # 1) (optional) train a tokenizer from the corpus.
     if train_tokenizer_first and tokenizer is None:
-        from data_science_mcp.tokenizer_trainer import (  # noqa: PLC0415
+        from data_science_mcp.tokenizer_trainer import (
             TokenizerSpec,
             train_tokenizer,
         )
@@ -319,7 +319,9 @@ def run_pretrain_pipeline(
 
     # 4) Reliability evaluation (optional).
     if eval_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+        from data_science_mcp.trainers.eval_hooks import (
+            evaluate_checkpoint,
+        )
 
         report["eval"] = evaluate_checkpoint(
             _resolve_eval_generate_fn(generate_fn), eval_cases
@@ -402,13 +404,15 @@ def run_rlhf_pipeline(
 
     # 4) Eval gates — reliability suite + (optional) GSM8K accuracy.
     if eval_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_checkpoint  # noqa: PLC0415
+        from data_science_mcp.trainers.eval_hooks import (
+            evaluate_checkpoint,
+        )
 
         report["eval"] = evaluate_checkpoint(
             _resolve_eval_generate_fn(generate_fn), eval_cases
         )
     if gsm8k_cases:
-        from data_science_mcp.trainers.eval_hooks import evaluate_gsm8k  # noqa: PLC0415
+        from data_science_mcp.trainers.eval_hooks import evaluate_gsm8k
 
         report["gsm8k"] = evaluate_gsm8k(
             _resolve_eval_generate_fn(generate_fn), gsm8k_cases
@@ -428,7 +432,7 @@ def run_rlhf_pipeline(
 __all__ = [
     "DeploymentTarget",
     "hot_load_adapter",
-    "run_sft_pipeline",
     "run_pretrain_pipeline",
     "run_rlhf_pipeline",
+    "run_sft_pipeline",
 ]

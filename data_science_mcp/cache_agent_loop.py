@@ -29,11 +29,11 @@ from enum import Enum
 from typing import Any
 
 __all__ = [
-    "CacheTier",
-    "CacheResult",
-    "ThreeTierToolCache",
     "CacheAgentLoop",
+    "CacheResult",
+    "CacheTier",
     "ThinkingTraceAugmenter",
+    "ThreeTierToolCache",
     "augment_trajectory",
 ]
 
@@ -156,7 +156,9 @@ class ThreeTierToolCache:
             if s > best_fuzzy[0]:
                 best_fuzzy = (s, e)
         if best_fuzzy[1] is not None and best_fuzzy[0] >= self.fuzzy_threshold:
-            return CacheResult(True, CacheTier.FUZZY, best_fuzzy[1].value, best_fuzzy[0])
+            return CacheResult(
+                True, CacheTier.FUZZY, best_fuzzy[1].value, best_fuzzy[0]
+            )
 
         # Tier 2: semantic (embedding cosine, or token-overlap proxy offline).
         query_emb = self._embed_fn(_norm_args(args)) if self._embed_fn else None

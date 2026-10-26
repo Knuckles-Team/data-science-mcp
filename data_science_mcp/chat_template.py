@@ -108,23 +108,27 @@ def gsm8k_gold(answer_field: str) -> str | None:
 def answer_matches(completion: str, gold: Any) -> bool:
     """True when the model's extracted final answer equals ``gold`` numerically."""
     pred = _normalize_number(extract_answer(completion))
-    want = _normalize_number(str(gold)) if not isinstance(gold, str) else _normalize_number(gold)
+    want = (
+        _normalize_number(str(gold))
+        if not isinstance(gold, str)
+        else _normalize_number(gold)
+    )
     return pred is not None and want is not None and pred == want
 
 
 __all__ = [
-    "USER",
-    "ASSISTANT",
-    "SYSTEM",
-    "END",
-    "THINK_OPEN",
-    "THINK_CLOSE",
-    "ANSWER_OPEN",
     "ANSWER_CLOSE",
+    "ANSWER_OPEN",
+    "ASSISTANT",
+    "END",
     "ROLE_MARKERS",
-    "render_chat",
-    "render_think_answer",
+    "SYSTEM",
+    "THINK_CLOSE",
+    "THINK_OPEN",
+    "USER",
+    "answer_matches",
     "extract_answer",
     "gsm8k_gold",
-    "answer_matches",
+    "render_chat",
+    "render_think_answer",
 ]

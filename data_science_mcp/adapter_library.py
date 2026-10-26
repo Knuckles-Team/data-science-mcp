@@ -46,7 +46,7 @@ class AdapterLibrary:
         base_url: str | None = None,
         tier: str = "medium",
     ) -> SpecialistAdapter:
-        """Add (or replace) the specialist for ``task_signature`` """
+        """Add (or replace) the specialist for ``task_signature``"""
         spec = SpecialistAdapter(
             task_signature=task_signature,
             adapter_id=adapter_id,
@@ -85,7 +85,11 @@ def served_generator(
     def generate(scaffold: str) -> str:
         prompt = scaffold_to_prompt(scaffold) if scaffold_to_prompt else scaffold
         out = backend.generate(
-            prompt, n=1, max_tokens=max_tokens, temperature=temperature, adapter=adapter_id
+            prompt,
+            n=1,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            adapter=adapter_id,
         )
         return out[0]["text"] if out else ""
 

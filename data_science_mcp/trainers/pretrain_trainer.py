@@ -44,7 +44,7 @@ class PretrainSpec:
     def build_config(self) -> Any:
         """Build an HF ``AutoConfig`` for the architecture (lazy import)."""
         try:
-            from transformers import AutoConfig  # noqa: PLC0415
+            from transformers import AutoConfig
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "transformers is required to build a model config; install "
@@ -65,7 +65,7 @@ class PretrainSpec:
     def build_model(self, attn_impl: str | None = None) -> Any:
         """Instantiate a **random-init** causal LM from the config (lazy import)."""
         try:
-            from transformers import AutoModelForCausalLM  # noqa: PLC0415
+            from transformers import AutoModelForCausalLM
         except ImportError as e:  # pragma: no cover - without the extra
             raise RuntimeError(
                 "transformers is required to build a model; install "
@@ -101,8 +101,11 @@ class PretrainTrainer(TrainerBase):
         """Build the random-init model + load the (trained) tokenizer when not injected."""
         if model is not None and tokenizer is not None:
             return model, tokenizer
-        from transformers import AutoTokenizer  # noqa: PLC0415
-        from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+        from transformers import AutoTokenizer
+
+        from data_science_mcp.hf_security import (
+            require_pinned_revision,
+        )
 
         revision = require_pinned_revision(
             self.config.base_model, self.config.model_revision
@@ -139,8 +142,8 @@ class PretrainTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Pretrain over ``{text}`` records (packed into ``max_seq_len`` blocks)."""
-        from data_science_mcp.data_engine import pack_sequences  # noqa: PLC0415
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+        from data_science_mcp.data_engine import pack_sequences
+        from data_science_mcp.trainers.loop import run_loop
 
         torch = _torch()
         if not dataset:

@@ -57,7 +57,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
             eval_texts_json: JSON list of eval text strings to protect against.
             options_json: ``{text_key, threshold, use_engine}``.
         """
-        from data_science_mcp.data_engine import decontaminate  # noqa: PLC0415
+        from data_science_mcp.data_engine import decontaminate
 
         def _go() -> dict[str, Any]:
             recs = json.loads(records_json or "[]")
@@ -84,7 +84,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
         Returns:
             JSON ``{kept, stages:{quality,dedup,decontaminate}, provenance, n_in, n_out}``.
         """
-        from data_science_mcp import data_engine as de  # noqa: PLC0415
+        from data_science_mcp import data_engine as de
 
         def _go() -> dict[str, Any]:
             recs = json.loads(records_json or "[]")
@@ -152,7 +152,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
         """
 
         def _go() -> dict[str, Any]:
-            from data_science_mcp.data_engine import (  # noqa: PLC0415
+            from data_science_mcp.data_engine import (
                 prepare_pretrain_data as _prep,
             )
 
@@ -174,9 +174,17 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 "limit": opts.get("limit"),
             }
             if not opts.get("execute"):
-                return {"plan": plan, "executed": False, "note": "set execute=true to run"}
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "note": "set execute=true to run",
+                }
             if not tok_ref:
-                return {"plan": plan, "executed": False, "error": "options.tokenizer (HF name or local dir) is required to execute"}
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "options.tokenizer (HF name or local dir) is required to execute",
+                }
             limit = opts.get("limit")
             flush_every = opts.get("flush_every", _MAX_FLUSH_TOKENS)
             dtype = opts.get("dtype", "int32")
@@ -267,10 +275,16 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                     "error": "invalid tokenizer repository ID",
                 }
             try:
-                from transformers import AutoTokenizer  # noqa: PLC0415
+                from transformers import AutoTokenizer
             except ImportError:
-                return {"plan": plan, "executed": False, "error": "transformers required — install data-science-mcp[training]"}
-            from data_science_mcp.hf_security import require_pinned_revision  # noqa: PLC0415
+                return {
+                    "plan": plan,
+                    "executed": False,
+                    "error": "transformers required — install data-science-mcp[training]",
+                }
+            from data_science_mcp.hf_security import (
+                require_pinned_revision,
+            )
 
             revision = require_pinned_revision(
                 tok_ref,
@@ -291,7 +305,14 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
                 max_tokens=_MAX_TOTAL_TOKENS,
                 **_pick(
                     opts,
-                    {"text_key", "append_eos", "eos_id", "limit", "dtype", "flush_every"},
+                    {
+                        "text_key",
+                        "append_eos",
+                        "eos_id",
+                        "limit",
+                        "dtype",
+                        "flush_every",
+                    },
                 ),
             )
             report["out_path"] = out_path
@@ -310,7 +331,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
             version: dataset version tag.
             options_json: ``{n_records, parents, ops, extra, kg_log}``.
         """
-        from data_science_mcp.data_engine import dataset_provenance  # noqa: PLC0415
+        from data_science_mcp.data_engine import dataset_provenance
 
         def _go() -> dict[str, Any]:
             opts = json.loads(options_json or "{}")
@@ -328,7 +349,7 @@ def register_data_engine_tools(mcp: FastMCP) -> None:
 
 
 def _dedup(records_json: str, options_json: str) -> dict[str, Any]:
-    from data_science_mcp.data_engine import dedup  # noqa: PLC0415
+    from data_science_mcp.data_engine import dedup
 
     recs = json.loads(records_json or "[]")
     opts = json.loads(options_json or "{}")

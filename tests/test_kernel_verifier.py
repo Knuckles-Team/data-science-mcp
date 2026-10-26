@@ -109,5 +109,3 @@ def test_reward_cap_is_respected():
     res = v.verify(_CORRECT)
     if res.passed:
         assert res.reward <= 2.0
-
-

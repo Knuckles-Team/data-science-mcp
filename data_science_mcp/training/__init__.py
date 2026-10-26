@@ -19,13 +19,13 @@ Everything imports lazily / guards torch so the package still imports without th
 from __future__ import annotations
 
 __all__ = [
+    "PauseTokenRecommender",
     "TradingLSTM",
+    "TrainResult",
+    "evaluate_trading_signal",
+    "is_available",
     "prepare_sequences",
     "walk_forward_validation",
-    "evaluate_trading_signal",
-    "PauseTokenRecommender",
-    "TrainResult",
-    "is_available",
 ]
 
 

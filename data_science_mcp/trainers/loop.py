@@ -27,7 +27,8 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from data_science_mcp.trainers.base import _torch
 
@@ -64,7 +65,7 @@ def build_scheduler(optimizer: Any, config: Any, num_training_steps: int) -> Any
     if name in ("", "constant") and warmup == 0:
         return None
     try:
-        from transformers import get_scheduler  # noqa: PLC0415
+        from transformers import get_scheduler
     except ImportError:  # pragma: no cover - without the extra
         return None
     return get_scheduler(
@@ -108,7 +109,7 @@ def _save_checkpoint(
 
 def _enforce_limit(checkpoints: list[str], limit: int) -> None:
     """Keep only the newest ``limit`` checkpoint dirs (best-effort delete)."""
-    import shutil  # noqa: PLC0415
+    import shutil
 
     if limit and len(checkpoints) > limit:
         for stale in checkpoints[:-limit]:
@@ -300,4 +301,4 @@ def run_loop(
     }
 
 
-__all__ = ["run_loop", "build_scheduler", "maybe_resume"]
+__all__ = ["build_scheduler", "maybe_resume", "run_loop"]

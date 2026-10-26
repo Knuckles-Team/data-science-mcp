@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# coding: utf-8
 """Client accessor for the MCP tool surface.
 
 data-science-mcp has no external REST API of its own — per ``AGENTS.md``, all ML
@@ -22,7 +21,6 @@ this package's live call path uses it today.
 """
 
 import requests
-
 from agent_connector_sdk.config import setting
 from agent_connector_sdk.exceptions import AuthError, UnauthorizedError
 from agent_connector_sdk.tls.profile import ResolvedTLSProfile

@@ -9,4 +9,10 @@ correctness-gated, speedup-rewarded compute kernels. See :mod:`kernel_tasks`
 from .kernel_tasks import KERNEL_TASKS, KernelTask, get_kernel_task
 from .kernel_verifier import KernelVerifier, VerifierResult
 
-__all__ = ["KERNEL_TASKS", "KernelTask", "KernelVerifier", "VerifierResult", "get_kernel_task"]
+__all__ = [
+    "KERNEL_TASKS",
+    "KernelTask",
+    "KernelVerifier",
+    "VerifierResult",
+    "get_kernel_task",
+]

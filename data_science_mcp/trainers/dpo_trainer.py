@@ -50,9 +50,9 @@ class DpoTrainer(TrainerBase):
         **_: Any,
     ) -> dict[str, Any]:
         """Optimise the DPO objective; return a training report."""
-        import math  # noqa: PLC0415
+        import math
 
-        from data_science_mcp.trainers.loop import run_loop  # noqa: PLC0415
+        from data_science_mcp.trainers.loop import run_loop
 
         torch = _torch()
         if not dataset:
