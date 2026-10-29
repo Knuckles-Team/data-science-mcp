@@ -23,7 +23,7 @@ import logging
 
 from agent_connector_sdk.connector_hooks import RegistrationContext
 
-# SDK gap (SDK-CONNECTOR-CONTROL-R009): agent_connector_sdk.mcp.tool_surface's
+# SDK gap (SCION-CONNECTOR-CONTROL-R009): agent_connector_sdk.mcp.tool_surface's
 # register_tool_surface silently ignores client_cls/get_client (R020 retired
 # verbose 1:1 auto-derivation). This connector's served tool surface genuinely
 # depends on that auto-derivation -- register_verbose_tools adds one real,
