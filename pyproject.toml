@@ -17,9 +17,9 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "agent-connector-sdk[mcp]>=0.5.4,<0.6.0",
+    "scion-sdk[mcp]>=0.5.9,<0.6.0",
     "requests>=2.34.2",
-    "epistemic-graph[full]>=2.27.1",
+    "medulla[full]>=2.27.10,<3",
     "polars>=2.0.0",
     "numpy>=2.5.4",
 ]
@@ -94,7 +94,7 @@ eval = [
 # memory — it will re-introduce the same workspace-wide CVE-pin conflict.
 
 all = [
-    "epistemic-graph[full]>=2.27.1",
+    "medulla[full]>=2.27.10,<3",
     "scikit-learn>=1.9.1"]
 
 test = [
@@ -103,7 +103,7 @@ test = [
 [project.scripts]
 data-science-mcp = "agent_connector_sdk.cli:serve"
 
-# The one declared connector identity: the fleet name (SDK-CONNECTOR-CONTROL-R071).
+# The one declared connector identity: the fleet name (SCION-CONNECTOR-CONTROL-R071).
 [project.entry-points."agent_connector_sdk.connector"]
 data-science-mcp = "data_science_mcp:connector"
 
