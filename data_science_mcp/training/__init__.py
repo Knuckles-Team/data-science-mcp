@@ -1,7 +1,7 @@
-"""Torch-backed ML training that was re-homed out of ``agent-connector-sdk`` core.
+"""Torch-backed ML training that was re-homed out of ``scion-sdk`` core.
 
-agent-connector-sdk core is the serving plane and must install/run torch-free
-(dependency-discipline rule in agent-connector-sdk/AGENTS.md). The heavy ML training
+scion-sdk core is the serving plane and must install/run torch-free
+(dependency-discipline rule in scion-sdk/AGENTS.md). The heavy ML training
 code that used to live in the reference implementation and
 the reference implementation now lives here, where torch is a
 first-class (optional ``[training]`` extra) dependency:

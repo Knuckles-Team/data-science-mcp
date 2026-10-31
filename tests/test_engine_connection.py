@@ -25,7 +25,7 @@ def test_connects_with_a_signed_compute_context(monkeypatch):
         seen["scopes"] = scopes
         return _Compute()
 
-    monkeypatch.setattr("agent_connector_sdk.compute.engine.connect_compute", _connect)
+    monkeypatch.setattr("scion_sdk.compute.engine.connect_compute", _connect)
     assert MLEngine._rust_client() is _Compute.client
     assert seen["scopes"] == ENGINE_SCOPES
     assert "compute:datascience" in ENGINE_SCOPES
@@ -38,11 +38,11 @@ def test_unconfigured_engine_is_cached_as_unavailable(monkeypatch, caplog):
 
     def _connect(*, scopes):
         calls.append(scopes)
-        from agent_connector_sdk.compute.engine import ComputeUnavailableError
+        from scion_sdk.compute.engine import ComputeUnavailableError
 
         raise ComputeUnavailableError("EPISTEMIC_GRAPH_ENDPOINT is not configured")
 
-    monkeypatch.setattr("agent_connector_sdk.compute.engine.connect_compute", _connect)
+    monkeypatch.setattr("scion_sdk.compute.engine.connect_compute", _connect)
     with caplog.at_level("WARNING", logger=ml_engine.logger.name):
         assert MLEngine._rust_client() is None
         assert MLEngine._rust_client() is None

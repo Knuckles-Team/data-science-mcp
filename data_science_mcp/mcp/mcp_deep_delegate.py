@@ -1,11 +1,11 @@
 """MCP tool for the AU-KG "deep mining" delegation family (CONCEPT:AU-KG.mining.dsm-forecast-delegation).
 
-agent-connector-sdk' engine core is pure-Rust and never imports torch — the
+scion-sdk' engine core is pure-Rust and never imports torch — the
 deep-learning / heavy-Python family the data-mining plan marks out of scope for
 the engine (LSTM/RNN sequence forecasting, MLP/deep classifiers, autoencoders, a
 histogram-gradient-boosting classifier standing in for XGBoost) is delegated
-HERE, over MCP, from agent-connector-sdk' ``graph_mine_deep`` tool
-(``agent_connector_sdk/mcp/tools/engine_surface_tools.py``, via the fleet
+HERE, over MCP, from scion-sdk' ``graph_mine_deep`` tool
+(``scion_sdk/mcp/tools/engine_surface_tools.py``, via the fleet
 ``call_tool_once`` connector). This module is the single entry point that
 delegation reaches: one action-routed tool, ``deep_train_predict``, dispatching
 into :mod:`data_science_mcp.training.deep_delegate` (the actual torch/sklearn

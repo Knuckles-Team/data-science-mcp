@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """Shortcut-resistant search tasks → SFT / DPO / GRPO corpora.
 
-The trainer-side glue for agent-connector-sdk' search-task synthesizer
+The trainer-side glue for scion-sdk' search-task synthesizer
 (CONCEPT:AU-KG.retrieval.evidence-graph-workspace/2.71/2.72) and realized-difficulty signatures (CONCEPT:AU-AHE.reward.search-task-corpus),
 distilled from FORT-Searcher (arXiv:2606.12087). It turns synthesized
 shortcut-resistant tasks and the trajectories a solver produces on them into the

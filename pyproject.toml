@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-science-mcp"
-version = "2.3.7"
+version = "2.3.8"
 description = "Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Exposes training, evaluation and evolution as MCP tools."
 readme = "README.md"
 authors = [{ name = "Repository Maintainers", email = "maintainers@knuckles.team" }]
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "scion-sdk[mcp]>=0.5.9,<0.6.0",
+    "scion-sdk[mcp]>=0.6.4,<0.7.0",
     "requests>=2.34.2",
     "medulla[full]>=2.27.10,<3",
     "polars>=2.0.0",
@@ -81,7 +81,7 @@ eval = [
 # `cryptography>=48.0.1,<49` override across the whole ecosystem — which,
 # per an osv.dev check, pins the MOST vulnerable available cryptography
 # release (6 known advisories at 48.0.1 vs. 2 at 49.0.0), directly
-# contradicting agent-connector-sdk' own CVE fix (GHSA-g6cj-pr64-35w5,
+# contradicting scion-sdk' own CVE fix (GHSA-g6cj-pr64-35w5,
 # PYSEC-2026-3552, fixed=50.0.0). Even mlflow's latest release (3.15.1)
 # only admits `cryptography>=43.0.0,<50` — still short of the fix. `import
 # mlflow` in data_science_mcp/tracking.py is already exception-guarded
@@ -101,10 +101,10 @@ test = [
     "pytest-xdist>=3.8.0", "pytest>=9.1.1", "pytest-asyncio>=1.4.0", "pytest-cov>=7.1.0"]
 
 [project.scripts]
-data-science-mcp = "agent_connector_sdk.cli:serve"
+data-science-mcp = "scion_sdk.cli:serve"
 
 # The one declared connector identity: the fleet name (SCION-CONNECTOR-CONTROL-R071).
-[project.entry-points."agent_connector_sdk.connector"]
+[project.entry-points."scion_sdk.connector"]
 data-science-mcp = "data_science_mcp:connector"
 
 [tool.uv.workspace]
@@ -113,7 +113,7 @@ members = ["."]
 [tool.setuptools.packages.find]
 where = ["."]
 
-[project.entry-points."agent_connector_sdk.prompt_providers"]
+[project.entry-points."scion_sdk.prompt_providers"]
 data-science-mcp = "data_science_mcp.prompts"
 
 [tool.setuptools]
@@ -130,7 +130,7 @@ ignore_names = ["request", "config", "connector", "stream"]
 # 3.10 retains the public tokenizer/corpus APIs LightEval uses and clears the
 # affected archive/resource-loading implementations.
 # fastmcp-slim override is part of the B6 pattern: pins the ecosystem's
-# fastmcp fork so this repo resolves standalone against agent-connector-sdk.
+# fastmcp fork so this repo resolves standalone against scion-sdk.
 override-dependencies = [
     "nltk>=3.10.0",
     "fastmcp-slim[client,server]>=4.1.0",

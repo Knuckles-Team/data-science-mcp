@@ -18,7 +18,7 @@ import json  # noqa: E402
 import pytest  # noqa: E402
 
 from data_science_mcp.ml_engine import MLEngine, _UNPROBED  # noqa: E402
-from agent_connector_sdk.connector import build_server  # noqa: E402
+from scion_sdk.connector import build_server  # noqa: E402
 
 QUANT_TOOLS = {
     "quant_market_making",

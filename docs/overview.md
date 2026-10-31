@@ -1,21 +1,21 @@
 # data-science-mcp — Concept Overview
 
 > **Category**: Intelligence | **Ecosystem Role**: MCP Server + A2A Agent
-> Built on [`agent-connector-sdk`](https://github.com/Knuckles-Team/agent-connector-sdk) — the unified AGI Harness.
+> Built on [`scion-sdk`](https://github.com/Knuckles-Team/scion-sdk) — the unified AGI Harness.
 
 ## Description
 
-Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with agent-connector-sdk IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview).
+Data Science MCP Server — Model training, evaluation, and evolution tools for agentic ML workflows. Integrates with scion-sdk IModelEvolver (CONCEPT:AU-AHE.harness.self-improvement-overview).
 
 ## Enterprise Readiness
 
-All agents in the ecosystem inherit enterprise-grade infrastructure from `agent-connector-sdk`:
+All agents in the ecosystem inherit enterprise-grade infrastructure from `scion-sdk`:
 
 | Feature | Status | Source |
 |:--------|:-------|:-------|
-| **JWT/OIDC Authentication** | ✅ Built-in | `agent-connector-sdk[auth]` — Authlib JWKS + API key middleware |
-| **OpenTelemetry Instrumentation** | ✅ Built-in | `agent-connector-sdk[logfire]` — OTLP export, FastAPI auto-instrumentation |
-| **HashiCorp Vault Integration** | ✅ Built-in | `agent-connector-sdk[vault]` — `secret://`, `env://`, `vault://` URI schemes |
+| **JWT/OIDC Authentication** | ✅ Built-in | `scion-sdk[auth]` — Authlib JWKS + API key middleware |
+| **OpenTelemetry Instrumentation** | ✅ Built-in | `scion-sdk[logfire]` — OTLP export, FastAPI auto-instrumentation |
+| **HashiCorp Vault Integration** | ✅ Built-in | `scion-sdk[vault]` — `secret://`, `env://`, `vault://` URI schemes |
 | **Audit Logging** | ✅ Built-in | Append-only compliance trail with 30+ action types (CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox) |
 | **Token Usage Analytics** | ✅ Built-in | 4-bucket tracking with budget alerting (CONCEPT:AU-OS.governance.wasm-micro-agent-sandbox) |
 | **Prompt Injection Defense** | ✅ Built-in | 25+ pattern scanner + jailbreak taxonomy (CONCEPT:AU-OS.config.secrets-authentication) |
@@ -44,13 +44,13 @@ This project implements or inherits the following ecosystem concepts (full
 |:-----------|:------------|:-------|
 | AU-AHE.trainer.high-caliber-llm-trainer … AU-AHE.trainer.concept-2 | **LLM trainer** — hardening, curation, pretrain, tracking, scale-out, eval, agent workflow | this project (cross-repo) |
 | DS-ECO.mcp.model-training | Model Training Operations (in-house training substrate) | this project |
-| AHE-3.1 | Training Substrate (reward / distillation) | `agent-connector-sdk` (bridge) |
-| AU-AHE.harness.self-improvement-overview | **Agent-Interpretable Model Evolver** | `agent-connector-sdk` (inherited) |
-| AU-AHE.harness.width-diverse-best-k | **LLM-Graded Interpretability Tests** | `agent-connector-sdk` (inherited) |
-| ECO-4.1 | MCP & Universal Skills | `agent-connector-sdk` (inherited) |
-| KG-2.17 | **Model Display Optimization** | `agent-connector-sdk` (inherited) |
+| AHE-3.1 | Training Substrate (reward / distillation) | `scion-sdk` (bridge) |
+| AU-AHE.harness.self-improvement-overview | **Agent-Interpretable Model Evolver** | `scion-sdk` (inherited) |
+| AU-AHE.harness.width-diverse-best-k | **LLM-Graded Interpretability Tests** | `scion-sdk` (inherited) |
+| ECO-4.1 | MCP & Universal Skills | `scion-sdk` (inherited) |
+| KG-2.17 | **Model Display Optimization** | `scion-sdk` (inherited) |
 
-> 📖 **Full Registry**: See the [agent-connector-sdk concept index](https://github.com/Knuckles-Team/agent-connector-sdk/blob/main/docs/overview.md) for the complete 5-Pillar concept registry.
+> 📖 **Full Registry**: See the [scion-sdk concept index](https://github.com/Knuckles-Team/scion-sdk/blob/main/docs/overview.md) for the complete 5-Pillar concept registry.
 
 ## Architecture
 

@@ -13,7 +13,7 @@
 
 ## Functional Requirements
 
-- **FR-001**: Minor update: agent-connector-sdk 0.2.40 (installed) -> 0.16.0
+- **FR-001**: Minor update: scion-sdk 0.2.40 (installed) -> 0.16.0
 - **FR-002**: Minor update: scikit-learn 1.5.0 (constraint — not installed) -> 1.8.0
 - **FR-003**: MAJOR update: pandas 2.0.0 (constraint — not installed) -> 3.0.3
 - **FR-004**: 2 functions exceed 200 lines (actionable refactoring targets): register_interpretability_tools (212L), register_interpretability_tools (212L)
@@ -42,7 +42,7 @@
 - **FR-027**: Partial env var documentation: 53% coverage
 - **FR-028**: Undocumented env vars: AUTH_TYPE, TLS_PROFILES_REF, TLS_PROFILE, EUNOMIA_POLICY_FILE, EUNOMIA_TYPE, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_PUBLIC_KEY, OTEL_EXPORTER_OTLP_SECRET_KEY
 - **FR-029**: 2 Python env vars not in .env.example: TLS_PROFILES_REF, TLS_PROFILE
-- **FR-030**: Analysis error: No module named 'agent_connector_sdk.knowledge_graph'
+- **FR-030**: Analysis error: No module named 'scion_sdk.knowledge_graph'
 
 ## Success Criteria
 

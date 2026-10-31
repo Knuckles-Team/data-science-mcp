@@ -1,7 +1,7 @@
 """Best-effort provenance logging through the SDK knowledge-ingest path.
 
 Dataset-version and training-run provenance records are pushed to epistemic-graph
-as typed entities with ``agent_connector_sdk.ingest``. Provenance is telemetry:
+as typed entities with ``scion_sdk.ingest``. Provenance is telemetry:
 when no engine is configured or reachable the write is skipped and never blocks
 training or data preparation.
 """
@@ -31,7 +31,7 @@ def _entity_id(payload: dict[str, Any]) -> str:
 def log_provenance(payload: dict[str, Any]) -> bool:
     """Push one provenance payload; returns whether it was committed."""
     try:  # pragma: no cover - requires a live engine
-        from agent_connector_sdk.ingest import (
+        from scion_sdk.ingest import (
             ChangeSet,
             Entity,
             IngestBinding,

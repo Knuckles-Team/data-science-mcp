@@ -25,7 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent_connector_sdk.tls.profile import ResolvedTLSProfile
+from scion_sdk.tls.profile import ResolvedTLSProfile
 
 from data_science_mcp import training_data as td
 from data_science_mcp.trainers import TrainConfig, get_trainer
@@ -133,7 +133,7 @@ def hot_load_adapter(
     base_url = target.base_url.rstrip("/")
     base_url = base_url.removesuffix("/v1")
     payload = {"lora_name": adapter_name, "lora_path": adapter_path}
-    from agent_connector_sdk.tls.resolve import resolve_tls_profile
+    from scion_sdk.tls.resolve import resolve_tls_profile
 
     profile = tls_profile or resolve_tls_profile("model")
     try:

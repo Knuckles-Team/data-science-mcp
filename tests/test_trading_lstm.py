@@ -1,8 +1,8 @@
-"""CONCEPT:AU-KG.research.research-pipeline-runner — torch-backed TradingLSTM training (re-homed from agent-connector-sdk core).
+"""CONCEPT:AU-KG.research.research-pipeline-runner — torch-backed TradingLSTM training (re-homed from scion-sdk core).
 
 These assertions cover the LSTM architecture, sequence preparation, and the
-signal-evaluation metrics that moved here so agent-connector-sdk core stays torch-free
-(see agent-connector-sdk/AGENTS.md "Dependency discipline"). Skipped when the
+signal-evaluation metrics that moved here so scion-sdk core stays torch-free
+(see scion-sdk/AGENTS.md "Dependency discipline"). Skipped when the
 ``[training]`` extra (torch + scikit-learn) is absent.
 """
 

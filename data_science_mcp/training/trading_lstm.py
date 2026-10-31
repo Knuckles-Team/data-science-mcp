@@ -3,7 +3,7 @@
 Re-homed from the reference implementation /
 the reference implementation so the platform core stays
 torch-free (the serving plane must not import torch — see
-agent-connector-sdk/AGENTS.md "Dependency discipline"). Heavy ML training belongs in
+scion-sdk/AGENTS.md "Dependency discipline"). Heavy ML training belongs in
 data-science-mcp, reached over MCP, not imported into core.
 
 Contents:

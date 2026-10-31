@@ -14,7 +14,7 @@ import pytest
 import numpy as np
 
 from data_science_mcp.ml_engine import MLEngine
-from agent_connector_sdk.connector import build_server
+from scion_sdk.connector import build_server
 
 
 @pytest.fixture(autouse=True)

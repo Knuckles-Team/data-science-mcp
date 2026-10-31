@@ -7,7 +7,7 @@ description: >-
 license: MIT
 tags: [data-science, development, mcp, spec-delivery]
 metadata:
-  author: Genius
+  author: Knuckles-Team
   version: '0.1.0'
 ---
 

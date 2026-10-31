@@ -2,7 +2,7 @@
 """Data Science MCP Server.
 
 Provides model training, evaluation, and evolution tools for agentic ML
-workflows. Designed as the MCP delegation target for agent-connector-sdk'
+workflows. Designed as the MCP delegation target for scion-sdk'
 IModelEvolver and InterpretabilityTestSuite.
 
 Tool tags:
@@ -21,18 +21,17 @@ Tool tags:
 import json
 import logging
 
-from agent_connector_sdk.connector_hooks import RegistrationContext
-
-# SDK gap (SCION-CONNECTOR-CONTROL-R009): agent_connector_sdk.mcp.tool_surface's
+# SDK gap (SCION-CONNECTOR-CONTROL-R009): scion_sdk.mcp.tool_surface's
 # register_tool_surface silently ignores client_cls/get_client (R020 retired
 # verbose 1:1 auto-derivation). This connector's served tool surface genuinely
 # depends on that auto-derivation -- register_verbose_tools adds one real,
 # separately-invokable data_science_<method> tool per MLEngine public method
 # (see auth.py's docstring for the historical dispatch-mismatch bug this
 # guards against). Swapping to the SDK here would silently drop that whole
-# tool surface, so this import stays on agent_connector_sdk.
+# tool surface, so this import stays on scion_sdk.
 from fastmcp import Context, FastMCP
 from pydantic import Field
+from scion_sdk.connector_hooks import RegistrationContext
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
