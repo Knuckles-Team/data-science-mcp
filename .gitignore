@@ -199,3 +199,6 @@ docker/debug.Dockerfile
 docker/*.compose.yml
 data_science_mcp/ontology/shapes/connector.shacl.ttl
 data_science_mcp/ontology/certification.json
+
+# Spec status is computed at read time (pipelines-hook spec-status --write), never committed.
+specs/*/status.json

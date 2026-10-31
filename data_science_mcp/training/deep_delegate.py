@@ -1,6 +1,6 @@
 """Generic torch-backed delegation targets for the AU-KG mining "deep" family.
 
-CONCEPT:AU-KG.mining.dsm-forecast-delegation — agent-connector-sdk' engine core stays
+CONCEPT:AU-KG.mining.dsm-forecast-delegation — scion-sdk' engine core stays
 pure-Rust (no torch/GPU deps); the deep-learning / heavy-Python family the
 data-mining plan marks out of scope for the engine (LSTM/RNN sequence
 forecasting, MLP/deep classifiers, autoencoders, a histogram-gradient-boosting

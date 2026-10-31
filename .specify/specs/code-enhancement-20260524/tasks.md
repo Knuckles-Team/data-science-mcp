@@ -3,7 +3,7 @@
 Generated: 2026-05-24T04:17:16.176178+00:00
 Skipped informational: 5
 
-- [ ] [P] **T001** [Dependency Audit] Minor update: agent-connector-sdk 0.2.40 (installed) -> 0.16.0
+- [ ] [P] **T001** [Dependency Audit] Minor update: scion-sdk 0.2.40 (installed) -> 0.16.0
   - Priority: P3-Low | Effort: Small
 - [ ] [P] **T002** [Dependency Audit] Minor update: scikit-learn 1.5.0 (constraint — not installed) -> 1.8.0
   - Priority: P3-Low | Effort: Small
@@ -61,5 +61,5 @@ Skipped informational: 5
   - Priority: P3-Low | Effort: Medium
 - [ ] [P] **T029** [Environment Variables] 2 Python env vars not in .env.example: TLS_PROFILES_REF, DATA_SCIENCE
   - Priority: P3-Low | Effort: Medium
-- [ ] [P] **T030** [analyze_xdg_kg] Analysis error: No module named 'agent_connector_sdk.knowledge_graph'
+- [ ] [P] **T030** [analyze_xdg_kg] Analysis error: No module named 'scion_sdk.knowledge_graph'
   - Priority: P1-High | Effort: Medium

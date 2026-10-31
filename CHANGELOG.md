@@ -5,6 +5,11 @@ All notable changes to `data-science-mcp` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.8] - 2026-10-30
+
+### Changed
+- Require `scion-sdk>=0.6.4,<0.7.0`; migrate imports to `scion_sdk`.
+
 ## [2.3.6] - 2026-10-24
 
 ### Changed

@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_connector_sdk.tls.profile import ResolvedTLSProfile
-from agent_connector_sdk.tls.resolve import resolve_tls_profile
+from scion_sdk.tls.profile import ResolvedTLSProfile
+from scion_sdk.tls.resolve import resolve_tls_profile
 
 from data_science_mcp.inference.base import InferenceBackend
 

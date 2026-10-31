@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 from pathlib import Path, PureWindowsPath
 
-from agent_connector_sdk import paths
+from scion_sdk import paths
 
 _BUILTIN_DATASETS = {
     "breast_cancer",

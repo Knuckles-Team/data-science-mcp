@@ -13,7 +13,7 @@ description: >-
 license: MIT
 tags: [data-science, interpretability, reliability, model-audit, evaluation, mcp]
 metadata:
-  author: Genius
+  author: Knuckles-Team
   version: '0.1.0'
 ---
 # Data Science — Model Reliability & Interpretability

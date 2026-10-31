@@ -111,7 +111,7 @@ class MLEngine:
 
         client = None
         try:
-            from agent_connector_sdk.compute.engine import connect_compute
+            from scion_sdk.compute.engine import connect_compute
 
             client = connect_compute(scopes=ENGINE_SCOPES).client
             logger.info("epistemic-graph engine connected; Rust compute enabled")

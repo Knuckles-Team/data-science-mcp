@@ -14,7 +14,7 @@ description: >-
 license: MIT
 tags: [data-science, llm, fine-tuning, sft, dpo, ppo, grpo, corpus, peft, mcp]
 metadata:
-  author: Genius
+  author: Knuckles-Team
   version: '0.1.0'
 ---
 # Data Science — LLM Fine-Tuning

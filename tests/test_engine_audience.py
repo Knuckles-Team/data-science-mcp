@@ -1,7 +1,7 @@
 """Engine request audience comes from the deployment (CONN-DATA-SCIENCE-MCP-R002)."""
 
 import pytest
-from agent_connector_sdk.ingest.engine import EngineSettings
+from scion_sdk.ingest.engine import EngineSettings
 
 pytestmark = pytest.mark.spec("CONN-DATA-SCIENCE-MCP-R002")
 

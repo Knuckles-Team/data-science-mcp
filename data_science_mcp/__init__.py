@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from agent_connector_sdk.connector import Connector
+from scion_sdk.connector import Connector
 
 from data_science_mcp.auth import get_client
 from data_science_mcp.mcp.mcp_data_engine import register_data_engine_tools
@@ -30,7 +30,7 @@ connector = Connector(
         ("data-management", "DATA_MANAGEMENTTOOL", register_data_management_tools),
         ("data-engine", "DATA_ENGINETOOL", register_data_engine_tools),
     ),
-    instructions="Data Science MCP Server for model training, evaluation, and evolution. Integrates with agent-connector-sdk IModelEvolver  for Agentic-iModels workflows.",
+    instructions="Data Science MCP Server for model training, evaluation, and evolution. Integrates with scion-sdk IModelEvolver  for Agentic-iModels workflows.",
     action_tools=(("quant", "QUANTTOOL", register_quant_tools),),
     extra_registrations=(register_prompts,),
 )
