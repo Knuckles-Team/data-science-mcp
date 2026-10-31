@@ -2,10 +2,11 @@
   "schema_version": 2,
   "spec_id": "CONN-DATA-SCIENCE-MCP",
   "owner_repo": "data-science-mcp",
-  "delivery_state": "VERIFIED",
+  "delivery_state": "SPECIFIED",
   "requirement_ids": [
     "CONN-DATA-SCIENCE-MCP-R001",
-    "CONN-DATA-SCIENCE-MCP-R002"
+    "CONN-DATA-SCIENCE-MCP-R002",
+    "CONN-DATA-SCIENCE-MCP-R003"
   ],
   "requirements": [
     {
@@ -29,6 +30,13 @@
       "verified_by": [
         "tests/test_engine_audience.py:6"
       ]
+    },
+    {
+      "id": "CONN-DATA-SCIENCE-MCP-R003",
+      "title": "Served tool uploads teacher scores",
+      "delivery_state": "SPECIFIED",
+      "landed_in": [],
+      "verified_by": []
     }
   ]
 }
