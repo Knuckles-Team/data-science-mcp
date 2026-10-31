@@ -14,3 +14,4 @@ Read the existing specs first. Extend the spec that owns the behavior. Create a 
 
 - [CONN-DATA-SCIENCE-MCP](connector/spec.md): Engine compute connection.
 - [`CONN-DATA-SCIENCE-MCP-CONNECTOR-CONTENT`](connector-content/spec.md) — The connector serves its packaged content.
+- [`CONN-DATA-SCIENCE-MCP-DATA-PLATFORM-OPERATIONS`](data-platform-operations/spec.md) — Operations the data-platform vocabulary needs.
