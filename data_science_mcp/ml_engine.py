@@ -63,9 +63,9 @@ _RUST_PARAM_KEYS = {
 }
 
 _ENGINE_REQUIRED_ERR = (
-    "epistemic-graph engine unavailable. Set EPISTEMIC_GRAPH_ENDPOINT, "
-    "EPISTEMIC_GRAPH_AUTH_SECRET_REF, EPISTEMIC_GRAPH_TENANT and "
-    "EPISTEMIC_GRAPH_GRAPH, and ensure the engine is running."
+    "epistemic-graph engine unavailable. Set MEDULLA_ENDPOINT, "
+    "MEDULLA_AUTH_SECRET_REF, MEDULLA_TENANT and "
+    "MEDULLA_GRAPH, and ensure the engine is running."
 )
 
 #: Engine scopes the compute session signs: data-science and finance compute.
@@ -99,9 +99,9 @@ class MLEngine:
         """Return a cached connected engine client, or None if unreachable.
 
         Connects through the connector SDK's compute adapter from
-        ``EPISTEMIC_GRAPH_ENDPOINT`` (``tls://host:port`` or ``unix:///path``),
-        ``EPISTEMIC_GRAPH_AUTH_SECRET_REF``, ``EPISTEMIC_GRAPH_TENANT`` and
-        ``EPISTEMIC_GRAPH_GRAPH``, signing a verified request context with the
+        ``MEDULLA_ENDPOINT`` (``tls://host:port`` or ``unix:///path``),
+        ``MEDULLA_AUTH_SECRET_REF``, ``MEDULLA_TENANT`` and
+        ``MEDULLA_GRAPH``, signing a verified request context with the
         data-science and finance compute scopes. The result (including a failed
         probe) is cached so a dead endpoint is never re-probed per call. The
         failure cause is logged by type only; it never carries a secret.

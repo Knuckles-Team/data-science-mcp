@@ -32,7 +32,7 @@ def test_connects_with_a_signed_compute_context(monkeypatch):
 
 
 def test_unconfigured_engine_is_cached_as_unavailable(monkeypatch, caplog):
-    for name in ("EPISTEMIC_GRAPH_ENDPOINT", "EPISTEMIC_GRAPH_AUTH_SECRET_REF"):
+    for name in ("MEDULLA_ENDPOINT", "MEDULLA_AUTH_SECRET_REF"):
         monkeypatch.delenv(name, raising=False)
     calls = []
 
@@ -40,7 +40,7 @@ def test_unconfigured_engine_is_cached_as_unavailable(monkeypatch, caplog):
         calls.append(scopes)
         from scion_sdk.compute.engine import ComputeUnavailableError
 
-        raise ComputeUnavailableError("EPISTEMIC_GRAPH_ENDPOINT is not configured")
+        raise ComputeUnavailableError("MEDULLA_ENDPOINT is not configured")
 
     monkeypatch.setattr("scion_sdk.compute.engine.connect_compute", _connect)
     with caplog.at_level("WARNING", logger=ml_engine.logger.name):
@@ -48,4 +48,4 @@ def test_unconfigured_engine_is_cached_as_unavailable(monkeypatch, caplog):
         assert MLEngine._rust_client() is None
     assert len(calls) == 1
     assert "ComputeUnavailableError" in caplog.text
-    assert "EPISTEMIC_GRAPH_ENDPOINT" in ml_engine._ENGINE_REQUIRED_ERR
+    assert "MEDULLA_ENDPOINT" in ml_engine._ENGINE_REQUIRED_ERR

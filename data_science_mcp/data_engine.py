@@ -223,13 +223,13 @@ def near_duplicate_pairs(
             raise RuntimeError(
                 f"near_duplicate_pairs: epistemic-graph engine unavailable and "
                 f"n={n} exceeds the local O(n^2) cap ({_NEAR_PAIRS_LOCAL_MAX}). "
-                f"Start the engine (EPISTEMIC_GRAPH_ENDPOINT) "
+                f"Start the engine (MEDULLA_ENDPOINT) "
                 f"for the Rust LSH/HNSW path, raise DSM_NEAR_PAIRS_LOCAL_MAX, or "
                 f"call with use_engine=False to force the local path."
             )
         logger.warning(
             "near_duplicate_pairs: engine unavailable; falling back to local "
-            "O(n^2) cosine for n=%d (set EPISTEMIC_GRAPH_ENDPOINT for the Rust "
+            "O(n^2) cosine for n=%d (set MEDULLA_ENDPOINT for the Rust "
             "LSH/HNSW path)",
             n,
         )

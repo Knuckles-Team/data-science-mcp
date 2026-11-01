@@ -338,9 +338,9 @@ the detailed transport contract.
 | `INFERENCE_BASE_URL` | — | Base URL of the running inference server, e.g. http://host:30000 |
 | `INFERENCE_MODEL` | — | Served model id exposed by the inference server. |
 | `INFERENCE_API_KEY` | secret-injected | Bearer token for the inference server (default "EMPTY" for local servers). |
-| `EPISTEMIC_GRAPH_ENDPOINT` | — | Engine endpoint: `tls://host:port` or `unix:///path`. |
-| `EPISTEMIC_GRAPH_AUTH_SECRET_REF` | — | Secret reference to the engine auth secret (e.g. `env://GRAPH_SERVICE_AUTH_SECRET`). |
-| `EPISTEMIC_GRAPH_TENANT` / `EPISTEMIC_GRAPH_GRAPH` | — | Tenant and graph the compute session signs for. |
+| `MEDULLA_ENDPOINT` | — | Engine endpoint: `tls://host:port` or `unix:///path`. |
+| `MEDULLA_AUTH_SECRET_REF` | — | Secret reference to the engine auth secret (e.g. `env://GRAPH_SERVICE_AUTH_SECRET`). |
+| `MEDULLA_TENANT` / `MEDULLA_GRAPH` | — | Tenant and graph the compute session signs for. |
 | `DSM_NEAR_PAIRS_LOCAL_MAX` | `20000` | Cap on local O(n^2) near-pair fallback before requiring the Rust path (0 disables the cap). |
 | `MODEL_TRAININGTOOL` | `True` |  |
 | `MODEL_EVOLUTIONTOOL` | `True` |  |
