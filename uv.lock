@@ -840,7 +840,7 @@ wheels = [
 
 [[package]]
 name = "data-science-mcp"
-version = "2.3.7"
+version = "2.3.9"
 source = { editable = "." }
 dependencies = [
     { name = "medulla" },
