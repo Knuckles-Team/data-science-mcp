@@ -14,3 +14,6 @@ The tests cover the error path that each row names.
 ## Quality and release proof
 
 Run `pytest -q`. The served proof is the fleet acceptance check through the gateway.
+
+## Rows awaiting bound tests
+- `CONN-DATA-SCIENCE-MCP-R003`: planned proof `tests/test_distilled_scores.py::test_tool_uploads_median_scores_with_bounds`. Expected: A recording uploader receives the median 16-bit fixed-point score with minimum and maximum bounds per document.. Refusal: An unknown scorer_id is refused with SCORER_UNKNOWN and nothing is uploaded..
