@@ -8,8 +8,8 @@ and no GPU**.
 ## Requirements
 
 - **Python 3.11–3.13** (`requires-python = ">=3.11,<3.14"`).
-- The Rust **`epistemic-graph`** compute engine (installed as a dependency via
-  `epistemic-graph[full]`). All classical ML compute runs in the engine over
+- The Rust **`medulla`** compute engine (installed as a dependency via
+  `medulla[full]`). All classical ML compute runs in the engine over
   its MessagePack/UDS protocol — there is no scikit-learn compute path.
 
 ## Install
@@ -41,7 +41,7 @@ pip install -e ".[training]"
 
 | Extra | Brings in | Weight |
 |---|---|---|
-| _(core)_ | `scion-sdk[mcp]`, `epistemic-graph[full]`, `polars`, `numpy` | full CPU engine, no GPU toolchain |
+| _(core)_ | `scion-sdk[mcp]`, `medulla[full]`, `polars`, `numpy` | full CPU engine, no GPU toolchain |
 | `datasets` | `scikit-learn` | light — sample-dataset loaders only (iris/diabetes/…), **not** compute |
 | `training` | `torch`, `transformers`, `peft`, `bitsandbytes`, `accelerate`, `datasets` (HF), `tokenizers`, `httpx` | heavy, GPU-oriented (CPU-installable) |
 | `training-scale` | `deepspeed`, `flash-attn` | **GPU host only** — needs the CUDA toolchain (`nvcc`); **not** CI/CPU-installable |
@@ -49,7 +49,7 @@ pip install -e ".[training]"
 | `eval` | `lighteval` | Hardened multi-backend benchmark harness |
 | `tracking` | `mlflow` | experiment-tracking dashboard (self-hostable). `wandb` is supported by `RunTracker` but install it the operator |
 | `agent` | `scion-sdk[agent-runtime,logfire]` | the bundled Pydantic-AI A2A agent runtime |
-| `all` | `scion-sdk[mcp,agent-runtime,logfire]`, `epistemic-graph[full]`, `scikit-learn` | everything **except** the GPU training extras |
+| `all` | `scion-sdk[mcp,agent-runtime,logfire]`, `medulla[full]`, `scikit-learn` | everything **except** the GPU training extras |
 
 All heavy deps are **lazily imported** — they load only when a capability that needs
 them actually runs, so the package installs and imports without them.
@@ -58,10 +58,10 @@ them actually runs, so the package installs and imports without them.
 
 | Capability | Tools / API | Needs |
 |---|---|---|
-| Engine-backed ML (fit/predict/evaluate/cross-validate) | `fit_model`, `predict`, `evaluate_model`, `cross_validate`, `MLEngine` | core + a running **epistemic-graph** engine (`EPISTEMIC_GRAPH_ENDPOINT`) |
+| Engine-backed ML (fit/predict/evaluate/cross-validate) | `fit_model`, `predict`, `evaluate_model`, `cross_validate`, `MLEngine` | core + a running **medulla** engine (`MEDULLA_ENDPOINT`) |
 | Sample datasets (iris/diabetes/…) | `load_dataset` | `[datasets]` (CSV needs nothing extra — uses polars) |
-| Quant / finance kernels | `quant_*` | core + epistemic-graph engine |
-| **Corpus curation** (dedup/decontaminate/quality-filter/pack/lineage) | `curate_corpus`, `dedup_corpus`, `decontaminate_corpus`, `dataset_lineage` (CONCEPT:DS-AHE.trainer.data-engine) | **core only** (pure-Python; epistemic-graph HNSW accelerates near-dup search when present) |
+| Quant / finance kernels | `quant_*` | core + medulla engine |
+| **Corpus curation** (dedup/decontaminate/quality-filter/pack/lineage) | `curate_corpus`, `dedup_corpus`, `decontaminate_corpus`, `dataset_lineage` (CONCEPT:DS-AHE.trainer.data-engine) | **core only** (pure-Python; medulla HNSW accelerates near-dup search when present) |
 | HF `datasets` streaming corpora | `stream_corpus({"hf": …})` | `[training]` |
 | **Plan** a training run (steps/effective-batch/params) | `train_sft`/`train_dpo`/`train_grpo`/`pretrain_model`/`train_tokenizer` with `execute=false` | **core only** (no torch) |
 | **Run** SFT / DPO / GRPO fine-tunes | same tools with `execute=true` | `[training]` + a GPU |

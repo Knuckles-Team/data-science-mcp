@@ -9,7 +9,7 @@ training run):
 * ``mlflow`` — self-hosted MLflow run + params/metrics (the homelab dashboard).
 * ``wandb``  — Weights & Biases run (available, non-default).
 
-Independently, ``kg_log=True`` mirrors the run into the epistemic-graph as a
+Independently, ``kg_log=True`` mirrors the run into the medulla as a
 ``TrainingRun`` provenance node via the scion-sdk KG facade, so every run,
 its hyper-parameters, and its metric trajectory are queryable as graph nodes
 alongside the datasets (:mod:`data_science_mcp.data_engine`) and checkpoints.
@@ -187,7 +187,7 @@ def _flat(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def _kg_mirror(payload: dict[str, Any]) -> None:
-    """Best-effort write of a ``TrainingRun`` node to the epistemic-graph KG.
+    """Best-effort write of a ``TrainingRun`` node to the medulla KG.
 
     Pushes through the SDK knowledge-ingest path; any failure (no engine, API drift) is
     swallowed — provenance is telemetry, never a training blocker.

@@ -2,7 +2,7 @@
 """Client accessor for the MCP tool surface.
 
 data-science-mcp has no external REST API of its own — per ``AGENTS.md``, all ML
-compute is delegated to the Rust ``epistemic-graph`` engine via
+compute is delegated to the Rust ``medulla`` engine via
 :class:`data_science_mcp.ml_engine.MLEngine` (a process-local singleton; see
 ``MLEngine._rust_client``/``.datascience`` namespace). ``mcp_server.py`` wires
 ``register_tool_surface(..., client_cls=MLEngine, get_client=get_client, ...)`` to

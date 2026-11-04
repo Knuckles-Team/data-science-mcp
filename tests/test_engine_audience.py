@@ -8,11 +8,11 @@ pytestmark = pytest.mark.spec("CONN-DATA-SCIENCE-MCP-R002")
 
 def test_signed_context_carries_the_configured_audience(monkeypatch):
     for key, value in {
-        "EPISTEMIC_GRAPH_ENDPOINT": "tcp://127.0.0.1:9100",
-        "EPISTEMIC_GRAPH_AUTH_SECRET_REF": "env://EG_SECRET",
-        "EPISTEMIC_GRAPH_TENANT": "tenant-a",
-        "EPISTEMIC_GRAPH_GRAPH": "kg",
-        "EPISTEMIC_GRAPH_AUDIENCE": "agent-services",
+        "MEDULLA_ENDPOINT": "tcp://127.0.0.1:9100",
+        "MEDULLA_AUTH_SECRET_REF": "env://EG_SECRET",
+        "MEDULLA_TENANT": "tenant-a",
+        "MEDULLA_GRAPH": "kg",
+        "MEDULLA_AUDIENCE": "agent-services",
     }.items():
         monkeypatch.setenv(key, value)
     settings = EngineSettings.from_settings()

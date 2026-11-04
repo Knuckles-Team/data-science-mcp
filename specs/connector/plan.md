@@ -42,7 +42,7 @@ No unknowns. Each row names the code it touches.
 
 ### Interfaces and data model
 
-Configuration moves to `EPISTEMIC_GRAPH_ENDPOINT`, `EPISTEMIC_GRAPH_AUTH_SECRET_REF`, `EPISTEMIC_GRAPH_TENANT` and `EPISTEMIC_GRAPH_GRAPH`. The old socket and TCP variables are removed.
+Configuration moves to `MEDULLA_ENDPOINT`, `MEDULLA_AUTH_SECRET_REF`, `MEDULLA_TENANT` and `MEDULLA_GRAPH`. The old socket and TCP variables are removed.
 
 ### Live integration path
 

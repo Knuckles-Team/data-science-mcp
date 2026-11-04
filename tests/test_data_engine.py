@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """Tests for the corpus curation engine (CONCEPT:DS-AHE.trainer.data-engine).
 
-Pure-Python coverage (``use_engine=False`` for determinism); the epistemic-graph
+Pure-Python coverage (``use_engine=False`` for determinism); the medulla
 all-pairs acceleration is exercised opportunistically only when a live engine is
 present and is behaviourally equivalent to the local fallback tested here.
 """

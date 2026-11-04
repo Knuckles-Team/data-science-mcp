@@ -116,9 +116,9 @@ runtime settings:
 | `INTERPRETABILITYTOOL` | `True` | Register the interpretability tool domain |
 | `DATA_MANAGEMENTTOOL` | `True` | Register the data-management tool domain |
 | `QUANTTOOL` | `True` | Register the quantitative-finance tool domain |
-| `EPISTEMIC_GRAPH_ENDPOINT` | — | Compute engine endpoint (`tls://host:port` or `unix:///path`) |
-| `EPISTEMIC_GRAPH_AUTH_SECRET_REF` | — | Secret reference to the engine auth secret |
-| `EPISTEMIC_GRAPH_TENANT` / `EPISTEMIC_GRAPH_GRAPH` | — | Tenant and graph the compute session signs for |
+| `MEDULLA_ENDPOINT` | — | Compute engine endpoint (`tls://host:port` or `unix:///path`) |
+| `MEDULLA_AUTH_SECRET_REF` | — | Secret reference to the engine auth secret |
+| `MEDULLA_TENANT` / `MEDULLA_GRAPH` | — | Tenant and graph the compute session signs for |
 
 Telemetry (`ENABLE_OTEL`, `OTEL_EXPORTER_OTLP_*`) and access governance
 (`EUNOMIA_TYPE`, `EUNOMIA_POLICY_FILE`, `EUNOMIA_REMOTE_URL`) are optional. The full

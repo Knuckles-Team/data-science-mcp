@@ -10,7 +10,7 @@ deps) and uses two optional accelerators when present:
 
 * **🤗 datasets** — memory-mapped/sharded streaming for large corpora
   (:func:`stream_corpus`); falls back to stdlib readers for ``.jsonl``/``.txt``/lists.
-* **epistemic-graph** — the Rust HNSW/LSH ``find_similar_pairs`` kernel for fast
+* **medulla** — the Rust HNSW/LSH ``find_similar_pairs`` kernel for fast
   near-duplicate and eval-set-leakage detection over the whole corpus
   (:func:`dedup`, :func:`decontaminate`); falls back to local cosine when the
   engine is unavailable.
@@ -20,7 +20,7 @@ vectorizer (:func:`feature_vector`) — no embedding model required — so dedup
 anywhere; the engine only accelerates the all-pairs search.
 
 :func:`dataset_provenance` records the corpus as a ``Dataset``/``DatasetVersion``
-node payload (lineage to parents) for the epistemic-graph, so every training run is
+node payload (lineage to parents) for the medulla, so every training run is
 traceable back to the exact, curated data it consumed.
 
 Concept: data-engine
@@ -162,11 +162,11 @@ def _near_pairs_local(
 def _near_pairs_engine(
     vectors: np.ndarray, ids: list[str], threshold: float
 ) -> list[tuple[int, int, float]] | None:
-    """Try the epistemic-graph Rust ``find_similar_pairs`` (LSH/HNSW). ``None`` on miss.
+    """Try the medulla Rust ``find_similar_pairs`` (LSH/HNSW). ``None`` on miss.
 
     Reuses the cached :meth:`MLEngine._rust_client` singleton instead of opening a
     fresh connection (background thread + event loop + socket) per call — the old
-    ``SyncEpistemicGraphClient.connect()`` here leaked one of each on every dedup.
+    ``SyncMedullaClient.connect()`` here leaked one of each on every dedup.
     """
     try:  # pragma: no cover - requires a live engine + matching client
         from .ml_engine import MLEngine
@@ -221,15 +221,15 @@ def near_duplicate_pairs(
         # surfaces instead of quietly running for minutes on a large corpus.
         if _NEAR_PAIRS_LOCAL_MAX and n > _NEAR_PAIRS_LOCAL_MAX:
             raise RuntimeError(
-                f"near_duplicate_pairs: epistemic-graph engine unavailable and "
+                f"near_duplicate_pairs: medulla engine unavailable and "
                 f"n={n} exceeds the local O(n^2) cap ({_NEAR_PAIRS_LOCAL_MAX}). "
-                f"Start the engine (EPISTEMIC_GRAPH_ENDPOINT) "
+                f"Start the engine (MEDULLA_ENDPOINT) "
                 f"for the Rust LSH/HNSW path, raise DSM_NEAR_PAIRS_LOCAL_MAX, or "
                 f"call with use_engine=False to force the local path."
             )
         logger.warning(
             "near_duplicate_pairs: engine unavailable; falling back to local "
-            "O(n^2) cosine for n=%d (set EPISTEMIC_GRAPH_ENDPOINT for the Rust "
+            "O(n^2) cosine for n=%d (set MEDULLA_ENDPOINT for the Rust "
             "LSH/HNSW path)",
             n,
         )

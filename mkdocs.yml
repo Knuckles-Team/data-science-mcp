@@ -1,5 +1,5 @@
 site_name: "data-science-mcp"
-site_description: "Data Science MCP Server + A2A Agent — model training, evaluation, and evolution tools for agentic ML workflows, with compute on the epistemic-graph Rust engine."
+site_description: "Data Science MCP Server + A2A Agent — model training, evaluation, and evolution tools for agentic ML workflows, with compute on the medulla Rust engine."
 site_url: "https://knuckles-team.github.io/data-science-mcp/"
 repo_name: "Knuckles-Team/data-science-mcp"
 repo_url: "https://github.com/Knuckles-Team/data-science-mcp"

@@ -3,7 +3,7 @@ Tests for checking the tool-surface client accessor in auth.py.
 
 data-science-mcp has no external REST API of its own: ``register_tool_surface``
 in ``mcp_server.py`` is wired with ``client_cls=MLEngine, get_client=get_client``
-(see ``AGENTS.md`` — all compute delegates to the Rust epistemic-graph engine via
+(see ``AGENTS.md`` — all compute delegates to the Rust medulla engine via
 ``MLEngine``). ``get_client()`` MUST therefore resolve to an ``MLEngine`` instance
 so the verbose 1:1 tool surface (introspected from ``MLEngine``) dispatches to a
 client that actually has those methods. A prior generic REST-client placeholder

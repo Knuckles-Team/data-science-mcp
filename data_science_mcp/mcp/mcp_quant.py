@@ -1,6 +1,6 @@
-"""MCP tools exposing the epistemic-graph Rust financial-quant kernels.
+"""MCP tools exposing the medulla Rust financial-quant kernels.
 
-All compute runs in the Rust ``epistemic-graph`` engine over its MessagePack/UDS
+All compute runs in the Rust ``medulla`` engine over its MessagePack/UDS
 client (``client.finance.*``); Python stays thin and only marshals arguments.
 The engine connection is the existing cached singleton on
 ``MLEngine._rust_client()`` — no raw sockets are opened here.

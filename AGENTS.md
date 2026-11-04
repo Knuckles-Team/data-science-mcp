@@ -15,19 +15,19 @@ Tool-neutral rules for any AI agent or human working in this repository. This bl
 > Canonical guidance for any AI coding agent or human; tool-specific entry files
 > (for example `CLAUDE.md`) only import this file. Edit this file.
 
-## ⚙️ Compute runs in epistemic-graph — NOT scikit-learn (READ FIRST)
+## ⚙️ Compute runs in medulla — NOT scikit-learn (READ FIRST)
 
 All ML compute (fit / predict / evaluate / cross-validate / dataset stats /
-train-test split) is delegated to the Rust **`epistemic-graph`** engine over its
-MessagePack/UDS client (`epistemic_graph.client.SyncEpistemicGraphClient`,
+train-test split) is delegated to the Rust **`medulla`** engine over its
+MessagePack/UDS client (`medulla.client.SyncMedullaClient`,
 `.datascience` namespace). `ml_engine.py` is the single integration point; the
 engine is a **required** dependency and there is **no scikit-learn compute path**.
 
 - **When adding or enhancing ML feature, extend the engine, not Python.**
-  Add the algorithm to `epistemic-graph/src/datascience/*`, expose it
-  (`protocol.rs` + `server.rs` + `epistemic_graph/client.py`), then call it from
+  Add the algorithm to `medulla/src/datascience/*`, expose it
+  (`protocol.rs` + `server.rs` + `medulla/client.py`), then call it from
   `ml_engine.py` via `client.datascience.*`. Do NOT add `scikit-learn`/`scipy`
-  compute here. See `epistemic-graph/docs/RUST_COMPUTE_GUIDE.md`.
+  compute here. See `medulla/docs/RUST_COMPUTE_GUIDE.md`.
 - Supported models route automatically (`ridge`, `lasso`, `elasticnet`,
   `decisiontree`, `randomforest`, `gradientboosting`, `adaboost`, `svr`, plus
   OLS). Need a new estimator? Implement it in the engine and add its normalized
@@ -35,7 +35,7 @@ engine is a **required** dependency and there is **no scikit-learn compute path*
 - `scikit-learn` is an **optional** extra (`data-science-mcp[datasets]`) used
   ONLY by the built-in sample-dataset loaders (iris/diabetes/...). CSV loading
   prefers polars (with a stdlib-csv fallback when polars is unavailable). `numpy` remains for array marshalling and light local math.
-- Configure the engine through `EPISTEMIC_GRAPH_ENDPOINT`, `EPISTEMIC_GRAPH_AUTH_SECRET_REF`, `EPISTEMIC_GRAPH_TENANT` and `EPISTEMIC_GRAPH_GRAPH`.
+- Configure the engine through `MEDULLA_ENDPOINT`, `MEDULLA_AUTH_SECRET_REF`, `MEDULLA_TENANT` and `MEDULLA_GRAPH`.
   Compute tests are gated by the `require_engine` fixture; sklearn-parity for the
   estimators is validated out-of-tree.
 
@@ -63,7 +63,7 @@ engine** and no GPU dep here; the runtime cost is `httpx` only.
 
 ## Tech Stack & Architecture
 - Language/Version: Python 3.10+
-- Core Libraries: `scion-sdk`, `epistemic-graph` (Rust compute engine), `fastmcp`, `pydantic-ai`
+- Core Libraries: `scion-sdk`, `medulla` (Rust compute engine), `fastmcp`, `pydantic-ai`
 - Key principles: Functional patterns, Pydantic for data validation, asynchronous tool execution.
 - Architecture:
     - `mcp_server.py`: Main MCP server entry point and tool registration.
@@ -316,7 +316,7 @@ Working in parallel with other sessions/worktrees? **Reserve a concept id before
 scion-sdk --json concept reserve --ns EG-KG.compute.backend   # or a package prefix, e.g. KEY
 ```
 
-Full protocol (ledger, merge=union, reconcile, MCP/REST): <https://knuckles-team.github.io/agent-connector-sdk/concept_coordination/>
+Full protocol (ledger, merge=union, reconcile, MCP/REST): <https://knuckles-team.github.io/scion-sdk/concept_coordination/>
 <!-- END concept-coordination (generated) -->
 
 ## Version & lockfile drift edict (keep the version mirrors AND the lock in sync)

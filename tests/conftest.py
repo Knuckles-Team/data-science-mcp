@@ -1,9 +1,9 @@
 """Shared test fixtures for Data Science Mcp.
 
-Compute runs in the Rust epistemic-graph engine, so the engine-backed tests need
-a live server. The session-scoped `epistemic_graph_engine` fixture best-effort
-launches one (installed `epistemic-graph-server` console script, or a sibling
-source build) and points `EPISTEMIC_GRAPH_ENDPOINT` at it. The per-test
+Compute runs in the Rust medulla engine, so the engine-backed tests need
+a live server. The session-scoped `medulla_engine` fixture best-effort
+launches one (installed `medulla-server` console script, or a sibling
+source build) and points `MEDULLA_ENDPOINT` at it. The per-test
 `require_engine` fixture depends on it and skips only if no engine could be
 started/reached — so coverage runs whenever the binary is available, and degrades
 to a clean skip when it is not.
@@ -27,11 +27,11 @@ def mock_env(monkeypatch):
 
 
 def _find_engine_binary() -> str | None:
-    """Locate the epistemic-graph-server binary: prefer the installed console
-    script (epistemic-graph[datascience] ships the version-matched binary via
+    """Locate the medulla-server binary: prefer the installed console
+    script (medulla[datascience] ships the version-matched binary via
     maturin bindings=bin), then fall back to the NEWEST sibling source build
     (newest mtime avoids picking a stale release over a fresh debug build)."""
-    found = shutil.which("epistemic-graph-server")
+    found = shutil.which("medulla-server")
     if found:
         return found
     here = os.path.dirname(__file__)
@@ -42,10 +42,10 @@ def _find_engine_binary() -> str | None:
                 "..",
                 "..",
                 "..",
-                "epistemic-graph",
+                "medulla",
                 "target",
                 build,
-                "epistemic-graph-server",
+                "medulla-server",
             )
         )
         for build in ("release", "debug")
@@ -57,14 +57,14 @@ def _find_engine_binary() -> str | None:
 
 
 @pytest.fixture(scope="session")
-def epistemic_graph_engine():
-    """Launch a local epistemic-graph engine for the session (best effort).
+def medulla_engine():
+    """Launch a local medulla engine for the session (best effort).
 
     No-ops (yields None) when an external engine is already configured, or when
     no binary is available — in which case `require_engine` tests skip.
     """
     # Respect an externally provided engine (e.g. a CI service container).
-    if os.environ.get("EPISTEMIC_GRAPH_ENDPOINT"):
+    if os.environ.get("MEDULLA_ENDPOINT"):
         yield None
         return
 
@@ -86,7 +86,7 @@ def epistemic_graph_engine():
         time.sleep(0.5)
 
     if os.path.exists(sock):
-        os.environ["EPISTEMIC_GRAPH_ENDPOINT"] = f"unix://{sock}"
+        os.environ["MEDULLA_ENDPOINT"] = f"unix://{sock}"
 
     try:
         yield proc
@@ -101,12 +101,12 @@ def epistemic_graph_engine():
                 os.remove(sock)
             except OSError:
                 pass
-        os.environ.pop("EPISTEMIC_GRAPH_ENDPOINT", None)
+        os.environ.pop("MEDULLA_ENDPOINT", None)
 
 
 @pytest.fixture
-def require_engine(epistemic_graph_engine):
-    """Skip a test unless the epistemic-graph compute engine is reachable.
+def require_engine(medulla_engine):
+    """Skip a test unless the medulla compute engine is reachable.
 
     Depends on the session engine fixture (which starts one when possible), then
     re-probes with the current env. Compute (fit/predict/evaluate/cross-validate)
@@ -116,7 +116,7 @@ def require_engine(epistemic_graph_engine):
 
     MLEngine._rust_client_cache = _UNPROBED  # re-probe with current env
     if MLEngine._rust_client() is None:
-        pytest.skip("epistemic-graph engine not reachable")
+        pytest.skip("medulla engine not reachable")
 
 
 @pytest.fixture
