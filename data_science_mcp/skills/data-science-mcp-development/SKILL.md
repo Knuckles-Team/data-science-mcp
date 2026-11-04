@@ -16,7 +16,7 @@ metadata:
 Use this skill when changing the `data-science-mcp` connector, its documentation, or
 its spec-delivery integration. Work from the repository root and read `AGENTS.md`, the
 affected module, and the relevant `specs/` status before editing. Keep the connector
-focused on MCP and A2A exposure; model computation belongs in the epistemic-graph
+focused on MCP and A2A exposure; model computation belongs in the medulla
 engine through the existing `MLEngine` and client protocol.
 
 ## Rapid delivery: the 5-minute contract

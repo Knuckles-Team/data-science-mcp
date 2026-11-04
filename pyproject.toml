@@ -17,9 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "scion-sdk[mcp]>=0.6.4,<0.7.0",
+    "scion-sdk[mcp]>=0.7.0,<0.8.0",
     "requests>=2.34.2",
-    "medulla[full]>=2.27.10,<3",
     "polars>=2.0.0",
     "numpy>=2.5.4",
 ]
@@ -27,7 +26,7 @@ dependencies = [
 [project.optional-dependencies]
 
 
-# scikit-learn is no longer used for compute (that runs in the epistemic-graph
+# scikit-learn is no longer used for compute (that runs in the medulla
 # Rust engine). It is optional and only powers the built-in sample-dataset
 # loaders (iris/diabetes/wine/...). CSV datasets need no scikit-learn.
 datasets = [
@@ -94,7 +93,6 @@ eval = [
 # memory — it will re-introduce the same workspace-wide CVE-pin conflict.
 
 all = [
-    "medulla[full]>=2.27.10,<3",
     "scikit-learn>=1.9.1"]
 
 test = [

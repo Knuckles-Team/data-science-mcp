@@ -2,7 +2,7 @@
 
 Model training, evaluation, and evolution tools for agentic ML workflows — an
 **MCP Server + A2A Agent** for the Arbora ecosystem, with compute delegated
-to the Rust **epistemic-graph** engine.
+to the Rust **medulla** engine.
 
 !!! info "Official documentation"
     This site is the canonical reference for `data-science-mcp`, maintained alongside
@@ -20,7 +20,7 @@ lifecycle — load datasets, fit and cross-validate estimators, rank models on a
 Pareto frontier, generate interpretability suites, and fine-tune open-weight models
 with SFT / DPO / GRPO. It provides:
 
-- **`MLEngine`** — a stateful façade over the `epistemic-graph` Rust compute engine
+- **`MLEngine`** — a stateful façade over the `medulla` Rust compute engine
   (`fit`, `predict`, `evaluate`, `cross_validate`, `load_dataset`, `split_dataset`).
   All ML compute runs in the engine over its MessagePack/UDS protocol; there is no
   scikit-learn compute path.

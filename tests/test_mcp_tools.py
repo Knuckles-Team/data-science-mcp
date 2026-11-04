@@ -92,7 +92,7 @@ def test_ml_engine_load_dataset(require_sklearn):
 
 
 def test_ml_engine_fit_predict_evaluate(require_engine, require_sklearn):
-    """Test model fitting, predictions, and evaluation via the epistemic-graph engine."""
+    """Test model fitting, predictions, and evaluation via the medulla engine."""
     engine = MLEngine()
 
     # Fit a model without loading dataset first (should trigger auto-load)
@@ -133,7 +133,7 @@ def test_ml_engine_fit_predict_evaluate(require_engine, require_sklearn):
 
 
 def test_ml_engine_cross_validate(require_engine, require_sklearn):
-    """Test cross-validation via the epistemic-graph engine."""
+    """Test cross-validation via the medulla engine."""
     engine = MLEngine()
 
     # Load dataset

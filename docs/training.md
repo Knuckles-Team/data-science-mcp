@@ -48,7 +48,7 @@ MCP tools: `train_sft`, `train_dpo`, `train_grpo`, `merge_adapters_ties`. They a
 `options.execute=true` (and torch present).
 
 ### 3. Rust performance path
-The loss/optimizer kernels also exist in pure Rust in `epistemic-graph`
+The loss/optimizer kernels also exist in pure Rust in `medulla`
 (`client.datascience.{softmax,cross_entropy,dpo_loss,grpo_surrogate,kl_divergence,adam_step,sgd_step}`),
 so a trainer can batch a step over the wire in one round-trip. Same math as
 `trainers/objectives.py`; torch is the default, Rust is the optimization.
@@ -190,7 +190,7 @@ CUDA toolchain) — not CI/CPU-installable.
 
 - `stream_corpus` — list / `.jsonl` / `.txt` / 🤗 `datasets(streaming=True)`.
 - `dedup` — exact (content-hash) + near-duplicate (cosine/LSH). The all-pairs search
-  is offloaded to the **epistemic-graph** Rust `find_similar_pairs` when a live engine
+  is offloaded to the **medulla** Rust `find_similar_pairs` when a live engine
   is present, with a local-cosine fallback. Embeddings use a deterministic hashing
   vectorizer — no embedding model required.
 - `decontaminate` — drop training records that leak held-out eval examples.

@@ -92,7 +92,7 @@ class TrainConfig:
     # --- tracking (CONCEPT:DS-AHE.trainer.concept-3) ------------------------------------------
     tracker: str = "none"  # none | mlflow | wandb
     run_name: str | None = None
-    kg_log: bool = False  # mirror the run into the epistemic-graph as a TrainingRun
+    kg_log: bool = False  # mirror the run into the medulla as a TrainingRun
     # provenance lineage (PROV-O): the curated DatasetVersion this run consumed and
     # the upstream run it continues (e.g. PPO ← reward ← sft ← pretrain). Emitted on
     # the TrainingRun node as `was_derived_from` so the dataset→…→model chain is

@@ -12,7 +12,7 @@ Tool tags:
     - data-management: load_dataset, describe_dataset, split_dataset
     - quant: quant_market_making, quant_microstructure, quant_sizing,
       quant_validation, quant_forensic, quant_statespace, quant_signals,
-      quant_derivatives (epistemic-graph finance kernels)
+      quant_derivatives (medulla finance kernels)
     - deep-delegate: deep_train_predict — the AU-KG mining plan's Phase-6
       delegation target (mlp_classify, autoencoder_anomaly/embed, lstm_forecast,
       histgbm_classify — torch/[training]-extra, CONCEPT:AU-KG.mining.dsm-forecast-delegation)

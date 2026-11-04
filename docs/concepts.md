@@ -31,9 +31,9 @@ and the SDD spec at `.specify/specs/llm-model-trainer/`.
 | Concept ID | Name | Description |
 |------------|------|-------------|
 | `CONCEPT:AU-AHE.trainer.high-caliber-llm-trainer` | Trainer Hardening | Shared `trainers/loop.py::run_loop` — precision (fp16 scaler / bf16 autocast), gradient accumulation, clipping, LR scheduling, checkpoint save+resume, metrics. SFT/DPO/GRPO/pretrain all route through it; `TrainConfig` defaults reproduce prior behaviour exactly |
-| `CONCEPT:DS-AHE.trainer.data-engine` | Corpus Curation Engine | `data_engine.py` (+ `mcp/mcp_data_engine.py`) — stream / exact+near dedup / decontaminate / quality-filter / pack / `DatasetVersion` lineage; epistemic-graph HNSW/LSH `find_similar_pairs` accelerates the all-pairs search (local-cosine fallback) |
+| `CONCEPT:DS-AHE.trainer.data-engine` | Corpus Curation Engine | `data_engine.py` (+ `mcp/mcp_data_engine.py`) — stream / exact+near dedup / decontaminate / quality-filter / pack / `DatasetVersion` lineage; medulla HNSW/LSH `find_similar_pairs` accelerates the all-pairs search (local-cosine fallback) |
 | `CONCEPT:DS-AHE.trainer.concept-2` | Pretrain From Random Init | `tokenizer_trainer.py` (BPE) + `trainers/pretrain_trainer.py` (`PretrainSpec`, `AutoConfig`→`from_config`, packed next-token CE; kind=`pretrain`) + `run_pretrain_pipeline` |
-| `CONCEPT:DS-AHE.trainer.concept-3` | Experiment Tracking | `tracking.py::RunTracker` — MLflow / W&B / none + best-effort epistemic-graph `TrainingRun` provenance mirror |
+| `CONCEPT:DS-AHE.trainer.concept-3` | Experiment Tracking | `tracking.py::RunTracker` — MLflow / W&B / none + best-effort medulla `TrainingRun` provenance mirror |
 | `CONCEPT:DS-AHE.trainer.concept-4` | Distributed Scale-Out | `trainers/accelerate_launch.py` + `launch/` — FSDP **and** DeepSpeed ZeRO-3 as first-class peers + `accelerate launch` config/command builder (homelab or cloud) |
 | `CONCEPT:DS-AHE.trainer.concept-5` | Benchmark Evaluation | `trainers/eval_hooks.evaluate_benchmarks` — LightEval scoring alongside the AHE-3.1 reliability suite |
 | `CONCEPT:AU-AHE.trainer.concept-2` | Agent-Driven Training | Personas `data_curator`/`training_engineer`/`eval_judge`/`ml_orchestrator` (scion-sdk) + the `ml/train_model` workflow + `model_training_team` (universal-skills) |

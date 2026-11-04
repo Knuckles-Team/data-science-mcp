@@ -1,6 +1,6 @@
 """Best-effort provenance logging through the SDK knowledge-ingest path.
 
-Dataset-version and training-run provenance records are pushed to epistemic-graph
+Dataset-version and training-run provenance records are pushed to medulla
 as typed entities with ``scion_sdk.ingest``. Provenance is telemetry:
 when no engine is configured or reachable the write is skipped and never blocks
 training or data preparation.

@@ -3,7 +3,7 @@
 Exposes :mod:`data_science_mcp.data_engine` as action-routed MCP tools so an agent
 (the ``data_curator`` persona) can build a clean training corpus: quality-filter →
 deduplicate → decontaminate against eval sets → record dataset lineage. The heavy
-near-duplicate search is offloaded to the epistemic-graph engine when available and
+near-duplicate search is offloaded to the medulla engine when available and
 falls back to local cosine, so every tool works with or without a live engine.
 
 All tools take/return JSON strings (parallel to :mod:`mcp_trainers`).

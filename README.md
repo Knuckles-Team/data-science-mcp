@@ -113,7 +113,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `data_science_cross_validate` | `ML_ENGINETOOL` | Run k-fold cross-validation via the engine. |
 | `data_science_describe_dataset` | `ML_ENGINETOOL` | Get descriptive statistics for a loaded dataset. |
 | `data_science_evaluate` | `ML_ENGINETOOL` | Evaluate a fitted model. |
-| `data_science_fit` | `ML_ENGINETOOL` | Fit a model on a dataset via the epistemic-graph engine. |
+| `data_science_fit` | `ML_ENGINETOOL` | Fit a model on a dataset via the medulla engine. |
 | `data_science_interpretability_reference` | `ML_ENGINETOOL` | Compute reference answers for the interpretability suite without any |
 | `data_science_load_dataset` | `ML_ENGINETOOL` | Load a dataset by name or file path. |
 | `data_science_predict` | `ML_ENGINETOOL` | Generate predictions from a fitted model. |
@@ -154,7 +154,7 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
 
 > **Install the connector-focused `[mcp]` extra.** Examples use `data-science-mcp[mcp]` to add
 > FastMCP / FastAPI through `scion-sdk[mcp]`; the required Agent Utilities core
-> still carries `epistemic-graph[full]`. The `[agent-runtime]` extra additionally
+> still carries `medulla[full]`. The `[agent-runtime]` extra additionally
 > enables model orchestration.
 
 #### stdio Transport (local IDEs — Cursor, Claude Desktop, VS Code)
@@ -549,8 +549,8 @@ Pick the extra that matches what the operator want to run:
 
 | Extra | Installs | Use when |
 |-------|----------|----------|
-| `data-science-mcp[mcp]` | Connector-focused MCP server (`scion-sdk[mcp]` — FastMCP/FastAPI + `epistemic-graph[full]`) | The operator only run the **MCP server** (smallest install / image) |
-| `data-science-mcp[agent]` | Agent runtime (`scion-sdk[agent-runtime,logfire]` — model orchestration + `epistemic-graph[full]`) | The operator run the **integrated agent** |
+| `data-science-mcp[mcp]` | Connector-focused MCP server (`scion-sdk[mcp]` — FastMCP/FastAPI + `medulla[full]`) | The operator only run the **MCP server** (smallest install / image) |
+| `data-science-mcp[agent]` | Agent runtime (`scion-sdk[agent-runtime,logfire]` — model orchestration + `medulla[full]`) | The operator run the **integrated agent** |
 | `data-science-mcp[all]` | Everything (`mcp` + `agent` + `scikit-learn` sample-dataset loaders) | Development / both surfaces |
 
 Heavy ML extras are opt-in and imported lazily — add them only when needed:
@@ -575,8 +575,8 @@ One multi-stage `docker/Dockerfile` builds two right-sized images, selected by `
 
 | Image tag | Build target | Contents | Entrypoint |
 |-----------|--------------|----------|------------|
-| `example/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **connector-focused**, includes `epistemic-graph[full]`; no model-orchestration stack | `data-science-mcp` |
-| `example/data-science-mcp@sha256:<digest>` | `--target agent` (default) | `data-science-mcp[agent]` — **agent runtime**, model orchestration + `epistemic-graph[full]` | `data-science-agent` |
+| `example/data-science-mcp:mcp` | `--target mcp` | `data-science-mcp[mcp]` — **connector-focused**, includes `medulla[full]`; no model-orchestration stack | `data-science-mcp` |
+| `example/data-science-mcp@sha256:<digest>` | `--target agent` (default) | `data-science-mcp[agent]` — **agent runtime**, model orchestration + `medulla[full]` | `data-science-agent` |
 
 ```bash
 docker build --target mcp   -t example/data-science-mcp:mcp    docker/   # connector-focused MCP server
@@ -586,15 +586,15 @@ docker build --target agent -t example/data-science-mcp:agent-local docker/   # 
 `docker/mcp.compose.yml` runs the connector-focused `:mcp` server; `docker/agent.compose.yml` runs the
 agent (`immutable agent digest`) with a co-located `:mcp` sidecar.
 
-### Knowledge-graph database (`epistemic-graph`)
+### Knowledge-graph database (`medulla`)
 
-`data-science-mcp` uses the mandatory `epistemic-graph[full]` compute capabilities on top of
-the `epistemic-graph[full]` runtime carried by every Agent Utilities install.
+`data-science-mcp` uses the mandatory `medulla[full]` compute capabilities on top of
+the `medulla[full]` runtime carried by every Agent Utilities install.
 The connector-focused `[mcp]` surface uses that engine without enabling model
 orchestration; `[agent]` adds the orchestration stack. Local deployments can use the
-bundled engine. For production or shared state, configure a dedicated epistemic-graph
+bundled engine. For production or shared state, configure a dedicated medulla
 service. See the
-[epistemic-graph deployment guide](https://knuckles-team.github.io/epistemic-graph/deployment/).
+[medulla deployment guide](https://knuckles-team.github.io/medulla/deployment/).
 
 ---
 

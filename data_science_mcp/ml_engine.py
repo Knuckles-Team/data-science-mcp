@@ -2,7 +2,7 @@
 """ML Engine — Core model training and evaluation logic.
 
 Compute (fit / predict / evaluate / cross-validation / stats / split) runs in the
-Rust ``epistemic-graph`` engine over its MessagePack/UDS protocol — there is no
+Rust ``medulla`` engine over its MessagePack/UDS protocol — there is no
 scikit-learn compute path. The engine is a required dependency for model
 operations; scikit-learn is optional and used only by the built-in sample-dataset
 loaders (``data-science-mcp[datasets]``). CSV loading prefers polars, with a
@@ -63,7 +63,7 @@ _RUST_PARAM_KEYS = {
 }
 
 _ENGINE_REQUIRED_ERR = (
-    "epistemic-graph engine unavailable. Set MEDULLA_ENDPOINT, "
+    "medulla engine unavailable. Set MEDULLA_ENDPOINT, "
     "MEDULLA_AUTH_SECRET_REF, MEDULLA_TENANT and "
     "MEDULLA_GRAPH, and ensure the engine is running."
 )
@@ -79,7 +79,7 @@ class MLEngine:
     """Stateful ML engine for model training and evaluation.
 
     Manages fitted models and loaded datasets in-memory. Compute is delegated to
-    the Rust epistemic-graph engine.
+    the Rust medulla engine.
     """
 
     _instance: MLEngine | None = None
@@ -93,7 +93,7 @@ class MLEngine:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    # ── Rust epistemic-graph engine integration (CONCEPT:EG-KG.compute.rust-native-training-loss) ──────
+    # ── Rust medulla engine integration (CONCEPT:EG-KG.compute.rust-native-training-loss) ──────
     @classmethod
     def _rust_client(cls) -> Any:
         """Return a cached connected engine client, or None if unreachable.
@@ -114,11 +114,11 @@ class MLEngine:
             from scion_sdk.compute.engine import connect_compute
 
             client = connect_compute(scopes=ENGINE_SCOPES).client
-            logger.info("epistemic-graph engine connected; Rust compute enabled")
+            logger.info("medulla engine connected; Rust compute enabled")
         except Exception as exc:
             cause = exc.__cause__ or exc
             logger.warning(
-                "epistemic-graph engine unavailable: error_type=%s cause_type=%s",
+                "medulla engine unavailable: error_type=%s cause_type=%s",
                 type(exc).__name__,
                 type(cause).__name__,
             )
@@ -357,7 +357,7 @@ class MLEngine:
         hyperparameters: dict[str, Any] | None = None,
         test_size: float = 0.2,
     ) -> dict[str, Any]:
-        """Fit a model on a dataset via the epistemic-graph engine.
+        """Fit a model on a dataset via the medulla engine.
 
         Args:
             model_class: Model name (e.g., 'LinearRegression', 'Ridge',

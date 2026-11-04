@@ -1,6 +1,6 @@
-"""Tests for the quant MCP tools that expose epistemic-graph finance kernels.
+"""Tests for the quant MCP tools that expose medulla finance kernels.
 
-Compute runs in the Rust epistemic-graph engine over ``client.finance.*``, so the
+Compute runs in the Rust medulla engine over ``client.finance.*``, so the
 end-to-end tool calls depend on a reachable engine and use the shared
 ``require_engine`` fixture (cleanly skipped when no engine socket is present).
 The engine-independent assertions (registration, action routing, graceful error

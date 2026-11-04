@@ -7,7 +7,7 @@ description: >-
   classes on a performance-vs-complexity Pareto frontier. Use when the agent must train
   a scikit-style regressor/classifier (LinearRegression, Ridge, RandomForest, …) on a
   named or CSV dataset, tune via k-fold CV, score held-out data, or decide which model
-  class to keep. Compute runs in the epistemic-graph Rust engine, not in-process. Do NOT
+  class to keep. Compute runs in the medulla Rust engine, not in-process. Do NOT
   use for LLM/gradient fine-tuning or corpus curation (use data-science-llm-finetuning)
   or for interpretability/reliability grading (use data-science-model-reliability).
 license: MIT
@@ -21,7 +21,7 @@ metadata:
 Train and rank classical ML models over the **data-science-mcp** MCP server. Datasets
 are loaded once by name, then referenced by that name across fit/CV/evaluate. Fitted
 models are addressed by the returned `model_id`. Heavy compute executes in the
-epistemic-graph Rust engine — these tools are thin, backend-agnostic wrappers.
+medulla Rust engine — these tools are thin, backend-agnostic wrappers.
 
 ## When to use
 - Fit a tabular regressor/classifier on a built-in sample or a `.csv` file.
@@ -45,7 +45,7 @@ Connect via the `mcp-client` skill against the **`data-science-mcp`** MCP server
 | `INFERENCE_BACKEND` / `INFERENCE_BASE_URL` | optional | Only for served-model workflows; classical fit needs neither |
 | (built-in datasets) | optional | `california`/`diabetes`/`iris`/`wine`/`breast_cancer`/`digits` need the `[datasets]` extra (scikit-learn); CSV paths do not |
 
-Compute is delegated to the epistemic-graph engine; no local scikit-learn is required
+Compute is delegated to the medulla engine; no local scikit-learn is required
 for CSV datasets.
 
 ## Tools & actions

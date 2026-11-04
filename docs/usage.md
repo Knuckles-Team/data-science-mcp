@@ -27,7 +27,7 @@ Example agent prompts that map onto these tools:
 
 ## As a Python API
 
-`MLEngine` is a stateful façade over the `epistemic-graph` Rust compute engine.
+`MLEngine` is a stateful façade over the `medulla` Rust compute engine.
 Fitted models and loaded datasets are held in-memory and referenced by ID for
 subsequent operations.
 
@@ -39,7 +39,7 @@ engine = MLEngine()
 # Load a dataset (built-in sample names need the [datasets] extra; CSV paths do not)
 engine.load_dataset("diabetes")
 
-# Fit an estimator — compute runs in the epistemic-graph engine
+# Fit an estimator — compute runs in the medulla engine
 result = engine.fit("RandomForest", "diabetes", test_size=0.2)
 model_id = result["model_id"]
 print(result["metrics"])                 # r2 / rmse on the holdout
