@@ -14,6 +14,7 @@
       "title": "Signed engine compute connection",
       "delivery_state": "VERIFIED",
       "landed_in": [
+        "c121734e53f6",
         "eac7c320be33"
       ],
       "verified_by": [
