@@ -277,26 +277,53 @@ def test_tool_surface_client_matches_client_cls():
 
 
 @pytest.mark.asyncio
-async def test_verbose_describe_dataset_tool_dispatches(
-    monkeypatch, require_engine, require_sklearn
-):
-    """End-to-end regression test for the reported bug: calling the verbose,
-    auto-derived ``data_science_describe_dataset`` tool (as a delegated task
-    would via the fleet multiplexer's ``load_tools``) must dispatch to a real
-    ``MLEngine.describe_dataset`` -- not raise
-    ``'Client' object has no attribute 'describe_dataset'``.
-    """
-    monkeypatch.setenv("MCP_TOOL_MODE", "verbose")
-    engine = MLEngine()
-    engine.load_dataset("iris", "")
+async def test_engine_methods_are_not_auto_derived_into_duplicate_tools():
+    """Each operation is served once, under its hand-written name.
 
+    The engine's public methods used to be auto-derived into ``data_science_*``
+    tools that duplicated ``fit_model``, ``load_dataset`` and the rest, and one of
+    them accepted an unconfined ``source_path``.
+    """
     _, mcp = build_server("data_science_mcp", command_args=[])
-    result = await mcp.call_tool(
-        "data_science_describe_dataset", {"params_json": json.dumps({"name": "iris"})}
-    )
+    names = {t.name for t in await mcp.list_tools()}
+    assert not {n for n in names if n.startswith("data_science_")}
+    assert {"load_dataset", "fit_model", "describe_dataset", "rank_models"} <= names
+    load = next(t for t in await mcp.list_tools() if t.name == "load_dataset")
+    assert "source_path" not in load.parameters["properties"]
+
+
+@pytest.mark.asyncio
+async def test_describe_dataset_tool_dispatches(require_engine, require_sklearn):
+    MLEngine().load_dataset("iris", "")
+    _, mcp = build_server("data_science_mcp", command_args=[])
+    result = await mcp.call_tool("describe_dataset", {"name": "iris"})
     payload = result.structured_content
     assert payload["name"] == "iris"
     assert "feature_stats" in payload
+
+
+@pytest.mark.asyncio
+async def test_load_dataset_fails_when_scikit_learn_is_missing(monkeypatch):
+    """A built-in sample without the ``[datasets]`` extra is a tool error, not a payload."""
+    import sys
+
+    monkeypatch.setitem(sys.modules, "sklearn", None)
+    monkeypatch.setitem(sys.modules, "sklearn.datasets", None)
+    _, mcp = build_server("data_science_mcp", command_args=[])
+    load = next(t for t in await mcp.list_tools() if t.name == "load_dataset")
+    with pytest.raises(ImportError, match="scikit-learn"):
+        await load.fn(name="iris", ctx=None)
+
+
+def test_engine_load_dataset_raises_missing_extra(monkeypatch):
+    import sys
+
+    from data_science_mcp.ml_engine import MissingExtraError
+
+    monkeypatch.setitem(sys.modules, "sklearn", None)
+    monkeypatch.setitem(sys.modules, "sklearn.datasets", None)
+    with pytest.raises(MissingExtraError, match=r"data-science-mcp\[datasets\]"):
+        MLEngine().load_dataset("iris")
 
 
 @pytest.mark.asyncio
@@ -664,18 +691,10 @@ async def test_mcp_context_logging(require_engine, require_sklearn):
 
 @pytest.mark.asyncio
 async def test_mcp_prompts():
-    """Verify prompts defined in FastMCP."""
+    """The workflow guidance is served as packaged agent prompts."""
     _, mcp = build_server("data_science_mcp", command_args=[])
-    prompts = await mcp.list_prompts()
-
-    # Check model_evolution_workflow
-    prompt_ev = next(p for p in prompts if p.name == "model_evolution_workflow")
-    res_ev = prompt_ev.fn(dataset="iris")
-    assert "iris" in res_ev
-    assert "fit_model" in res_ev
-
-    # Check interpretability_audit
-    prompt_ia = next(p for p in prompts if p.name == "interpretability_audit")
-    res_ia = prompt_ia.fn(model_name="LinearRegression")
-    assert "LinearRegression" in res_ia
-    assert "Feature Attribution" in res_ia
+    prompts = {p.name for p in await mcp.list_prompts()}
+    assert "data-science-mcp-operator" in prompts
+    assert "data-science-mcp-data-scientist" in prompts
+    assert "model_evolution_workflow" not in prompts
+    assert "interpretability_audit" not in prompts

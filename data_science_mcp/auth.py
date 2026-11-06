@@ -1,24 +1,17 @@
 #!/usr/bin/python
-"""Client accessor for the MCP tool surface.
+"""Client accessors.
 
-data-science-mcp has no external REST API of its own — per ``AGENTS.md``, all ML
-compute is delegated to the Rust ``medulla`` engine via
-:class:`data_science_mcp.ml_engine.MLEngine` (a process-local singleton; see
-``MLEngine._rust_client``/``.datascience`` namespace). ``mcp_server.py`` wires
-``register_tool_surface(..., client_cls=MLEngine, get_client=get_client, ...)`` to
-auto-derive the verbose 1:1 tool surface (``data_science_<method>``) from
-``MLEngine``'s public methods, then dispatches each call as
-``getattr(get_client(), method)(**kwargs)``. ``get_client`` therefore MUST return
-an ``MLEngine`` instance so the introspected surface (``client_cls``) matches the
-live dispatch target — an earlier generic REST-client placeholder here caused
-every verbose tool (e.g. ``data_science_describe_dataset``) to fail with
-``'Client' object has no attribute '<method>'``.
+data-science-mcp has no external REST API of its own: all ML compute is delegated
+to the Rust ``medulla`` engine via :class:`data_science_mcp.ml_engine.MLEngine` (a
+process-local singleton; see ``MLEngine._rust_client``). Every served tool is
+registered by hand in ``mcp_server.py`` and ``mcp/``; the engine's public methods
+are not auto-derived into tools (a derived ``load_dataset`` bypassed the
+data-root confinement of the hand-written tool). :func:`get_client` returns the
+engine singleton for in-process callers.
 
-:func:`get_rest_client` below is a separate, TLS-hardened accessor kept for a
-future/optional upstream REST integration (``DATA_SCIENCE_MCP_URL`` /
-``DATA_SCIENCE_MCP_TOKEN``) — it is NOT the tool-surface client and nothing in
-this package's live call path uses it today.
-"""
+:func:`get_rest_client` below is a separate, TLS-hardened accessor kept for an
+optional upstream REST integration (``DATA_SCIENCE_MCP_URL`` /
+``DATA_SCIENCE_MCP_TOKEN``); nothing in the live call path uses it today."""
 
 import requests
 from scion_sdk.config import setting

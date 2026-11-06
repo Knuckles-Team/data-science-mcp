@@ -1,18 +1,14 @@
 """
-Tests for checking the tool-surface client accessor in auth.py.
+Tests for the client accessors in auth.py.
 
-data-science-mcp has no external REST API of its own: ``register_tool_surface``
-in ``mcp_server.py`` is wired with ``client_cls=MLEngine, get_client=get_client``
-(see ``AGENTS.md`` — all compute delegates to the Rust medulla engine via
-``MLEngine``). ``get_client()`` MUST therefore resolve to an ``MLEngine`` instance
-so the verbose 1:1 tool surface (introspected from ``MLEngine``) dispatches to a
-client that actually has those methods. A prior generic REST-client placeholder
-here caused every verbose tool call (e.g. ``data_science_describe_dataset``) to
-fail with ``'Client' object has no attribute '<method>'``.
+data-science-mcp has no external REST API of its own: all compute delegates to the
+Rust medulla engine via ``MLEngine``. ``get_client()`` resolves to the ``MLEngine``
+singleton for in-process callers; the served tools are hand-written and are not
+auto-derived from the engine's methods.
 
 The ``get_rest_client`` tests below cover the separate, optional TLS-hardened
-upstream REST seam (:func:`data_science_mcp.auth.get_rest_client`) — it is not
-part of the tool-surface contract and has no live caller today.
+upstream REST seam (:func:`data_science_mcp.auth.get_rest_client`) which has no
+live caller today.
 """
 
 import os

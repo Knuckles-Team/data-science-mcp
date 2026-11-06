@@ -5,6 +5,13 @@ All notable changes to `data-science-mcp` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.11] - 2026-11-06
+
+### Changed
+- Removed the auto-derived `data_science_*` duplicates of the hand-written tools (one accepted an unconfined `source_path`); `interpretability_reference` is now a hand-written tool. The quant routers are now 38 typed `quant_<domain>_<kernel>` tools.
+- `load_dataset` now raises `MissingExtraError` (an `ImportError`) with the install hint when scikit-learn is missing, instead of returning an error payload.
+- Declared tool-use contracts, links, data locations and business roles; replaced the workflow prompts with an operator prompt and three business-role prompts; added the quant-analytics skill; raised `scion-sdk` to `>=0.9.0`.
+
 ## [2.3.8] - 2026-10-30
 
 ### Changed

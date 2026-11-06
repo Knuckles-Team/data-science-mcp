@@ -75,6 +75,24 @@ ENGINE_SCOPES = ("compute:datascience", "compute:finance", "sparql:read")
 _UNPROBED = object()
 
 
+class MissingExtraError(ImportError):
+    """An optional extra needed by the requested operation is not installed.
+
+    Raised instead of returning an ``{"error": ...}`` payload, so a tool call
+    fails with the install hint rather than looking like a successful load.
+    """
+
+
+_SKLEARN_SAMPLE_DATASETS = {
+    "california": "fetch_california_housing",
+    "diabetes": "load_diabetes",
+    "iris": "load_iris",
+    "wine": "load_wine",
+    "breast_cancer": "load_breast_cancer",
+    "digits": "load_digits",
+}
+
+
 class MLEngine:
     """Stateful ML engine for model training and evaluation.
 
@@ -246,30 +264,27 @@ class MLEngine:
 
         Returns:
             Dict with dataset summary: shape, features, target, description.
+
+        Raises:
+            MissingExtraError: a built-in sample was requested but scikit-learn
+                (the ``[datasets]`` extra) is not installed.
         """
+        if name.lower() in _SKLEARN_SAMPLE_DATASETS:
+            try:
+                import sklearn.datasets  # noqa: F401
+            except ImportError as exc:
+                raise MissingExtraError(
+                    f"Built-in sample dataset {name!r} requires scikit-learn. "
+                    "Install 'data-science-mcp[datasets]' or pass a .csv file path."
+                ) from exc
         try:
             data: dict[str, Any] = {}
 
-            sklearn_datasets = {
-                "california": "fetch_california_housing",
-                "diabetes": "load_diabetes",
-                "iris": "load_iris",
-                "wine": "load_wine",
-                "breast_cancer": "load_breast_cancer",
-                "digits": "load_digits",
-            }
+            sklearn_datasets = _SKLEARN_SAMPLE_DATASETS
             csv_path = source_path or name
 
             if name.lower() in sklearn_datasets:
-                try:
-                    from sklearn import datasets as sk_datasets
-                except ImportError:
-                    return {
-                        "error": (
-                            "Built-in sample datasets require scikit-learn. Install "
-                            "'data-science-mcp[datasets]' or pass a .csv file path."
-                        )
-                    }
+                from sklearn import datasets as sk_datasets
 
                 loader = getattr(sk_datasets, sklearn_datasets[name.lower()])
                 bunch = loader()

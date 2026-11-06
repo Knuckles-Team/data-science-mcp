@@ -8,11 +8,11 @@ IModelEvolver and InterpretabilityTestSuite.
 Tool tags:
     - model-training: fit_model, predict, evaluate_model, cross_validate
     - model-evolution: evolve_model_class, rank_models, pareto_frontier
-    - interpretability: run_interpretability_suite, grade_response, generate_tests
+    - interpretability: run_interpretability_suite, grade_response, generate_interpretability_tests, interpretability_reference
     - data-management: load_dataset, describe_dataset, split_dataset
-    - quant: quant_market_making, quant_microstructure, quant_sizing,
-      quant_validation, quant_forensic, quant_statespace, quant_signals,
-      quant_derivatives (medulla finance kernels)
+    - quant: quant_<domain>_<kernel> (market_making, microstructure, sizing,
+      validation, statespace, signals, derivatives) and quant_forensic
+      (medulla finance kernels, one typed tool each)
     - deep-delegate: deep_train_predict — the AU-KG mining plan's Phase-6
       delegation target (mlp_classify, autoencoder_anomaly/embed, lstm_forecast,
       histgbm_classify — torch/[training]-extra, CONCEPT:AU-KG.mining.dsm-forecast-delegation)
@@ -21,17 +21,8 @@ Tool tags:
 import json
 import logging
 
-# SDK gap (SCION-CONNECTOR-CONTROL-R009): scion_sdk.mcp.tool_surface's
-# register_tool_surface silently ignores client_cls/get_client (R020 retired
-# verbose 1:1 auto-derivation). This connector's served tool surface genuinely
-# depends on that auto-derivation -- register_verbose_tools adds one real,
-# separately-invokable data_science_<method> tool per MLEngine public method
-# (see auth.py's docstring for the historical dispatch-mismatch bug this
-# guards against). Swapping to the SDK here would silently drop that whole
-# tool surface, so this import stays on scion_sdk.
 from fastmcp import Context, FastMCP
 from pydantic import Field
-from scion_sdk.connector_hooks import RegistrationContext
 
 # Redirect logging to stderr to prevent MCP stdout corruption
 logger = logging.getLogger("MCP_Server")
@@ -256,6 +247,21 @@ def register_model_evolution_tools(mcp: FastMCP) -> None:
 
 
 def register_interpretability_tools(mcp: FastMCP) -> None:
+    @mcp.tool(tags={"interpretability"})
+    async def interpretability_reference(
+        model_id: str = Field(description="ID of a fitted model"),
+        ctx: Context | None = Field(
+            default=None, description="MCP context for progress reporting"
+        ),
+    ) -> dict:
+        """Reference answers for the interpretability suite: largest feature, baseline prediction, first coefficient, test R2 and train size."""
+        if ctx:
+            await ctx.info(f"Computing interpretability reference for {model_id}...")
+        reference = MLEngine().interpretability_reference(model_id)
+        if reference is None:
+            raise ValueError(f"Unknown model_id: {model_id}")
+        return reference
+
     @mcp.tool(tags={"interpretability"})
     async def generate_interpretability_tests(
         model_id: str = Field(description="ID of a fitted model to generate tests for"),
@@ -504,57 +510,6 @@ def register_data_management_tools(mcp: FastMCP) -> None:
 
 
 # ── Prompts ──────────────────────────────────────────────────────────
-
-
-def register_prompts(context: RegistrationContext) -> None:
-    """Register MCP prompts for guided workflows."""
-    mcp = context.server
-
-    @mcp.prompt(
-        name="model_evolution_workflow",
-        description=(
-            "Step-by-step guide for evolving interpretable models using "
-            "the autoresearch loop from arXiv:2605.03808."
-        ),
-    )
-    def model_evolution_workflow(dataset: str) -> str:
-        return (
-            f"You are running the Agentic-iModels autoresearch loop.\n\n"
-            f"Dataset: {dataset}\n\n"
-            f"Steps:\n"
-            f"1. load_dataset('{dataset}') — Load and inspect the data\n"
-            f"2. fit_model('LinearRegression', '{dataset}') — Baseline model\n"
-            f"3. evaluate_model(model_id, '{dataset}') — Get accuracy metrics\n"
-            f"4. generate_interpretability_tests(...) — Create test cases\n"
-            f"5. run_interpretability_suite(...) — Grade the model\n"
-            f"6. evolve_model_class(...) — Submit to Pareto frontier\n"
-            f"7. Repeat steps 2-6 with increasingly complex model classes\n"
-            f"8. get_pareto_frontier() — View the final frontier\n"
-        )
-
-    @mcp.prompt(
-        name="interpretability_audit",
-        description=(
-            "Guide for auditing a model's interpretability using the "
-            "6-category LLM-graded test protocol."
-        ),
-    )
-    def interpretability_audit(model_name: str) -> str:
-        return (
-            f"You are auditing the interpretability of model '{model_name}'.\n\n"
-            f"Test Categories (200 total):\n"
-            f"  1. Feature Attribution (32): Which features matter most?\n"
-            f"  2. Point Simulation (43): Can you predict for specific inputs?\n"
-            f"  3. Sensitivity Analysis (32): How do changes propagate?\n"
-            f"  4. Counterfactual (32): What inputs achieve a target output?\n"
-            f"  5. Confidence Calibration (32): How certain are predictions?\n"
-            f"  6. Data Attribution (29): Which training data influenced this?\n\n"
-            f"Process:\n"
-            f"1. Use generate_interpretability_tests() to create test cases\n"
-            f"2. For each test, read the model's __str__() and answer the query\n"
-            f"3. Use grade_response() to check each answer\n"
-            f"4. Use run_interpretability_suite() for aggregate scoring\n"
-        )
 
 
 # ── MCP Initialization ──────────────────────────────────────────────
