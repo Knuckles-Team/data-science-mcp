@@ -14,7 +14,7 @@ import pytest
 
 PKG = Path(__file__).resolve().parent.parent / "data_science_mcp"
 ONTOLOGY = PKG / "ontology" / "datascience.ttl"
-PROMPT = PKG / "prompts" / "datascience_specialist.json"
+PROMPT = PKG / "prompts" / "data-science-mcp-operator.json"
 SKILLS_DIR = PKG / "skills"
 
 EXPECTED_SKILLS = {
@@ -29,10 +29,10 @@ def test_ontology_parses_and_has_iri():
     g = rdflib.Graph()
     g.parse(str(ONTOLOGY), format="turtle")
     assert len(g) > 0
-    # per-package owl:Ontology IRI imports the shared hub
+    # classes reach the shared core through rdfs:subClassOf; the core is never imported
     onto = rdflib.URIRef("http://knuckles.team/kg/datascience")
     imports = rdflib.URIRef("http://www.w3.org/2002/07/owl#imports")
-    assert (onto, imports, rdflib.URIRef("http://knuckles.team/kg")) in g
+    assert (onto, imports, rdflib.URIRef("http://knuckles.team/kg")) not in g
 
 
 def test_ontology_reuses_shared_classes_not_redefines():
@@ -55,13 +55,11 @@ def test_ontology_reuses_shared_classes_not_redefines():
 
 def test_prompt_is_valid_structured_prompt():
     data = json.loads(PROMPT.read_text())
-    assert data["type"] == "prompt"
-    assert data["schema_version"] == "1.0"
-    assert data["source"] == "data-science-mcp"
     assert data["identity"]["role"]
     assert data["instructions"]["core_directive"]
+    assert data["agent"]["kind"] == "operator"
     # every referenced skill exists on disk
-    for skill in data["skills"]:
+    for skill in data["agent"]["skills"]:
         assert (SKILLS_DIR / skill / "SKILL.md").is_file(), skill
 
 
@@ -81,7 +79,11 @@ def test_three_real_skills_present_and_prefixed():
 def test_source_preset_uses_real_tool_and_fields():
     from scion_sdk.ingest import load_declaration
 
-    source = next(s for s in load_declaration("data_science_mcp").sources if s.source_id == "datascience-model-registry")
+    source = next(
+        s
+        for s in load_declaration("data_science_mcp").sources
+        if s.source_id == "datascience-model-registry"
+    )
     # rank_models is a real registered MCP tool
     assert source.tools == ("rank_models",)
     assert source.records_path == "ranked_models"

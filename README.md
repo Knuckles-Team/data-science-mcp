@@ -60,7 +60,7 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 
 <!-- MCP-TOOLS-TABLE:START -->
 
-#### Condensed action-routed tools (`MCP_TOOL_MODE=condensed`)
+#### Tools
 
 | MCP Tool | Toggle Env Var | Description |
 |----------|----------------|-------------|
@@ -103,26 +103,8 @@ _Auto-generated — do not edit (synced by the `mcp-readme-table` pre-commit hoo
 | `train_sft` | `MODEL_TRAININGTOOL` | Supervised fine-tune on an ``sft`` corpus (CONCEPT:AU-AHE.evaluation.adaptive-reasoning-effort). |
 | `train_tokenizer` | `MODEL_TRAININGTOOL` | Train a byte-level BPE tokenizer from scratch (CONCEPT:DS-AHE.trainer.concept-2). |
 
-#### Verbose 1:1 API-mapped tools (`MCP_TOOL_MODE=verbose` or `both`)
 
-<details>
-<summary>9 per-operation tools — one per public API method (click to expand)</summary>
-
-| MCP Tool | Toggle Env Var | Description |
-|----------|----------------|-------------|
-| `data_science_cross_validate` | `ML_ENGINETOOL` | Run k-fold cross-validation via the engine. |
-| `data_science_describe_dataset` | `ML_ENGINETOOL` | Get descriptive statistics for a loaded dataset. |
-| `data_science_evaluate` | `ML_ENGINETOOL` | Evaluate a fitted model. |
-| `data_science_fit` | `ML_ENGINETOOL` | Fit a model on a dataset via the medulla engine. |
-| `data_science_interpretability_reference` | `ML_ENGINETOOL` | Compute reference answers for the interpretability suite without any |
-| `data_science_load_dataset` | `ML_ENGINETOOL` | Load a dataset by name or file path. |
-| `data_science_predict` | `ML_ENGINETOOL` | Generate predictions from a fitted model. |
-| `data_science_ranked_models` | `ML_ENGINETOOL` | Rank fitted models by stored test R² (backend-agnostic, no recompute). |
-| `data_science_split_dataset` | `ML_ENGINETOOL` | Split a dataset into train/test/validation sizes. |
-
-</details>
-
-_38 action-routed tool(s) · 9 verbose 1:1 tool(s). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (**`intent` default** — the six verb-tools, granular set loaded on demand · `condensed` action-routed · `verbose` 1:1 · `both`). Auto-generated — do not edit._
+_One typed tool per operation (69 tools). Each is enabled unless its `<DOMAIN>TOOL` toggle is set false; `MCP_TOOL_MODE` selects the surface (**`intent` default** — the six verb-tools, granular set loaded on demand · `condensed` action-routed · `verbose` 1:1 · `both`). Auto-generated — do not edit._
 <!-- MCP-TOOLS-TABLE:END -->
 
 Detailed tool schemas, parameter shapes, and validation constraints are preserved in [docs/usage.md](docs/usage.md).
@@ -405,7 +387,7 @@ Every variable the server reads, grouped by purpose.
 | `INFERENCE_BASE_URL` | OpenAI-compatible inference server base URL | — |
 
 ### Tool toggles
-Each action-routed tool can be disabled individually via its toggle env var (set to `false`).
+Each tool group can be disabled individually via its toggle env var (set to `false`).
 The full list is in the [Available MCP Tools](#available-mcp-tools) table above.
 | Variable | Tools |
 |----------|-------|
