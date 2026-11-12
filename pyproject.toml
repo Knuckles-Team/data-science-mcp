@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3"]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "scion-sdk[mcp]>=0.10.1,<0.11",
+    "scion-sdk[mcp]>=0.11.0,<0.12",
     "requests>=2.34.2",
     "polars>=2.0.0",
     "numpy>=2.5.4",
@@ -80,7 +80,7 @@ eval = [
 # `cryptography>=48.0.1,<49` override across the whole ecosystem — which,
 # per an osv.dev check, pins the MOST vulnerable available cryptography
 # release (6 known advisories at 48.0.1 vs. 2 at 49.0.0), directly
-# contradicting scion-sdk' own CVE fix (GHSA-g6cj-pr64-35w5,
+# contradicting scion-sdk>=0.11.0,<0.12' own CVE fix (GHSA-g6cj-pr64-35w5,
 # PYSEC-2026-3552, fixed=50.0.0). Even mlflow's latest release (3.15.1)
 # only admits `cryptography>=43.0.0,<50` — still short of the fix. `import
 # mlflow` in data_science_mcp/tracking.py is already exception-guarded
