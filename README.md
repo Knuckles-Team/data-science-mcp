@@ -135,7 +135,7 @@ When query strings or parameters are supplied, an LLM-free **Knowledge Graph res
 <!-- MCP-CONFIG-EXAMPLES:START -->
 
 > **Install the connector-focused `[mcp]` extra.** Examples use `data-science-mcp[mcp]` to add
-> FastMCP / FastAPI through `scion-sdk[mcp]`; the required Agent Utilities core
+> FastMCP / FastAPI through `scion-sdk[mcp]`; the required Meristem core
 > still carries `medulla[full]`. The `[agent-runtime]` extra additionally
 > enables model orchestration.
 
@@ -571,7 +571,7 @@ agent (`immutable agent digest`) with a co-located `:mcp` sidecar.
 ### Knowledge-graph database (`medulla`)
 
 `data-science-mcp` uses the mandatory `medulla[full]` compute capabilities on top of
-the `medulla[full]` runtime carried by every Agent Utilities install.
+the `medulla[full]` runtime carried by every Meristem install.
 The connector-focused `[mcp]` surface uses that engine without enabling model
 orchestration; `[agent]` adds the orchestration stack. Local deployments can use the
 bundled engine. For production or shared state, configure a dedicated medulla
