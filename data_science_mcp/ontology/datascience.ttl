@@ -6,6 +6,7 @@
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dp: <https://knuckles-team.github.io/ontology/data-platform#> .
 
 # Data Science / ML-workflow ontology — experiments, training runs, fitted model
 # artifacts, corpus curation, adapters, tokenizers, evaluation and interpretability.
@@ -18,20 +19,6 @@
 # here): :Dataset, :Model, :LanguageModel, :OutcomeEvaluation, :Document, :Person.
 
 # --- classes (owl:Class) ---
-
-:Experiment a owl:Class ;
-    rdfs:subClassOf core:Experiment ;
-    rdfs:label "ML Experiment" ;
-    rdfs:comment "A tracked experiment grouping related training runs and their metrics (tracking.py / MLflow)." .
-
-:TrainingRun a owl:Class ;
-    rdfs:subClassOf core:ExperimentRun ;
-    rdfs:label "Training Run" ;
-    rdfs:comment "A single training/fit execution — classical fit_model/cross_validate or a gradient trainer (train_sft/dpo/grpo/reward/ppo, pretrain_model)." .
-
-:ModelArtifact a owl:Class ;
-    rdfs:label "Model Artifact" ;
-    rdfs:comment "A fitted/trained model produced by a TrainingRun, addressed by model_id (fit_model / rank_models). Distinct from the served :Model catalog entry." .
 
 :HyperparameterConfig a owl:Class ;
     rdfs:subClassOf core:HyperParameterSetting ;
@@ -62,11 +49,6 @@
     rdfs:label "Interpretability Suite" ;
     rdfs:comment "A graded reliability/interpretability run over a model's test cases (run_interpretability_suite / grade_response)." .
 
-:Corpus a owl:Class ;
-    rdfs:subClassOf core:Corpus ;
-    rdfs:label "Training Corpus" ;
-    rdfs:comment "A curated text corpus for pretraining/fine-tuning after dedup/decontaminate/curate (data-engine: dedup_corpus, decontaminate_corpus, curate_corpus, prepare_pretrain_data)." .
-
 :Adapter a owl:Class ;
     rdfs:subClassOf core:ModelArtifact ;
     rdfs:label "PEFT Adapter" ;
@@ -87,64 +69,42 @@
     rdfs:label "Specialized Kernel" ;
     rdfs:comment "A GPU compute kernel optimized by scaffold-search to a speedup target (ds_specialize_kernel: fused-softmax, layernorm, matmul)." .
 
-:DatasetSplit a owl:Class ;
-    rdfs:label "Dataset Split" ;
-    rdfs:comment "A train/validation/test partition of a :Dataset (split_dataset)." .
-
 # --- links (owl:ObjectProperty) ---
 
 :partOfExperiment a owl:ObjectProperty ;
     rdfs:label "part of experiment" ;
     rdfs:comment "Links a TrainingRun to the Experiment that groups it." ;
-    rdfs:domain :TrainingRun ;
-    rdfs:range :Experiment .
-
-:trainedOn a owl:ObjectProperty ;
-    rdfs:label "trained on" ;
-    rdfs:comment "Links a TrainingRun to the :Dataset it fit against." ;
-    rdfs:domain :TrainingRun ;
-    rdfs:range core:Dataset .
+    rdfs:domain dp:TrainingRun ;
+    rdfs:range core:Experiment .
 
 :trainedFromCorpus a owl:ObjectProperty ;
     rdfs:label "trained from corpus" ;
     rdfs:comment "Links a TrainingRun to the curated :Corpus it consumed." ;
-    rdfs:domain :TrainingRun ;
-    rdfs:range :Corpus .
-
-:producedModel a owl:ObjectProperty ;
-    rdfs:label "produced model" ;
-    rdfs:comment "Links a TrainingRun to the ModelArtifact it produced." ;
-    rdfs:domain :TrainingRun ;
-    rdfs:range :ModelArtifact .
+    rdfs:domain dp:TrainingRun ;
+    rdfs:range core:Corpus .
 
 :producedAdapter a owl:ObjectProperty ;
     rdfs:label "produced adapter" ;
     rdfs:comment "Links a TrainingRun to a PEFT Adapter it produced or merged." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :Adapter .
 
 :trainedTokenizer a owl:ObjectProperty ;
     rdfs:label "trained tokenizer" ;
     rdfs:comment "Links a TrainingRun to the Tokenizer it trained." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :Tokenizer .
 
 :usedHyperparameters a owl:ObjectProperty ;
     rdfs:label "used hyperparameters" ;
     rdfs:comment "Links a TrainingRun to its HyperparameterConfig." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :HyperparameterConfig .
 
 :fineTunes a owl:ObjectProperty ;
     rdfs:label "fine-tunes" ;
     rdfs:comment "Links a TrainingRun to the base :LanguageModel it fine-tunes." ;
-    rdfs:domain :TrainingRun ;
-    rdfs:range core:LanguageModel .
-
-:appliesTo a owl:ObjectProperty ;
-    rdfs:label "applies to" ;
-    rdfs:comment "Links a PEFT Adapter to the base :LanguageModel it adapts." ;
-    rdfs:domain :Adapter ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range core:LanguageModel .
 
 :reportedMetric a owl:ObjectProperty ;
@@ -155,25 +115,25 @@
 :evaluatedBy a owl:ObjectProperty ;
     rdfs:label "evaluated by" ;
     rdfs:comment "Links a ModelArtifact to an :OutcomeEvaluation reward/eval record." ;
-    rdfs:domain :ModelArtifact ;
+    rdfs:domain core:ModelArtifact ;
     rdfs:range core:OutcomeEvaluation .
 
 :hasCrossValidation a owl:ObjectProperty ;
     rdfs:label "has cross-validation" ;
     rdfs:comment "Links a TrainingRun to its CrossValidationResult." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :CrossValidationResult .
 
 :onFrontier a owl:ObjectProperty ;
     rdfs:label "on frontier" ;
     rdfs:comment "Links a ModelArtifact (by model class) to the ParetoFrontier it is a non-dominated member of." ;
-    rdfs:domain :ModelArtifact ;
+    rdfs:domain core:ModelArtifact ;
     rdfs:range :ParetoFrontier .
 
 :interpretedBy a owl:ObjectProperty ;
     rdfs:label "interpreted by" ;
     rdfs:comment "Links a ModelArtifact to an InterpretabilitySuite that graded it." ;
-    rdfs:domain :ModelArtifact ;
+    rdfs:domain core:ModelArtifact ;
     rdfs:range :InterpretabilitySuite .
 
 :hasTest a owl:ObjectProperty ;
@@ -185,25 +145,25 @@
 :scoredByReward a owl:ObjectProperty ;
     rdfs:label "scored by reward" ;
     rdfs:comment "Links a TrainingRun (RLHF/GRPO/PPO) to the RewardModel used to score rollouts." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :RewardModel .
 
 :curatedFrom a owl:ObjectProperty ;
     rdfs:label "curated from" ;
     rdfs:comment "Links a Corpus to the source :Document records it was curated/deduplicated from." ;
-    rdfs:domain :Corpus ;
+    rdfs:domain core:Corpus ;
     rdfs:range core:Document .
 
 :specializesKernel a owl:ObjectProperty ;
     rdfs:label "specializes kernel" ;
     rdfs:comment "Links a TrainingRun/factory search to the SpecializedKernel it optimized." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range :SpecializedKernel .
 
 :splitOf a owl:ObjectProperty ;
     rdfs:label "split of" ;
     rdfs:comment "Links a DatasetSplit to the :Dataset it partitions." ;
-    rdfs:domain :DatasetSplit ;
+    rdfs:domain core:DatasetSplit ;
     rdfs:range core:Dataset .
 
 :ranBy a owl:ObjectProperty ;
@@ -216,7 +176,7 @@
 :modelId a owl:DatatypeProperty ;
     rdfs:label "model id" ;
     rdfs:comment "Identifier of a fitted ModelArtifact (model_id)." ;
-    rdfs:domain :ModelArtifact ;
+    rdfs:domain core:ModelArtifact ;
     rdfs:range xsd:string .
 
 :modelClass a owl:DatatypeProperty ;
@@ -238,7 +198,7 @@
 :r2Test a owl:DatatypeProperty ;
     rdfs:label "test R2" ;
     rdfs:comment "Held-out test R² score stored for a ModelArtifact (r2_test)." ;
-    rdfs:domain :ModelArtifact ;
+    rdfs:domain core:ModelArtifact ;
     rdfs:range xsd:double .
 
 :performance a owl:DatatypeProperty ;
@@ -271,20 +231,8 @@
 :trainerKind a owl:DatatypeProperty ;
     rdfs:label "trainer kind" ;
     rdfs:comment "Gradient-trainer kind for a TrainingRun (sft, dpo, grpo, reward, ppo, pretrain)." ;
-    rdfs:domain :TrainingRun ;
+    rdfs:domain dp:TrainingRun ;
     rdfs:range xsd:string .
-
-:metricName a owl:DatatypeProperty ;
-    rdfs:label "metric name" ;
-    rdfs:comment "Name of an EvaluationMetric (e.g. r2, accuracy, loss, f1)." ;
-    rdfs:domain :EvaluationMetric ;
-    rdfs:range xsd:string .
-
-:metricValue a owl:DatatypeProperty ;
-    rdfs:label "metric value" ;
-    rdfs:comment "Numeric value of an EvaluationMetric." ;
-    rdfs:domain :EvaluationMetric ;
-    rdfs:range xsd:double .
 
 :splitKind a owl:DatatypeProperty ;
     rdfs:label "split kind" ;
@@ -322,5 +270,3 @@
 <https://knuckles-team.github.io/ontology/connector/data-science#EvaluationMetric> rdfs:subClassOf <https://knuckles-team.github.io/ontology/core#Metric> .
 
 # ontology-codemod R4
-<https://knuckles-team.github.io/ontology/connector/data-science#DatasetSplit> rdfs:subClassOf <https://knuckles-team.github.io/ontology/core#Dataset> .
-<https://knuckles-team.github.io/ontology/connector/data-science#ModelArtifact> rdfs:subClassOf <https://knuckles-team.github.io/ontology/core#Model> .

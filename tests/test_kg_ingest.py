@@ -30,9 +30,15 @@ def test_ontology_parses_and_has_iri():
     g.parse(str(ONTOLOGY), format="turtle")
     assert len(g) > 0
     # classes reach the shared core through rdfs:subClassOf; the core is never imported
-    onto = rdflib.URIRef("https://knuckles-team.github.io/ontology/connector/datascience")
+    onto = rdflib.URIRef(
+        "https://knuckles-team.github.io/ontology/connector/datascience"
+    )
     imports = rdflib.URIRef("http://www.w3.org/2002/07/owl#imports")
-    assert (onto, imports, rdflib.URIRef("https://knuckles-team.github.io/ontology/core")) not in g
+    assert (
+        onto,
+        imports,
+        rdflib.URIRef("https://knuckles-team.github.io/ontology/core"),
+    ) not in g
 
 
 def test_ontology_reuses_shared_classes_not_redefines():
@@ -48,9 +54,15 @@ def test_ontology_reuses_shared_classes_not_redefines():
         ":OutcomeEvaluation a owl:Class",
     ):
         assert shared not in text, f"must not redefine shared class: {shared}"
-    # but DS-specific classes are defined
-    assert ":TrainingRun a owl:Class" in text
-    assert ":ModelArtifact a owl:Class" in text
+    # the core-owned classes are referenced, never declared here
+    for core_owned in (
+        ":TrainingRun",
+        ":ModelArtifact",
+        ":Corpus",
+        ":Experiment",
+        ":DatasetSplit",
+    ):
+        assert f"{core_owned} a owl:Class" not in text
 
 
 def test_prompt_is_valid_structured_prompt():
