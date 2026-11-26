@@ -2,14 +2,7 @@
 name: data-science-model-reliability
 skill_type: skill
 description: >-
-  Model interpretability and reliability grading on the data-science-mcp compute server —
-  generate a structured suite of behavioural probes for a fitted model (feature
-  attribution, point simulation, sensitivity, counterfactual, confidence calibration,
-  data attribution), grade answers against expected references, and run the full graded
-  suite for a pass-rate. Use when the agent must audit or explain a fitted model_id,
-  score interpretability responses, or produce a reliability report. Do NOT use to train
-  models (use data-science-model-training) or to fine-tune LLMs / curate corpora
-  (use data-science-llm-finetuning).
+  Grade interpretability and reliability of a fitted model on the data-science-mcp compute server: generate behavioural probes, grade answers against references, run the suite for a pass-rate. Use to audit or explain a fitted model_id. Do NOT use to train models (data-science-model-training) or fine-tune LLMs (data-science-llm-finetuning).
 license: MIT
 tags: [data-science, interpretability, reliability, model-audit, evaluation, mcp]
 metadata:
@@ -18,10 +11,27 @@ metadata:
 ---
 # Data Science — Model Reliability & Interpretability
 
+Scope: Model interpretability and reliability grading on the data-science-mcp compute server — generate a structured suite of behavioural probes for a fitted model (feature attribution, point simulation, sensitivity, counterfactual, confidence calibration, data attribution), grade answers against expected references, and run the full graded suite for a pass-rate. Use when the agent must audit or explain a fitted model_id, score interpretability responses, or produce a reliability report. Do NOT use to train models (use data-science-model-training) or to fine-tune LLMs / curate corpora (use data-science-llm-finetuning).
+
 Audit a **fitted model** over the **data-science-mcp** MCP server. The flow is
 **generate probes → answer → grade → suite pass-rate**. Every tool keys off a
 `model_id` produced by `fit_model` (see `data-science-model-training`) in the same
 engine session.
+
+## Steps
+
+1. Confirm a fitted model exists by calling `evaluate_model` with its `model_id` from `data-science-model-training`. Verify it returns metrics rather than a not-found error.
+2. Generate the suite with `generate_interpretability_tests` and the `model_id`. Verify the response holds 6 cases, each with a `test_id`, `category` and `question`.
+3. Grade one answer with `grade_response`, passing `test_id`, `response` and `expected`. Verify the result contains `passed` and `score`.
+4. Grade the whole suite with `run_interpretability_suite` and `answers_json` mapping each `test_id` to its answer. Verify the aggregate pass-rate covers all 6 `test_id`s.
+
+## Failure recovery
+
+| Failure | Cause | Recovery |
+| --- | --- | --- |
+| `{"error": "Model <id> not found."}` | The `model_id` is wrong or the model was fitted in another engine session | Call `fit_model` in this session and use the returned `model_id`. |
+| A graded answer scores 0.0 | The response is prose rather than matching the `expected` reference value | Rewrite the response as the reference value (for example the R2 or `n_train`) and call `grade_response` with it. |
+| Suite reports fewer than 6 graded cases | `answers_json` is missing `test_id`s or was passed as an object | Read the `test_id`s from `generate_interpretability_tests`, build a JSON string covering all of them, and pass it to `run_interpretability_suite`. |
 
 ## When to use
 - Generate a fixed 6-case interpretability suite for a `model_id` (attribution,

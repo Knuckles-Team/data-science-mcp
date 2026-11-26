@@ -19,6 +19,21 @@ Use the provider's governed MCP tools through Arbora delegation.
 5. Ingest source data only through the signed connector preset and ChangeEnvelope path.
 6. Verify the durable result and its trace/evidence before reporting completion.
 
+## Steps
+
+1. Confirm the verified GraphSession and tenant before any call, by calling `ask` for the session context. Verify the session reports the intended tenant.
+2. Discover the current tool surface with `find` for the capability you need, never relying on remembered names. Verify the tool and its parameter schema appear in the result.
+3. Inspect read-only first with `ask`, and for a change request the provider's dry-run or preview. Verify the preview states the impact before any execution.
+4. Execute an approved change as a fenced WorkItem with `act` and the returned plan reference. Verify the result carries a trace or evidence reference.
+
+## Failure recovery
+
+| Failure | Cause | Recovery |
+| --- | --- | --- |
+| Discovery returns no matching tool | The capability is not exposed to this tenant or the name was guessed | Call `find` with a natural-language intent for the capability and use only the operation id it returns. |
+| Preview is unavailable for a mutation | The provider offers no dry-run mode | Stop and ask the operator for explicit approval, stating the impact, before calling `act`. |
+| Result lacks trace or evidence | The WorkItem did not complete or was not durable | Call `ask` for the WorkItem status and report the failure instead of claiming completion. |
+
 ## Safety contract
 
 - Never persist credentials, endpoints, raw personal identifiers, hostnames, or local paths.
