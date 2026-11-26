@@ -19,6 +19,21 @@ affected module, and the relevant `specs/` status before editing. Keep the conne
 focused on MCP and A2A exposure; model computation belongs in the medulla
 engine through the existing `MLEngine` and client protocol.
 
+## Steps
+
+1. Find the owning requirement with `grep -rn CONN-DATA-SCIENCE-MCP specs`. Verify the change maps to an existing row before editing.
+2. Make the smallest change in the existing connector module, routing ML compute through the engine. Verify with `git diff --stat` that only the intended files changed.
+3. Run the narrowest relevant test, for example `uv run --locked pytest -q tests/test_kg_ingest.py`. Verify the run reports no failures.
+4. Run the repository hooks with `pre-commit run --all-files`. Verify every hook reports Passed and none was skipped.
+
+## Failure recovery
+
+| Failure | Cause | Recovery |
+| --- | --- | --- |
+| A hook fails | The change violates formatting, spelling or a repository gate | Read the failing hook output, fix the named file and line, and rerun `pre-commit run --all-files` without skip flags. |
+| The focused test fails | The change broke connector behavior | Run `uv run --locked pytest -q <failing test file> -x` to see the first failure and fix that code path. |
+| The dashboard inputs look wrong | `.config/spec-dashboard.json` or a workflow file has a syntax error | Validate the file with `python3 -c "import json,sys; json.load(open(sys.argv[1]))" .config/spec-dashboard.json` and fix the reported line. |
+
 ## Rapid delivery: the 5-minute contract
 
 For a small, reviewable change:

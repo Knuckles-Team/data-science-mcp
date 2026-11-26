@@ -2,14 +2,7 @@
 name: data-science-model-training
 skill_type: skill
 description: >-
-  Classical (tabular) ML lifecycle on the data-science-mcp compute server — load a
-  dataset, fit a model, cross-validate, predict, evaluate, then rank and evolve model
-  classes on a performance-vs-complexity Pareto frontier. Use when the agent must train
-  a scikit-style regressor/classifier (LinearRegression, Ridge, RandomForest, …) on a
-  named or CSV dataset, tune via k-fold CV, score held-out data, or decide which model
-  class to keep. Compute runs in the medulla Rust engine, not in-process. Do NOT
-  use for LLM/gradient fine-tuning or corpus curation (use data-science-llm-finetuning)
-  or for interpretability/reliability grading (use data-science-model-reliability).
+  Classical tabular ML on the data-science-mcp compute server: load a dataset, fit, cross-validate, predict, evaluate, then rank model classes on a performance-vs-complexity Pareto frontier. Use to train a scikit-style model on a named or CSV dataset. Do NOT use for LLM fine-tuning (data-science-llm-finetuning) or grading (data-science-model-reliability).
 license: MIT
 tags: [data-science, machine-learning, training, cross-validation, pareto, mcp]
 metadata:
@@ -18,10 +11,28 @@ metadata:
 ---
 # Data Science — Model Training
 
+Scope: Classical (tabular) ML lifecycle on the data-science-mcp compute server — load a dataset, fit a model, cross-validate, predict, evaluate, then rank and evolve model classes on a performance-vs-complexity Pareto frontier. Use when the agent must train a scikit-style regressor/classifier (LinearRegression, Ridge, RandomForest, …) on a named or CSV dataset, tune via k-fold CV, score held-out data, or decide which model class to keep. Compute runs in the medulla Rust engine, not in-process. Do NOT use for LLM/gradient fine-tuning or corpus curation (use data-science-llm-finetuning) or for interpretability/reliability grading (use data-science-model-reliability).
+
 Train and rank classical ML models over the **data-science-mcp** MCP server. Datasets
 are loaded once by name, then referenced by that name across fit/CV/evaluate. Fitted
 models are addressed by the returned `model_id`. Heavy compute executes in the
 medulla Rust engine — these tools are thin, backend-agnostic wrappers.
+
+## Steps
+
+1. Load data with `load_dataset`, passing a built-in name or a CSV path with `target_column`. Verify `describe_dataset` returns the expected columns and row count.
+2. Fit with `fit_model`, passing `model_class`, `dataset_name` and `hyperparameters_json` as a JSON string. Verify the response returns a `model_id` and test metrics.
+3. Compare settings with `cross_validate` and `n_folds`. Verify the response lists one score per fold.
+4. Score the model with `evaluate_model` on the `test` split, or `predict` on feature dicts. Verify the metrics or predictions come back for the same `model_id`.
+5. Rank classes with `rank_models` and place them with `evolve_model_class`, reading the result from `get_pareto_frontier`. Verify the class you submitted appears in the frontier or is dominated by a listed one.
+
+## Failure recovery
+
+| Failure | Cause | Recovery |
+| --- | --- | --- |
+| `{"error": ...}` payload from `fit_model` | `hyperparameters_json` was passed as an object, not a JSON string | Serialize the hyperparameters to a string and call `fit_model` with that string. |
+| Built-in dataset name fails to load | The `[datasets]` extra (scikit-learn) is not installed | Install `data-science-mcp[datasets]`, or call `load_dataset` with a `.csv` path and `target_column`. |
+| `rank_models` returns nothing, or `predict` rejects the `model_id` | No model was fitted in the current engine session | Call `fit_model` in this session, then use the returned `model_id`. |
 
 ## When to use
 - Fit a tabular regressor/classifier on a built-in sample or a `.csv` file.

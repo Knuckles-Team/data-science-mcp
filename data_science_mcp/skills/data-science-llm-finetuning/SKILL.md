@@ -2,15 +2,7 @@
 name: data-science-llm-finetuning
 skill_type: skill
 description: >-
-  LLM gradient fine-tuning and corpus pipeline on the data-science-mcp compute server —
-  curate a corpus (dedup/decontaminate/quality), build an SFT/DPO/GRPO dataset from
-  traces, then run SFT, DPO, reward-model, PPO, GRPO or from-scratch pretraining, train
-  a tokenizer, and TIES-merge PEFT adapters. Use when the agent must post-train or
-  pretrain a language model, assemble a preference/RL corpus, or produce/merge LoRA
-  adapters. Trainers plan by default and only execute with options.execute=true; the
-  heavy path needs the [training] extra + a GPU. Do NOT use for tabular scikit-style ML
-  (use data-science-model-training) or interpretability grading
-  (use data-science-model-reliability).
+  LLM gradient fine-tuning and corpus pipeline on the data-science-mcp compute server: curate corpora, build SFT, DPO or GRPO datasets, run trainers, train tokenizers, merge PEFT adapters. Use to post-train or pretrain a language model. Do NOT use for tabular ML (data-science-model-training) or grading (data-science-model-reliability).
 license: MIT
 tags: [data-science, llm, fine-tuning, sft, dpo, ppo, grpo, corpus, peft, mcp]
 metadata:
@@ -19,11 +11,29 @@ metadata:
 ---
 # Data Science — LLM Fine-Tuning
 
+Scope: LLM gradient fine-tuning and corpus pipeline on the data-science-mcp compute server — curate a corpus (dedup/decontaminate/quality), build an SFT/DPO/GRPO dataset from traces, then run SFT, DPO, reward-model, PPO, GRPO or from-scratch pretraining, train a tokenizer, and TIES-merge PEFT adapters. Use when the agent must post-train or pretrain a language model, assemble a preference/RL corpus, or produce/merge LoRA adapters. Trainers plan by default and only execute with options.execute=true; the heavy path needs the [training] extra + a GPU. Do NOT use for tabular scikit-style ML (use data-science-model-training) or interpretability grading (use data-science-model-reliability).
+
 Post-train and pretrain language models over the **data-science-mcp** MCP server. The
 canonical flow is **curate → build dataset → train → (merge adapters)**. Trainers return
 a *plan* unless you pass `"execute": true` in `options_json`; execution runs gradient
 steps in-process and needs the `[training]` extra (torch/transformers/peft/accelerate)
 plus a GPU.
+
+## Steps
+
+1. Curate raw records with `curate_corpus`, passing `records_json` and `options_json` with a name and version. Verify the result reports kept counts and a provenance entry.
+2. Shape the corpus with `build_training_dataset`, setting `kind` to `sft`, `dpo` or `grpo`. Verify each output record has the fields that trainer expects.
+3. Plan the run with `train_sft` (or `train_dpo`, `train_reward`, `train_ppo`, `train_grpo`, `pretrain_model`) and `"execute": false` in `options_json`. Verify the response carries `executed: false` and a plan.
+4. Execute only after approval by passing `"execute": true` in `options_json` to the same trainer. Verify the response reports `executed: true` with training metrics.
+5. Combine adapters, when needed, with `merge_adapters_ties` and `density` and `scaling` in `options_json`. Verify the merged weights are returned with the base keys intact.
+
+## Failure recovery
+
+| Failure | Cause | Recovery |
+| --- | --- | --- |
+| Trainer returns a plan only | `options_json` lacks `"execute": true`, or the `[training]` extra or GPU is absent | Add `"execute": true` to `options_json`; if it still reports `executed: false`, install `data-science-mcp[training]` on a GPU host and call the trainer again. |
+| Error naming a malformed argument | A `*_json` argument was passed as an object instead of a JSON string | Serialize `dataset_json`, `options_json` or `records_json` to a string and pass that string to the same tool. |
+| `prepare_pretrain_data` writes nothing | `options.tokenizer` or `options.execute` is missing | Set `options.tokenizer` to an HF name or local directory and `options.execute` to true, then call `prepare_pretrain_data`. |
 
 ## When to use
 - Curate raw text into a clean corpus (quality-filter + dedup + decontaminate).
