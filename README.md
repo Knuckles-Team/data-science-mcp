@@ -20,8 +20,8 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-mcp)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/data-science-mcp)
 
-> **Documentation** — Installation, deployment, usage across the MCP, Python API, and
-> CLI interfaces, and the in-house model-training substrate are maintained in the
+> **Documentation** — Installation, deployment, and usage across the API, CLI, MCP,
+> and A2A agent interfaces are maintained in the
 > [official documentation](https://knuckles-team.github.io/data-science-mcp/).
 
 ---
@@ -287,6 +287,112 @@ the detailed transport contract.
 
 ---
 
+## Agent
+
+This repository features a fully integrated Pydantic AI Graph Agent. It communicates over the **Agent Control Protocol (ACP)** and interacts smoothly with the **Agent Web UI (AG-UI)** and Terminal interface.
+
+### Running the Agent CLI
+To start the interactive command-line agent:
+
+```bash
+# Set credentials
+export DATA_SCIENCE_MCP_URL="your_value"
+export DATA_SCIENCE_MCP_TOKEN="your_value"
+
+# Run the agent server
+data-science-agent --provider openai --model-id gpt-4o
+```
+
+### Docker Compose Orchestration
+The following `docker/agent.compose.yml` configures the Agent, Web UI, and Terminal Interface together:
+
+```yaml
+version: '3.8'
+
+services:
+  data-science-mcp-mcp:
+    image: example/data-science-mcp:mcp
+    container_name: data-science-mcp-mcp
+    hostname: data-science-mcp-mcp
+    restart: always
+    env_file:
+      - ../.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST=0.0.0.0
+      - PORT=8000
+      - TRANSPORT=streamable-http
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  data-science-mcp-agent:
+    image: example/data-science-mcp@sha256:<digest>
+    container_name: data-science-mcp-agent
+    hostname: data-science-mcp-agent
+    restart: always
+    depends_on:
+      - data-science-mcp-mcp
+    env_file:
+      - ../.env
+    command: [ "data-science-agent" ]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST=0.0.0.0
+      - PORT=9004
+      - MCP_URL=http://data-science-mcp-mcp:8000/mcp
+      - PROVIDER=${PROVIDER:-openai}
+      - MODEL_ID=${MODEL_ID:-gpt-4o}
+      - ENABLE_WEB_UI=True
+      - ENABLE_OTEL=True
+    ports:
+      - "9004:9004"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9004/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+```
+
+Detailed graph node architecture explanations, custom skill configurations, and agentic trace guides are available in [docs/deployment.md](docs/deployment.md).
+
+---
+
+## Security & Governance
+
+Built directly upon the enterprise-ready [`scion-sdk`](https://github.com/Knuckles-Team/scion-sdk) core, standard security parameters are fully supported:
+
+### Access Control & Policy Enforcement
+- **Eunomia Policies:** Fine-grained, policy-driven tool authorization. Supports `none`, local `embedded` (`mcp_policies.json`), or centralized `remote` modes.
+- **OIDC Token Delegation:** Compliant with RFC 8693 token exchange for flowing authenticating user credentials from Web UI / ACP → Agent → MCP.
+- **Scoped Credentials:** Execution context runs restricted to the specific caller identity.
+
+### Runtime Security Grid
+| Feature | Feature | Enablement |
+|---------|---------------|------------|
+| **Tool Guard** | Sensitivity inspection with human-in-the-loop validation | Enabled by default |
+| **Prompt Injection Defense** | Input scanning, repetition monitoring, and recursive loop blocks | Enabled by default |
+| **Context Safety Guard** | Stuck-loop detectors and contextual overflow preemptive alerts | Enabled by default |
+
+---
+
 ## Environment Variables
 
 <!-- ENV-VARS-TABLE:START -->
@@ -419,110 +525,6 @@ The full list is in the [Available MCP Tools](#available-mcp-tools) table above.
 
 See [`.env.example`](.env.example) for a copy-paste starting point.
 
-## Agent
-
-This repository features a fully integrated Pydantic AI Graph Agent. It communicates over the **Agent Control Protocol (ACP)** and interacts smoothly with the **Agent Web UI (AG-UI)** and Terminal interface.
-
-### Running the Agent CLI
-To start the interactive command-line agent:
-
-```bash
-# Set credentials
-export DATA_SCIENCE_MCP_URL="your_value"
-export DATA_SCIENCE_MCP_TOKEN="your_value"
-
-# Run the agent server
-data-science-agent --provider openai --model-id gpt-4o
-```
-
-### Docker Compose Orchestration
-The following `docker/agent.compose.yml` configures the Agent, Web UI, and Terminal Interface together:
-
-```yaml
-version: '3.8'
-
-services:
-  data-science-mcp-mcp:
-    image: example/data-science-mcp:mcp
-    container_name: data-science-mcp-mcp
-    hostname: data-science-mcp-mcp
-    restart: always
-    env_file:
-      - ../.env
-    environment:
-      - PYTHONUNBUFFERED=1
-      - HOST=0.0.0.0
-      - PORT=8000
-      - TRANSPORT=streamable-http
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  data-science-mcp-agent:
-    image: example/data-science-mcp@sha256:<digest>
-    container_name: data-science-mcp-agent
-    hostname: data-science-mcp-agent
-    restart: always
-    depends_on:
-      - data-science-mcp-mcp
-    env_file:
-      - ../.env
-    command: [ "data-science-agent" ]
-    environment:
-      - PYTHONUNBUFFERED=1
-      - HOST=0.0.0.0
-      - PORT=9004
-      - MCP_URL=http://data-science-mcp-mcp:8000/mcp
-      - PROVIDER=${PROVIDER:-openai}
-      - MODEL_ID=${MODEL_ID:-gpt-4o}
-      - ENABLE_WEB_UI=True
-      - ENABLE_OTEL=True
-    ports:
-      - "9004:9004"
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9004/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-```
-
-Detailed graph node architecture explanations, custom skill configurations, and agentic trace guides are available in [docs/deployment.md](docs/deployment.md).
-
----
-
-## Security & Governance
-
-Built directly upon the enterprise-ready [`scion-sdk`](https://github.com/Knuckles-Team/scion-sdk) core, standard security parameters are fully supported:
-
-### Access Control & Policy Enforcement
-- **Eunomia Policies:** Fine-grained, policy-driven tool authorization. Supports `none`, local `embedded` (`mcp_policies.json`), or centralized `remote` modes.
-- **OIDC Token Delegation:** Compliant with RFC 8693 token exchange for flowing authenticating user credentials from Web UI / ACP → Agent → MCP.
-- **Scoped Credentials:** Execution context runs restricted to the specific caller identity.
-
-### Runtime Security Grid
-| Feature | Feature | Enablement |
-|---------|---------------|------------|
-| **Tool Guard** | Sensitivity inspection with human-in-the-loop validation | Enabled by default |
-| **Prompt Injection Defense** | Input scanning, repetition monitoring, and recursive loop blocks | Enabled by default |
-| **Context Safety Guard** | Stuck-loop detectors and contextual overflow preemptive alerts | Enabled by default |
-
 ---
 
 ## Installation
@@ -613,7 +615,6 @@ Contributions are welcome! Please ensure code quality by running local checks be
 - Lint code using `ruff check .`
 - Validate type-safety with `mypy .`
 - Run test suites using `pytest`
-
 
 <!-- BEGIN scion-sdk-deployment (generated; do not edit between markers) -->
 
